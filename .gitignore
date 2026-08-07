@@ -28,6 +28,7 @@ Thumbs.db
 # Editor
 .idea/
 *.swp
+.claude/session-state.json
 
 # Docker
 docker-compose.override.yml
