@@ -1,0 +1,4 @@
+interface:
+  display_name: "B-United Delivery Team"
+  short_description: "Build and audit B-United V1 safely"
+  default_prompt: "Use $b-united-delivery to implement and independently audit the next B-United V1 vertical slice."
