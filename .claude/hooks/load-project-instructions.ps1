@@ -17,7 +17,14 @@ function Get-Sha256 {
 }
 
 try {
-    $inputText = [Console]::In.ReadToEnd()
+    $stdin = [Console]::OpenStandardInput()
+    $reader = [System.IO.StreamReader]::new($stdin, [System.Text.UTF8Encoding]::new($false))
+    try {
+        $inputText = $reader.ReadToEnd()
+    }
+    finally {
+        $reader.Dispose()
+    }
     if ([string]::IsNullOrWhiteSpace($inputText)) {
         [Console]::Error.WriteLine('Missing UserPromptSubmit hook input.')
         exit 2
@@ -42,8 +49,9 @@ try {
         }
     }
 
-    $claudeContent = Get-Content -Raw -LiteralPath $claudePath
-    $instructionsContent = Get-Content -Raw -LiteralPath $instructionsPath
+    $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+    $claudeContent = [System.IO.File]::ReadAllText($claudePath, $utf8NoBom)
+    $instructionsContent = [System.IO.File]::ReadAllText($instructionsPath, $utf8NoBom)
     if ([string]::IsNullOrWhiteSpace($claudeContent) -or [string]::IsNullOrWhiteSpace($instructionsContent)) {
         [Console]::Error.WriteLine('A mandatory project instruction file is empty.')
         exit 2

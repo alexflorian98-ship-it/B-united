@@ -14,7 +14,7 @@ The imported instructions are mandatory for every task. If a request conflicts w
 
 ## Current status
 
-The repository is an architecture scaffold. It contains the planned module structure, initial ADRs, locale namespaces, PostgreSQL Docker Compose configuration, and the B-United delivery skill. `docs/ARCHITECTURE.md` now contains the full Phase 0 architecture deliverable and the mandatory architecture review (§75), with four accepted findings (R1–R4). It is **pending explicit human approval (task P0.32)**. The ASP.NET Core solution and React application have not been initialized yet — do not begin Phase 1 implementation until that approval is recorded.
+The repository is an architecture scaffold. It contains the planned module structure, initial ADRs, locale namespaces, PostgreSQL Docker Compose configuration, and the B-United delivery skill. `docs/ARCHITECTURE.md` now contains the full Phase 0 architecture deliverable and the mandatory architecture review (§75), with four accepted findings (R1-R4). It is **pending explicit human approval (task P0.32)**. The ASP.NET Core solution and React application have not been initialized yet - do not begin Phase 1 implementation until that approval is recorded.
 
 ## Architecture
 
@@ -74,5 +74,9 @@ skills/b-united-delivery/ Project delivery skill
 This section is maintained automatically by `.claude/hooks/update-claude-md.ps1` when a Claude Code session stops. Entries describe workspace snapshots changed during that session, not committed release notes.
 
 <!-- SESSION-CHANGES:START -->
-No Claude Code session changes recorded yet.
+### 2026-08-07 20:44:06 UTC - Session `4cdc522d-8914-43fd-9ee8-ee125939e9cf`
+
+- Base commit: `2335b95`
+- Outcome: Delivered Phase 0 architecture document and review; committed and pushed `docs/ARCHITECTURE.md`, `docs/TASKS.md` (Phase 0 tasks checked off, P0.32 left open pending explicit approval), and `CLAUDE.md` status update.
+- Workspace changes: clean working tree
 <!-- SESSION-CHANGES:END -->

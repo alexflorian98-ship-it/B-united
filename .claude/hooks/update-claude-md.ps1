@@ -32,7 +32,14 @@ function Get-Sha256 {
 }
 
 try {
-    $inputText = [Console]::In.ReadToEnd()
+    $stdin = [Console]::OpenStandardInput()
+    $reader = [System.IO.StreamReader]::new($stdin, [System.Text.UTF8Encoding]::new($false))
+    try {
+        $inputText = $reader.ReadToEnd()
+    }
+    finally {
+        $reader.Dispose()
+    }
     if ([string]::IsNullOrWhiteSpace($inputText)) {
         exit 0
     }
@@ -153,7 +160,7 @@ try {
             }
         }
 
-        $content = Get-Content -Raw -LiteralPath $claudePath
+        $content = [System.IO.File]::ReadAllText($claudePath, [System.Text.UTF8Encoding]::new($false))
         $startMarker = '<!-- SESSION-CHANGES:START -->'
         $endMarker = '<!-- SESSION-CHANGES:END -->'
         $startIndex = $content.IndexOf($startMarker, [StringComparison]::Ordinal)
