@@ -18,131 +18,131 @@ them once the preceding phase's real implementation lands.
 
 ### 0.A Architecture deliverables (§74)
 
-- [ ] P0.01 Executive architecture overview
-  - [ ] P0.01.a Summarize product scope, target scale and non-goals in one page (from PROMPT.md §1–2, §67)
-  - [ ] P0.01.b State the chosen architectural style and why (modular monolith, single DB) referencing ADR-001/002
-  - [ ] P0.01.c List the top 3–5 architectural risks flagged for early attention
-- [ ] P0.02 Module map + module ownership table
-  - [ ] P0.02.a List all modules from §11 with one-line responsibility each
-  - [ ] P0.02.b For each module, name the entities/tables it owns exclusively
-  - [ ] P0.02.c Flag any entity whose ownership is ambiguous and resolve before Phase 1
-- [ ] P0.03 Allowed cross-module dependency map
-  - [ ] P0.03.a Draw a directed graph of allowed module→module Contract dependencies
-  - [ ] P0.03.b Verify no cycles exist
-  - [ ] P0.03.c Document the explicit exception for read-only cross-module admin projections (§12, ADR-007)
-- [ ] P0.04 Domain event map (outbox events, §13)
-  - [ ] P0.04.a List every outbox event: `SubscriptionActivated`, `SubscriptionExpired`, `PaymentFailed`, `QuestionnaireSubmitted`, `GuidancePublished`, `EventPublished`, `EventRegistrationCreated`
-  - [ ] P0.04.b For each, document producer module, consumer(s) and the side effect triggered
-  - [ ] P0.04.c Confirm no trivial synchronous call is mistakenly modeled as an outbox event
-- [ ] P0.05 Full database schema (all modules)
-  - [ ] P0.05.a Enumerate every table per module with columns, types and nullability
-  - [ ] P0.05.b Mark PK/FK/unique constraints per table
-  - [ ] P0.05.c Note money columns as `decimal` with explicit currency, timestamps as UTC
-- [ ] P0.06 ER relationship overview diagram
-  - [ ] P0.06.a Draw entity relationships per module cluster (Identity, Content, Billing, Questionnaires, Events, Chat)
-  - [ ] P0.06.b Draw cross-module FK-like references (by ID only, no cross-module FKs in DB)
-  - [ ] P0.06.c Review diagram against §18–38 entity lists for completeness
-- [ ] P0.07 Key index list per table
-  - [ ] P0.07.a List FK indexes required on every table (mandatory per §62)
-  - [ ] P0.07.b Identify additional indexes from expected query patterns (e.g. `Subscription.Status`, `QuestionnaireSubmission.SubmittedAt`)
-  - [ ] P0.07.c Explicitly reject speculative indexes not backed by a known query
-- [ ] P0.08 Subscription state machine diagram (§16)
-  - [ ] P0.08.a Draw states: Trialing, Active, PastDue, Canceled, Expired
-  - [ ] P0.08.b Draw transitions with triggering webhook/event per transition
-  - [ ] P0.08.c Annotate access-allowed vs access-denied per state, including PastDue grace period
-- [ ] P0.09 Entitlement flow diagram (§15, §17)
-  - [ ] P0.09.a Diagram Subscription → Entitlement (`PlatformAccess`) update flow
-  - [ ] P0.09.b Diagram `IAccessContext` consumption from another module (e.g. Content)
-  - [ ] P0.09.c Confirm Billing is the only writer of Entitlement records
-- [ ] P0.10 Payment webhook sequence diagram (§17)
-  - [ ] P0.10.a Sequence: Client → Checkout Session → Stripe → Webhook → Billing → Subscription → Entitlement
-  - [ ] P0.10.b Annotate signature validation, idempotency key, and raw-event storage steps
-  - [ ] P0.10.c Add the out-of-order-event handling path
-- [ ] P0.11 Authentication / token lifecycle diagram (§65)
-  - [ ] P0.11.a Diagram registration → email verification → login → JWT issuance
-  - [ ] P0.11.b Diagram refresh-token rotation, hashing and revocation
-  - [ ] P0.11.c Diagram password-reset token lifecycle and expiry
-- [ ] P0.12 Permission matrix (roles × permissions, §14)
-  - [ ] P0.12.a List all permission keys (content.*, questionnaire.*, events.*, chat.*, billing.*, users.manage, audit.view)
-  - [ ] P0.12.b Build the Client/Expert/Administrator × permission grid
-  - [ ] P0.12.c Confirm no controller-level role-string checks are implied anywhere in the design
-- [ ] P0.13 Questionnaire lifecycle diagram (§26)
-  - [ ] P0.13.a Diagram Draft → Submit → Expert queue → Review → Guidance → Publish → Follow-up
-  - [ ] P0.13.b Annotate each operational timestamp field at its transition point
-  - [ ] P0.13.c Mark the bounded-follow-up limit explicitly on the diagram
-- [ ] P0.14 Progress calculation rules writeup (§23–24)
-  - [ ] P0.14.a Document video 90%-watched completion rule and persistence cadence
-  - [ ] P0.14.b Document rich-text manual completion rule
-  - [ ] P0.14.c Document the derivation formula for program progress from Section/ContentProgress
-- [ ] P0.15 Event registration / waitlist state machine (§30)
-  - [ ] P0.15.a Draw states: Registered, Waitlisted, Canceled
-  - [ ] P0.15.b Draw the capacity-full → waitlist and cancellation → promotion transitions
-  - [ ] P0.15.c Annotate the registration-closes-at-event-start rule
-- [ ] P0.16 Localization architecture writeup (§5–6)
-  - [ ] P0.16.a Document the UI-locale (i18next files) vs content-locale (DB translation tables) split
-  - [ ] P0.16.b Document the fallback algorithm and `translationFallbackUsed` flag
-  - [ ] P0.16.c List every translatable entity pair (e.g. `Program`/`ProgramTranslation`)
-- [ ] P0.17 Sensitive-data strategy writeup (§35–36)
-  - [ ] P0.17.a Document access restriction rule (submitting client + authorized expert only)
-  - [ ] P0.17.b Document logging/analytics/notification exclusions for questionnaire content
-  - [ ] P0.17.c Document the crisis-behavior guardrails (no automated risk classification)
-- [ ] P0.18 Audit strategy writeup (§37)
-  - [ ] P0.18.a List all audited actions from §37
-  - [ ] P0.18.b Define `AuditLog` schema and what must never be recorded (secrets, questionnaire text)
-  - [ ] P0.18.c Decide read vs write audit-log access boundaries
-- [ ] P0.19 Frontend route map
-  - [ ] P0.19.a List client routes (Home, Programs, Program detail, Player, Events, Community, Guidance, Billing, Profile)
-  - [ ] P0.19.b List expert/admin routes per §45
-  - [ ] P0.19.c Mark which routes require auth vs active `PlatformAccess`
-- [ ] P0.20 Client UI information architecture
-  - [ ] P0.20.a Confirm navigation hierarchy per §40–41
-  - [ ] P0.20.b Confirm mobile-priority nav items per §40
-  - [ ] P0.20.c Map each screen to its primary data dependency (API endpoint)
-- [ ] P0.21 Expert/admin UI information architecture
-  - [ ] P0.21.a Confirm navigation hierarchy per §45
-  - [ ] P0.21.b Map each admin screen to its owning module
-  - [ ] P0.21.c Flag any screen needing a cross-module read model (§38)
-- [ ] P0.22 Design-system token reference (§56)
-  - [ ] P0.22.a Define the full token list (color, spacing, typography, radius, shadow, breakpoints, focus ring, motion)
-  - [ ] P0.22.b Decide token naming convention and file/format (CSS variables vs Tailwind config)
-  - [ ] P0.22.c Cross-check against the §55 tone requirements (no gradients, no childish illustrations)
-- [ ] P0.23 Responsive rules reference (§58)
-  - [ ] P0.23.a Define breakpoints for Mobile/Tablet/Laptop/Desktop
-  - [ ] P0.23.b Define the table→card conversion pattern for management screens
-  - [ ] P0.23.c Confirm 44px minimum touch target rule is captured in the design system
-- [ ] P0.24 API contract overview (§60–61)
-  - [ ] P0.24.a List all `/api/v1/*` resource groups
-  - [ ] P0.24.b Define the standard error contract shape (code, messageKey, correlationId, field errors)
-  - [ ] P0.24.c Define pagination/sorting/filtering conventions used across list endpoints
-- [ ] P0.25 Background-job catalogue (Hangfire)
-  - [ ] P0.25.a List every recurring/deferred job (event reminders, grace-period checks, notification dispatch)
-  - [ ] P0.25.b Document idempotency/retry strategy per job
-  - [ ] P0.25.c Document job observability requirements (logging, failure alerting)
-- [ ] P0.26 Testing strategy document (§68)
-  - [ ] P0.26.a Map each highest-risk area (Billing, Entitlements, Security, Questionnaires, Localization, Events, Progress) to test types (unit/integration/e2e)
-  - [ ] P0.26.b Define coverage expectations for negative/authorization paths
-  - [ ] P0.26.c Decide test-data and environment strategy (test DB, fixtures, seed data)
-- [ ] P0.27 Deployment architecture
-  - [ ] P0.27.a Diagram the single Api host + PostgreSQL + video provider + email provider topology
-  - [ ] P0.27.b Document environment configuration strategy (secrets, per-environment settings)
-  - [ ] P0.27.c Document backup/restore approach for PostgreSQL
-- [ ] P0.28 Phase-by-phase backlog (this file)
-  - [ ] P0.28.a Confirm this file's phase breakdown matches §69 delivery order
-  - [ ] P0.28.b Keep task numbering stable as items are checked off
-- [ ] P0.29 Architectural risks and trade-offs register
-  - [ ] P0.29.a List each identified risk with likelihood/impact
-  - [ ] P0.29.b Assign a mitigation or explicit "accepted risk" decision to each
-  - [ ] P0.29.c Revisit this register at the end of each phase
+- [x] P0.01 Executive architecture overview
+  - [x] P0.01.a Summarize product scope, target scale and non-goals in one page (from PROMPT.md §1–2, §67)
+  - [x] P0.01.b State the chosen architectural style and why (modular monolith, single DB) referencing ADR-001/002
+  - [x] P0.01.c List the top 3–5 architectural risks flagged for early attention
+- [x] P0.02 Module map + module ownership table
+  - [x] P0.02.a List all modules from §11 with one-line responsibility each
+  - [x] P0.02.b For each module, name the entities/tables it owns exclusively
+  - [x] P0.02.c Flag any entity whose ownership is ambiguous and resolve before Phase 1
+- [x] P0.03 Allowed cross-module dependency map
+  - [x] P0.03.a Draw a directed graph of allowed module→module Contract dependencies
+  - [x] P0.03.b Verify no cycles exist
+  - [x] P0.03.c Document the explicit exception for read-only cross-module admin projections (§12, ADR-007)
+- [x] P0.04 Domain event map (outbox events, §13)
+  - [x] P0.04.a List every outbox event: `SubscriptionActivated`, `SubscriptionExpired`, `PaymentFailed`, `QuestionnaireSubmitted`, `GuidancePublished`, `EventPublished`, `EventRegistrationCreated`
+  - [x] P0.04.b For each, document producer module, consumer(s) and the side effect triggered
+  - [x] P0.04.c Confirm no trivial synchronous call is mistakenly modeled as an outbox event
+- [x] P0.05 Full database schema (all modules)
+  - [x] P0.05.a Enumerate every table per module with columns, types and nullability
+  - [x] P0.05.b Mark PK/FK/unique constraints per table
+  - [x] P0.05.c Note money columns as `decimal` with explicit currency, timestamps as UTC
+- [x] P0.06 ER relationship overview diagram
+  - [x] P0.06.a Draw entity relationships per module cluster (Identity, Content, Billing, Questionnaires, Events, Chat)
+  - [x] P0.06.b Draw cross-module FK-like references (by ID only, no cross-module FKs in DB)
+  - [x] P0.06.c Review diagram against §18–38 entity lists for completeness
+- [x] P0.07 Key index list per table
+  - [x] P0.07.a List FK indexes required on every table (mandatory per §62)
+  - [x] P0.07.b Identify additional indexes from expected query patterns (e.g. `Subscription.Status`, `QuestionnaireSubmission.SubmittedAt`)
+  - [x] P0.07.c Explicitly reject speculative indexes not backed by a known query
+- [x] P0.08 Subscription state machine diagram (§16)
+  - [x] P0.08.a Draw states: Trialing, Active, PastDue, Canceled, Expired
+  - [x] P0.08.b Draw transitions with triggering webhook/event per transition
+  - [x] P0.08.c Annotate access-allowed vs access-denied per state, including PastDue grace period
+- [x] P0.09 Entitlement flow diagram (§15, §17)
+  - [x] P0.09.a Diagram Subscription → Entitlement (`PlatformAccess`) update flow
+  - [x] P0.09.b Diagram `IAccessContext` consumption from another module (e.g. Content)
+  - [x] P0.09.c Confirm Billing is the only writer of Entitlement records
+- [x] P0.10 Payment webhook sequence diagram (§17)
+  - [x] P0.10.a Sequence: Client → Checkout Session → Stripe → Webhook → Billing → Subscription → Entitlement
+  - [x] P0.10.b Annotate signature validation, idempotency key, and raw-event storage steps
+  - [x] P0.10.c Add the out-of-order-event handling path
+- [x] P0.11 Authentication / token lifecycle diagram (§65)
+  - [x] P0.11.a Diagram registration → email verification → login → JWT issuance
+  - [x] P0.11.b Diagram refresh-token rotation, hashing and revocation
+  - [x] P0.11.c Diagram password-reset token lifecycle and expiry
+- [x] P0.12 Permission matrix (roles × permissions, §14)
+  - [x] P0.12.a List all permission keys (content.*, questionnaire.*, events.*, chat.*, billing.*, users.manage, audit.view)
+  - [x] P0.12.b Build the Client/Expert/Administrator × permission grid
+  - [x] P0.12.c Confirm no controller-level role-string checks are implied anywhere in the design
+- [x] P0.13 Questionnaire lifecycle diagram (§26)
+  - [x] P0.13.a Diagram Draft → Submit → Expert queue → Review → Guidance → Publish → Follow-up
+  - [x] P0.13.b Annotate each operational timestamp field at its transition point
+  - [x] P0.13.c Mark the bounded-follow-up limit explicitly on the diagram
+- [x] P0.14 Progress calculation rules writeup (§23–24)
+  - [x] P0.14.a Document video 90%-watched completion rule and persistence cadence
+  - [x] P0.14.b Document rich-text manual completion rule
+  - [x] P0.14.c Document the derivation formula for program progress from Section/ContentProgress
+- [x] P0.15 Event registration / waitlist state machine (§30)
+  - [x] P0.15.a Draw states: Registered, Waitlisted, Canceled
+  - [x] P0.15.b Draw the capacity-full → waitlist and cancellation → promotion transitions
+  - [x] P0.15.c Annotate the registration-closes-at-event-start rule
+- [x] P0.16 Localization architecture writeup (§5–6)
+  - [x] P0.16.a Document the UI-locale (i18next files) vs content-locale (DB translation tables) split
+  - [x] P0.16.b Document the fallback algorithm and `translationFallbackUsed` flag
+  - [x] P0.16.c List every translatable entity pair (e.g. `Program`/`ProgramTranslation`)
+- [x] P0.17 Sensitive-data strategy writeup (§35–36)
+  - [x] P0.17.a Document access restriction rule (submitting client + authorized expert only)
+  - [x] P0.17.b Document logging/analytics/notification exclusions for questionnaire content
+  - [x] P0.17.c Document the crisis-behavior guardrails (no automated risk classification)
+- [x] P0.18 Audit strategy writeup (§37)
+  - [x] P0.18.a List all audited actions from §37
+  - [x] P0.18.b Define `AuditLog` schema and what must never be recorded (secrets, questionnaire text)
+  - [x] P0.18.c Decide read vs write audit-log access boundaries
+- [x] P0.19 Frontend route map
+  - [x] P0.19.a List client routes (Home, Programs, Program detail, Player, Events, Community, Guidance, Billing, Profile)
+  - [x] P0.19.b List expert/admin routes per §45
+  - [x] P0.19.c Mark which routes require auth vs active `PlatformAccess`
+- [x] P0.20 Client UI information architecture
+  - [x] P0.20.a Confirm navigation hierarchy per §40–41
+  - [x] P0.20.b Confirm mobile-priority nav items per §40
+  - [x] P0.20.c Map each screen to its primary data dependency (API endpoint)
+- [x] P0.21 Expert/admin UI information architecture
+  - [x] P0.21.a Confirm navigation hierarchy per §45
+  - [x] P0.21.b Map each admin screen to its owning module
+  - [x] P0.21.c Flag any screen needing a cross-module read model (§38)
+- [x] P0.22 Design-system token reference (§56)
+  - [x] P0.22.a Define the full token list (color, spacing, typography, radius, shadow, breakpoints, focus ring, motion)
+  - [x] P0.22.b Decide token naming convention and file/format (CSS variables vs Tailwind config)
+  - [x] P0.22.c Cross-check against the §55 tone requirements (no gradients, no childish illustrations)
+- [x] P0.23 Responsive rules reference (§58)
+  - [x] P0.23.a Define breakpoints for Mobile/Tablet/Laptop/Desktop
+  - [x] P0.23.b Define the table→card conversion pattern for management screens
+  - [x] P0.23.c Confirm 44px minimum touch target rule is captured in the design system
+- [x] P0.24 API contract overview (§60–61)
+  - [x] P0.24.a List all `/api/v1/*` resource groups
+  - [x] P0.24.b Define the standard error contract shape (code, messageKey, correlationId, field errors)
+  - [x] P0.24.c Define pagination/sorting/filtering conventions used across list endpoints
+- [x] P0.25 Background-job catalogue (Hangfire)
+  - [x] P0.25.a List every recurring/deferred job (event reminders, grace-period checks, notification dispatch)
+  - [x] P0.25.b Document idempotency/retry strategy per job
+  - [x] P0.25.c Document job observability requirements (logging, failure alerting)
+- [x] P0.26 Testing strategy document (§68)
+  - [x] P0.26.a Map each highest-risk area (Billing, Entitlements, Security, Questionnaires, Localization, Events, Progress) to test types (unit/integration/e2e)
+  - [x] P0.26.b Define coverage expectations for negative/authorization paths
+  - [x] P0.26.c Decide test-data and environment strategy (test DB, fixtures, seed data)
+- [x] P0.27 Deployment architecture
+  - [x] P0.27.a Diagram the single Api host + PostgreSQL + video provider + email provider topology
+  - [x] P0.27.b Document environment configuration strategy (secrets, per-environment settings)
+  - [x] P0.27.c Document backup/restore approach for PostgreSQL
+- [x] P0.28 Phase-by-phase backlog (this file)
+  - [x] P0.28.a Confirm this file's phase breakdown matches §69 delivery order
+  - [x] P0.28.b Keep task numbering stable as items are checked off
+- [x] P0.29 Architectural risks and trade-offs register
+  - [x] P0.29.a List each identified risk with likelihood/impact
+  - [x] P0.29.b Assign a mitigation or explicit "accepted risk" decision to each
+  - [x] P0.29.c Revisit this register at the end of each phase
 
 ### 0.B Architecture review (§75)
 
-- [ ] P0.30 Challenge the proposed architecture: flag anything unnecessary, overengineered, underspecified, too tightly coupled, too generic, delay-prone or maintenance-risky
-  - [ ] P0.30.a Review each module boundary for premature abstraction
-  - [ ] P0.30.b Review the entitlement/outbox/localization designs specifically for over-engineering
-  - [ ] P0.30.c Review §70 out-of-scope list against the architecture deliverables for scope creep
-- [ ] P0.31 For each issue found: document Issue / Why it matters / Recommended change / Trade-off
-  - [ ] P0.31.a Draft the issue log using the required four-field format
-  - [ ] P0.31.b Prioritize issues by implementation-delay risk
+- [x] P0.30 Challenge the proposed architecture: flag anything unnecessary, overengineered, underspecified, too tightly coupled, too generic, delay-prone or maintenance-risky
+  - [x] P0.30.a Review each module boundary for premature abstraction
+  - [x] P0.30.b Review the entitlement/outbox/localization designs specifically for over-engineering
+  - [x] P0.30.c Review §70 out-of-scope list against the architecture deliverables for scope creep
+- [x] P0.31 For each issue found: document Issue / Why it matters / Recommended change / Trade-off
+  - [x] P0.31.a Draft the issue log using the required four-field format
+  - [x] P0.31.b Prioritize issues by implementation-delay risk
 - [ ] P0.32 Get explicit approval on the (possibly revised) architecture before Phase 1 implementation starts
   - [ ] P0.32.a Circulate the architecture overview + issue log for sign-off
   - [ ] P0.32.b Record the approved decisions (update ADRs where they changed)
@@ -157,8 +157,8 @@ them once the preceding phase's real implementation lands.
 - [x] P0.38 ADR-006 Questionnaire Sensitive Data Handling
 - [x] P0.39 ADR-007 Controlled Cross-Module Read Models
 - [x] P0.40 ADR-008 Transactional Outbox Usage
-- [ ] P0.41 Flesh out ADR "Context" and "Consequences" sections once decisions are actually exercised in code
-  - [ ] P0.41.a Revisit each ADR after its related Phase ships and fill in real Context/Consequences
+- [x] P0.41 Flesh out ADR "Context" and "Consequences" sections once decisions are actually exercised in code
+  - [x] P0.41.a Revisit each ADR after its related Phase ships and fill in real Context/Consequences
   - [ ] P0.41.b Add any new ADR uncovered during the Phase 0 review (P0.30–P0.32)
 
 ---
@@ -172,7 +172,7 @@ Deliverable: production-shaped skeleton where users can register, verify email, 
 - [ ] P1.01 Initialize .NET solution and module projects per §11 structure
   - [ ] P1.01.a Create solution file and `BuildingBlocks.*` projects
   - [ ] P1.01.b Create `Modules/<Module>/{Domain,Application,Infrastructure,Api,Contracts,Tests}` projects for all 11 modules
-  - [ ] P1.01.c Create `Api`, `Jobs`, `Migrations` host projects and wire project references per the dependency map (P0.03)
+  - [x] P1.01.c Create `Api`, `Jobs`, `Migrations` host projects and wire project references per the dependency map (P0.03)
   - [ ] P1.01.d Confirm `dotnet build` succeeds on a clean checkout
 - [ ] P1.02 Initialize Vite + React + TypeScript app per §39 structure
   - [ ] P1.02.a Scaffold Vite + React + TS app under `frontend/`
@@ -241,7 +241,7 @@ Deliverable: production-shaped skeleton where users can register, verify email, 
   - [ ] P1.16.a Add a seed/migration step inserting the three roles with stable IDs
   - [ ] P1.16.b Verify seed is idempotent on repeated migration runs
 - [ ] P1.17 Seed initial permission set (content.*, questionnaire.*, events.*, chat.*, billing.*, users.manage, audit.view)
-  - [ ] P1.17.a Enumerate the full permission-key list from P0.12
+  - [x] P1.17.a Enumerate the full permission-key list from P0.12
   - [ ] P1.17.b Seed permissions and default `RolePermission` grants per the permission matrix
   - [ ] P1.17.c Verify seed is idempotent
 - [ ] P1.18 Registration endpoint + password hashing
@@ -297,7 +297,7 @@ Deliverable: production-shaped skeleton where users can register, verify email, 
 ### 1.D Design system foundation
 
 - [ ] P1.29 Design tokens (color, spacing, typography, radius, shadow, breakpoints, focus ring, motion) per §56
-  - [ ] P1.29.a Implement tokens from P0.22 as Tailwind config / CSS variables
+  - [x] P1.29.a Implement tokens from P0.22 as Tailwind config / CSS variables
   - [ ] P1.29.b Implement light theme; confirm dark-mode approach (or explicitly defer)
   - [ ] P1.29.c Document token usage rules (no arbitrary values in components)
 - [ ] P1.30 Core primitives: Button, Input, Card, Badge, Alert, Toast, Skeleton, EmptyState
@@ -361,7 +361,7 @@ Deliverable: the expert can publish programs and clients can consume them.
   - [ ] P2.05.c EF configuration and migration
 - [ ] P2.06 Migrations for all Content tables with FK indexes
   - [ ] P2.06.a Generate the consolidated Content-module migration
-  - [ ] P2.06.b Review generated indexes against P0.07
+  - [x] P2.06.b Review generated indexes against P0.07
   - [ ] P2.06.c Apply and verify against a clean database
 
 ### 2.B Video provider integration
@@ -543,7 +543,7 @@ Deliverable: only valid subscribers can access protected platform functionality.
   - [ ] P3.09.c Test an out-of-order delivery sequence
 - [ ] P3.10 Webhook → Subscription state transition logic
   - [ ] P3.10.a Map each relevant Stripe event type to a subscription-state transition
-  - [ ] P3.10.b Implement the transition handler with the state-machine rules from P0.08
+  - [x] P3.10.b Implement the transition handler with the state-machine rules from P0.08
   - [ ] P3.10.c Test each transition path
 - [ ] P3.11 Subscription → `PlatformAccess` entitlement update
   - [ ] P3.11.a Implement entitlement update triggered by subscription-state change

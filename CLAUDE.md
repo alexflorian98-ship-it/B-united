@@ -14,7 +14,7 @@ The imported instructions are mandatory for every task. If a request conflicts w
 
 ## Current status
 
-The repository is an architecture scaffold. It contains the planned module structure, initial ADRs, locale namespaces, PostgreSQL Docker Compose configuration, and the B-United delivery skill. The ASP.NET Core solution and React application have not been initialized yet. Complete the Phase 0 architecture review before production implementation.
+The repository is an architecture scaffold. It contains the planned module structure, initial ADRs, locale namespaces, PostgreSQL Docker Compose configuration, and the B-United delivery skill. `docs/ARCHITECTURE.md` now contains the full Phase 0 architecture deliverable and the mandatory architecture review (§75), with four accepted findings (R1–R4). It is **pending explicit human approval (task P0.32)**. The ASP.NET Core solution and React application have not been initialized yet — do not begin Phase 1 implementation until that approval is recorded.
 
 ## Architecture
 
