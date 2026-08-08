@@ -1,1 +1,6 @@
-{}
+{
+  "greeting": "Welcome, {{email}}",
+  "accountVerified": "Verified",
+  "phase1Notice": "Your account is active. Programs, events and community features are on the way.",
+  "adminPhase1Notice": "Admin tools will appear here as they ship — nothing is available yet in this delivery phase."
+}

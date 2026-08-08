@@ -14,7 +14,7 @@ The imported instructions are mandatory for every task. If a request conflicts w
 
 ## Current status
 
-The repository is an architecture scaffold. It contains the planned module structure, initial ADRs, locale namespaces, PostgreSQL Docker Compose configuration, and the B-United delivery skill. `docs/ARCHITECTURE.md` now contains the full Phase 0 architecture deliverable and the mandatory architecture review (§75), with four accepted findings (R1-R4). It is **pending explicit human approval (task P0.32)**. The ASP.NET Core solution and React application have not been initialized yet - do not begin Phase 1 implementation until that approval is recorded.
+Phase 0 (Architecture) is complete and approved (P0.32, 2026-08-08; R3 encryption-at-rest deferral captured in ADR-009). Phase 1 (Foundation/Identity), Phase 2 (Content/Progress), Phase 3 (Simulated billing and real local access — built behind a `FakePaymentProvider`, see ADR-010, real provider integration deferred to Phase 8), and Phase 4 (Questionnaire and guidance) are implemented and live-verified end to end. The ASP.NET Core solution and React SPA are both initialized and running. `docs/TASKS.md` has the authoritative per-subtask checklist; `docs/HANDOVER.md` has the narrative summary, known gaps, and bugs found. Do not treat this paragraph as the source of truth for exact completion state — `docs/TASKS.md`'s checkboxes are.
 
 ## Architecture
 
@@ -74,9 +74,1143 @@ skills/b-united-delivery/ Project delivery skill
 This section is maintained automatically by `.claude/hooks/update-claude-md.ps1` when a Claude Code session stops. Entries describe workspace snapshots changed during that session, not committed release notes.
 
 <!-- SESSION-CHANGES:START -->
-### 2026-08-07 20:44:06 UTC - Session `4cdc522d-8914-43fd-9ee8-ee125939e9cf`
+### 2026-08-08 19:31:30 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
 
-- Base commit: `2335b95`
-- Outcome: Delivered Phase 0 architecture document and review; committed and pushed `docs/ARCHITECTURE.md`, `docs/TASKS.md` (Phase 0 tasks checked off, P0.32 left open pending explicit approval), and `CLAUDE.md` status update.
-- Workspace changes: clean working tree
+- Base commit: `79a4df4`
+- Outcome: Phase 3 (Billing) is complete and documented. Here's the summary: ## Rezumat Phase 3 — Billing (Simulated billing and real local access) **Construit:** - Modulul Billing complet: Domain (Plan, Subscription, Entitlement etc. cu state mach...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - ` M docs/adr/ADR-005-Video-Hosting-Provider-Abstraction.md`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/questionnaire.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/questionnaire.json`
+  - ` M frontend/src/shared/design-system/README.md`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/HANDOVER.md`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? docs/adr/ADR-010-Fake-Payment-Provider-For-V1.md`
+  - `?? frontend/.env.example`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/scripts/check-locale-parity.mjs`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/app/AppProviders.tsx`
+  - `?? frontend/src/app/ErrorBoundary.tsx`
+  - `?? frontend/src/app/router.tsx`
+  - `?? frontend/src/app/screens/ComingSoonPage.tsx`
+  - `?? frontend/src/app/screens/ForbiddenPage.tsx`
+  - `?? frontend/src/app/screens/NotFoundPage.tsx`
+  - `?? frontend/src/app/screens/UnauthorizedPage.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/layouts/AdminLayout.test.tsx`
+  - `?? frontend/src/layouts/AdminLayout.tsx`
+  - `?? frontend/src/layouts/ClientLayout.test.tsx`
+  - ... and 585 more paths
+
+### 2026-08-08 16:14:06 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+
+- Base commit: `79a4df4`
+- Outcome: ## Rezumat **Phase 4 (Chestionar și ghidaj) este acum complet și verificat live end-to-end**, plus module noi de infrastructură care erau doar schele goale înainte: - **Modul nou Notifications** (`INotificationSender`, tipar de logging f...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - ` M docs/adr/ADR-005-Video-Hosting-Provider-Abstraction.md`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/questionnaire.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/questionnaire.json`
+  - ` M frontend/src/shared/design-system/README.md`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/HANDOVER.md`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.env.example`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/scripts/check-locale-parity.mjs`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/app/AppProviders.tsx`
+  - `?? frontend/src/app/ErrorBoundary.tsx`
+  - `?? frontend/src/app/router.tsx`
+  - `?? frontend/src/app/screens/ComingSoonPage.tsx`
+  - `?? frontend/src/app/screens/ForbiddenPage.tsx`
+  - `?? frontend/src/app/screens/NotFoundPage.tsx`
+  - `?? frontend/src/app/screens/UnauthorizedPage.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/layouts/AdminLayout.test.tsx`
+  - `?? frontend/src/layouts/AdminLayout.tsx`
+  - `?? frontend/src/layouts/ClientLayout.test.tsx`
+  - `?? frontend/src/layouts/ClientLayout.tsx`
+  - `?? frontend/src/layouts/navigation.ts`
+  - `?? frontend/src/locales/en/profile.json`
+  - ... and 521 more paths
+
+### 2026-08-08 15:14:15 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+
+- Base commit: `79a4df4`
+- Outcome: Everything is clean and in order — no stray processes, `.env` restored to the documented default, and the working tree only shows legitimate content changes (no deletions of unrelated work). ## Summary Phase 2 (Content module) is now fun...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - ` M docs/adr/ADR-005-Video-Hosting-Provider-Abstraction.md`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/shared/design-system/README.md`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/HANDOVER.md`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.env.example`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/scripts/check-locale-parity.mjs`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/app/AppProviders.tsx`
+  - `?? frontend/src/app/ErrorBoundary.tsx`
+  - `?? frontend/src/app/router.tsx`
+  - `?? frontend/src/app/screens/ComingSoonPage.tsx`
+  - `?? frontend/src/app/screens/ForbiddenPage.tsx`
+  - `?? frontend/src/app/screens/NotFoundPage.tsx`
+  - `?? frontend/src/app/screens/UnauthorizedPage.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/layouts/AdminLayout.test.tsx`
+  - `?? frontend/src/layouts/AdminLayout.tsx`
+  - `?? frontend/src/layouts/ClientLayout.test.tsx`
+  - `?? frontend/src/layouts/ClientLayout.tsx`
+  - `?? frontend/src/layouts/navigation.ts`
+  - `?? frontend/src/locales/en/profile.json`
+  - `?? frontend/src/locales/ro/profile.json`
+  - `?? frontend/src/main.tsx`
+  - ... and 402 more paths
+
+### 2026-08-08 14:28:20 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+
+- Base commit: `79a4df4`
+- Outcome: **Phase 2.A–2.C is done and live-verified.** Summary: **Backend Content module built from scratch:** - **Schema (2.A)**: `ContentDomain`, `Program`, `Section`, `ContentItem`, `MediaAsset` + translation tables, migrated and seeded (5 doma...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - ` M docs/adr/ADR-005-Video-Hosting-Provider-Abstraction.md`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/shared/design-system/README.md`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/HANDOVER.md`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.env.example`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/scripts/check-locale-parity.mjs`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/app/AppProviders.tsx`
+  - `?? frontend/src/app/ErrorBoundary.tsx`
+  - `?? frontend/src/app/router.tsx`
+  - `?? frontend/src/app/screens/ComingSoonPage.tsx`
+  - `?? frontend/src/app/screens/ForbiddenPage.tsx`
+  - `?? frontend/src/app/screens/NotFoundPage.tsx`
+  - `?? frontend/src/app/screens/UnauthorizedPage.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/layouts/AdminLayout.test.tsx`
+  - `?? frontend/src/layouts/AdminLayout.tsx`
+  - `?? frontend/src/layouts/ClientLayout.test.tsx`
+  - `?? frontend/src/layouts/ClientLayout.tsx`
+  - `?? frontend/src/layouts/navigation.ts`
+  - `?? frontend/src/locales/en/profile.json`
+  - `?? frontend/src/locales/ro/profile.json`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/src/modules/admin/AdminHomePage.tsx`
+  - `?? frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - `?? frontend/src/modules/auth/LoginPage.test.tsx`
+  - `?? frontend/src/modules/auth/LoginPage.tsx`
+  - ... and 363 more paths
+
+### 2026-08-08 10:01:53 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+
+- Base commit: `79a4df4`
+- Outcome: This was a very large batch of work. Summary: ## Backend - **P1.35**: Permission enforcement tests — a real `TestServer` proving all 15 seeded permissions actually gate HTTP access (48 new tests). - **P1.42.a**: New `GET`/`PUT /api/v1/pr...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/shared/design-system/README.md`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/HANDOVER.md`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.env.example`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/scripts/check-locale-parity.mjs`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/app/AppProviders.tsx`
+  - `?? frontend/src/app/ErrorBoundary.tsx`
+  - `?? frontend/src/app/router.tsx`
+  - `?? frontend/src/app/screens/ComingSoonPage.tsx`
+  - `?? frontend/src/app/screens/ForbiddenPage.tsx`
+  - `?? frontend/src/app/screens/NotFoundPage.tsx`
+  - `?? frontend/src/app/screens/UnauthorizedPage.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/layouts/AdminLayout.test.tsx`
+  - `?? frontend/src/layouts/AdminLayout.tsx`
+  - `?? frontend/src/layouts/ClientLayout.test.tsx`
+  - `?? frontend/src/layouts/ClientLayout.tsx`
+  - `?? frontend/src/layouts/navigation.ts`
+  - `?? frontend/src/locales/en/profile.json`
+  - `?? frontend/src/locales/ro/profile.json`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/src/modules/admin/AdminHomePage.tsx`
+  - `?? frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - `?? frontend/src/modules/auth/LoginPage.test.tsx`
+  - `?? frontend/src/modules/auth/LoginPage.tsx`
+  - `?? frontend/src/modules/auth/RegisterPage.test.tsx`
+  - ... and 289 more paths
+
+### 2026-08-08 09:14:30 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+
+- Base commit: `79a4df4`
+- Outcome: **P1.34 is done.** Summary: - **P1.34.a**: `AuthFlowTests.Register_verify_login_refresh_and_logout_flow_succeeds_end_to_end` chains the real `RegisterUserHandler` → `VerifyEmailHandler` → `LoginHandler` → `RefreshTokenHandler` → `RevokeT...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/shared/design-system/README.md`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/HANDOVER.md`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/scripts/check-locale-parity.mjs`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/layouts/AdminLayout.test.tsx`
+  - `?? frontend/src/layouts/AdminLayout.tsx`
+  - `?? frontend/src/layouts/ClientLayout.test.tsx`
+  - `?? frontend/src/layouts/ClientLayout.tsx`
+  - `?? frontend/src/layouts/navigation.ts`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/src/setupTests.ts`
+  - `?? frontend/src/shared/design-system/Alert.test.tsx`
+  - `?? frontend/src/shared/design-system/Alert.tsx`
+  - `?? frontend/src/shared/design-system/Badge.test.tsx`
+  - `?? frontend/src/shared/design-system/Badge.tsx`
+  - `?? frontend/src/shared/design-system/Button.test.tsx`
+  - `?? frontend/src/shared/design-system/Button.tsx`
+  - `?? frontend/src/shared/design-system/Card.test.tsx`
+  - `?? frontend/src/shared/design-system/Card.tsx`
+  - `?? frontend/src/shared/design-system/EmptyState.test.tsx`
+  - `?? frontend/src/shared/design-system/EmptyState.tsx`
+  - `?? frontend/src/shared/design-system/Input.test.tsx`
+  - `?? frontend/src/shared/design-system/Input.tsx`
+  - `?? frontend/src/shared/design-system/Skeleton.test.tsx`
+  - `?? frontend/src/shared/design-system/Skeleton.tsx`
+  - `?? frontend/src/shared/design-system/Toast.test.tsx`
+  - `?? frontend/src/shared/design-system/Toast.tsx`
+  - ... and 217 more paths
+
+### 2026-08-08 09:08:24 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+
+- Base commit: `79a4df4`
+- Outcome: All green (80/80). **P1.33 is done, with one deliberate exception:** - **P1.33.a/b**: `LoginHandler` and `ConfirmPasswordResetHandler` now emit `user.login`, `user.failed_login` (tagged with a `reason`: `unknown_email`/`locked_out`/`wron...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/shared/design-system/README.md`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/HANDOVER.md`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/scripts/check-locale-parity.mjs`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/layouts/AdminLayout.test.tsx`
+  - `?? frontend/src/layouts/AdminLayout.tsx`
+  - `?? frontend/src/layouts/ClientLayout.test.tsx`
+  - `?? frontend/src/layouts/ClientLayout.tsx`
+  - `?? frontend/src/layouts/navigation.ts`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/src/setupTests.ts`
+  - `?? frontend/src/shared/design-system/Alert.test.tsx`
+  - `?? frontend/src/shared/design-system/Alert.tsx`
+  - `?? frontend/src/shared/design-system/Badge.test.tsx`
+  - `?? frontend/src/shared/design-system/Badge.tsx`
+  - `?? frontend/src/shared/design-system/Button.test.tsx`
+  - `?? frontend/src/shared/design-system/Button.tsx`
+  - `?? frontend/src/shared/design-system/Card.test.tsx`
+  - `?? frontend/src/shared/design-system/Card.tsx`
+  - `?? frontend/src/shared/design-system/EmptyState.test.tsx`
+  - `?? frontend/src/shared/design-system/EmptyState.tsx`
+  - `?? frontend/src/shared/design-system/Input.test.tsx`
+  - `?? frontend/src/shared/design-system/Input.tsx`
+  - `?? frontend/src/shared/design-system/Skeleton.test.tsx`
+  - `?? frontend/src/shared/design-system/Skeleton.tsx`
+  - `?? frontend/src/shared/design-system/Toast.test.tsx`
+  - `?? frontend/src/shared/design-system/Toast.tsx`
+  - ... and 216 more paths
+
+### 2026-08-08 08:37:56 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: ## Handover creat Am scris **[docs/HANDOVER.md](docs/HANDOVER.md)** — document narativ pentru o sesiune Claude Code nouă, fără memoria acestei conversații. Conține: - **Stadiul curent**: Phase 0 complet, Phase 1.A–1.D complete (P1.01–P1....
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/shared/design-system/README.md`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/HANDOVER.md`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/scripts/check-locale-parity.mjs`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/layouts/AdminLayout.test.tsx`
+  - `?? frontend/src/layouts/AdminLayout.tsx`
+  - `?? frontend/src/layouts/ClientLayout.test.tsx`
+  - `?? frontend/src/layouts/ClientLayout.tsx`
+  - `?? frontend/src/layouts/navigation.ts`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/src/setupTests.ts`
+  - `?? frontend/src/shared/design-system/Alert.test.tsx`
+  - `?? frontend/src/shared/design-system/Alert.tsx`
+  - `?? frontend/src/shared/design-system/Badge.test.tsx`
+  - `?? frontend/src/shared/design-system/Badge.tsx`
+  - `?? frontend/src/shared/design-system/Button.test.tsx`
+  - `?? frontend/src/shared/design-system/Button.tsx`
+  - `?? frontend/src/shared/design-system/Card.test.tsx`
+  - `?? frontend/src/shared/design-system/Card.tsx`
+  - `?? frontend/src/shared/design-system/EmptyState.test.tsx`
+  - `?? frontend/src/shared/design-system/EmptyState.tsx`
+  - `?? frontend/src/shared/design-system/Input.test.tsx`
+  - `?? frontend/src/shared/design-system/Input.tsx`
+  - `?? frontend/src/shared/design-system/Skeleton.test.tsx`
+  - `?? frontend/src/shared/design-system/Skeleton.tsx`
+  - `?? frontend/src/shared/design-system/Toast.test.tsx`
+  - `?? frontend/src/shared/design-system/Toast.tsx`
+  - ... and 200 more paths
+
+### 2026-08-08 08:00:29 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: Nicio instanță rămasă activă, build curat, 62/62 teste backend trec. ## Rezumat: Phase 1.C — Localization infrastructure (P1.25–P1.28) complet **P1.25 — i18next setup** - `frontend/src/shared/i18n/i18n.ts`: lazy-loading per namespace via...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/common.json`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/scripts/check-locale-parity.mjs`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/src/shared/i18n/LanguageSwitcher.tsx`
+  - `?? frontend/src/shared/i18n/i18n.ts`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/Dockerfile`
+  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Application/Errors/AppException.cs`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
+  - ... and 176 more paths
+
+### 2026-08-08 07:46:58 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: ## Rezumat: Modulul Identity complet (P1.12 → P1.24) **Livrat:** - **Domain** (P1.12–15): `User`/`Role`/`Permission`/`RolePermission`/`UserRole`/`RefreshToken`/`EmailVerificationToken`/`PasswordResetToken`/`UserConsent`/`UserPreference` ...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/Dockerfile`
+  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Application/Errors/AppException.cs`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
+  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/FluentValidationActionFilterTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/GlobalExceptionHandlerTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
+  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
+  - ... and 164 more paths
+
+### 2026-08-07 23:03:43 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: ## Rezultat Docker Desktop e funcțional acum (a fost nevoie de activarea WSL2 + Virtual Machine Platform din Windows Features + restart). Am rulat verificarea completă end-to-end: - `docker compose up --build -d` — imaginea `api` s-a con...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/Dockerfile`
+  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Application/Errors/AppException.cs`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
+  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/FluentValidationActionFilterTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/GlobalExceptionHandlerTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
+  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
+  - ... and 82 more paths
+
+### 2026-08-07 22:32:01 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: ## Rezumat: P1.09 → P1.11.c complet **P1.09 — Middleware standardizat de erori** - `AppException`/`NotFoundAppException`/`BusinessRuleAppException` (framework-agnostic, `BuildingBlocks/Application`) + `GlobalExceptionHandler`/`ErrorRespo...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M .env.example`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - `?? .dockerignore`
+  - `?? .github/workflows/ci.yml`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/Dockerfile`
+  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Application/Errors/AppException.cs`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
+  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/FluentValidationActionFilterTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/GlobalExceptionHandlerTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
+  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
+  - ... and 82 more paths
+
+### 2026-08-07 22:18:07 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: ## P1.08 complet **Livrat** ([RateLimitingExtensions.cs](src/BuildingBlocks/Security/Abuse/RateLimitingExtensions.cs)): - Politică globală: 100 req/min per IP, cu `/health*` exclus explicit (monitorizarea nu trebuie limitată). - Politică...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
+  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
+  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdContext.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdExtensions.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdMiddleware.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/ICorrelationIdAccessor.cs`
+  - `?? src/BuildingBlocks/Observability/HealthChecks/HealthCheckEndpointExtensions.cs`
+  - `?? src/BuildingBlocks/Observability/Logging/SensitiveDataDestructuringPolicy.cs`
+  - `?? src/BuildingBlocks/Observability/Logging/SensitiveLogValueAttribute.cs`
+  - ... and 71 more paths
+
+### 2026-08-07 22:08:11 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: ## P1.07 complet **Livrat:** - [BearerSecuritySchemeTransformers.cs](src/Api/OpenApi/BearerSecuritySchemeTransformers.cs) — două document/operation transformers pentru generatorul OpenAPI nativ .NET 9: definesc schema `Bearer` (HTTP, JWT...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
+  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
+  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdContext.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdExtensions.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdMiddleware.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/ICorrelationIdAccessor.cs`
+  - `?? src/BuildingBlocks/Observability/HealthChecks/HealthCheckEndpointExtensions.cs`
+  - `?? src/BuildingBlocks/Observability/Logging/SensitiveDataDestructuringPolicy.cs`
+  - `?? src/BuildingBlocks/Observability/Logging/SensitiveLogValueAttribute.cs`
+  - ... and 70 more paths
+
+### 2026-08-07 22:05:23 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: ## P1.06 aproape complet (2 din 3 subtask-uri, unul parțial din motive de mediu) **Livrat:** - [HealthCheckEndpointExtensions.cs](src/BuildingBlocks/Observability/HealthChecks/HealthCheckEndpointExtensions.cs) — `/health/live` (liveness,...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M README.md`
+  - ` M docker-compose.yml`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
+  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
+  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdContext.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdExtensions.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdMiddleware.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/ICorrelationIdAccessor.cs`
+  - `?? src/BuildingBlocks/Observability/HealthChecks/HealthCheckEndpointExtensions.cs`
+  - `?? src/BuildingBlocks/Observability/Logging/SensitiveDataDestructuringPolicy.cs`
+  - `?? src/BuildingBlocks/Observability/Logging/SensitiveLogValueAttribute.cs`
+  - `?? src/BuildingBlocks/Observability/Logging/SerilogConfigurationExtensions.cs`
+  - ... and 69 more paths
+
+### 2026-08-07 21:58:58 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: ## P1.05 complet **Livrat** (`BuildingBlocks/Observability`, plus wiring în `src/Api/Program.cs`): - [SerilogConfigurationExtensions.cs](src/BuildingBlocks/Observability/Logging/SerilogConfigurationExtensions.cs) — `AddBUnitedLogging()`:...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M README.md`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
+  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
+  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
+  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
+  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
+  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdContext.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdExtensions.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdMiddleware.cs`
+  - `?? src/BuildingBlocks/Observability/CorrelationId/ICorrelationIdAccessor.cs`
+  - `?? src/BuildingBlocks/Observability/Logging/SensitiveDataDestructuringPolicy.cs`
+  - `?? src/BuildingBlocks/Observability/Logging/SensitiveLogValueAttribute.cs`
+  - `?? src/BuildingBlocks/Observability/Logging/SerilogConfigurationExtensions.cs`
+  - `?? src/BuildingBlocks/Security/BUnited.BuildingBlocks.Security.csproj`
+  - `?? src/Jobs/BUnited.Jobs.csproj`
+  - ... and 67 more paths
+
+### 2026-08-07 21:50:26 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: ## P1.04 complet **Livrat** (`BuildingBlocks/Infrastructure`): - [BUnitedDbContext.cs](src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs) — `DbContext` de bază: aplică convenția snake_case (tabele/coloane/chei/FK/indecși,...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M README.md`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
+  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
+  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
+  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
+  - `?? src/BuildingBlocks/Security/BUnited.BuildingBlocks.Security.csproj`
+  - `?? src/BuildingBlocks/Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
+  - `?? src/BuildingBlocks/Tests/BUnitedDbContextTests.cs`
+  - `?? src/Jobs/BUnited.Jobs.csproj`
+  - `?? src/Migrations/BUnited.Migrations.csproj`
+  - `?? src/Modules/Admin/Api/BUnited.Modules.Admin.Api.csproj`
+  - `?? src/Modules/Admin/Application/BUnited.Modules.Admin.Application.csproj`
+  - `?? src/Modules/Admin/Contracts/BUnited.Modules.Admin.Contracts.csproj`
+  - `?? src/Modules/Admin/Domain/BUnited.Modules.Admin.Domain.csproj`
+  - `?? src/Modules/Admin/Infrastructure/BUnited.Modules.Admin.Infrastructure.csproj`
+  - `?? src/Modules/Admin/Tests/BUnited.Modules.Admin.Tests.csproj`
+  - `?? src/Modules/Audit/Api/BUnited.Modules.Audit.Api.csproj`
+  - `?? src/Modules/Audit/Application/BUnited.Modules.Audit.Application.csproj`
+  - `?? src/Modules/Audit/Contracts/BUnited.Modules.Audit.Contracts.csproj`
+  - ... and 57 more paths
+
+### 2026-08-07 21:42:32 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: Build-ul întregii soluții trece fără erori sau avertismente. ## Rezumat **P1.03 aproape complet** (2 din 3 subtask-uri finalizate, unul rămâne blocat de mediu): - **P1.03.a — nefinalizat**: Docker nu e instalat/disponibil în acest mediu ...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M README.md`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
+  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
+  - `?? src/BuildingBlocks/Security/BUnited.BuildingBlocks.Security.csproj`
+  - `?? src/Jobs/BUnited.Jobs.csproj`
+  - `?? src/Migrations/BUnited.Migrations.csproj`
+  - `?? src/Modules/Admin/Api/BUnited.Modules.Admin.Api.csproj`
+  - `?? src/Modules/Admin/Application/BUnited.Modules.Admin.Application.csproj`
+  - `?? src/Modules/Admin/Contracts/BUnited.Modules.Admin.Contracts.csproj`
+  - `?? src/Modules/Admin/Domain/BUnited.Modules.Admin.Domain.csproj`
+  - `?? src/Modules/Admin/Infrastructure/BUnited.Modules.Admin.Infrastructure.csproj`
+  - `?? src/Modules/Admin/Tests/BUnited.Modules.Admin.Tests.csproj`
+  - `?? src/Modules/Audit/Api/BUnited.Modules.Audit.Api.csproj`
+  - `?? src/Modules/Audit/Application/BUnited.Modules.Audit.Application.csproj`
+  - `?? src/Modules/Audit/Contracts/BUnited.Modules.Audit.Contracts.csproj`
+  - `?? src/Modules/Audit/Domain/BUnited.Modules.Audit.Domain.csproj`
+  - `?? src/Modules/Audit/Infrastructure/BUnited.Modules.Audit.Infrastructure.csproj`
+  - `?? src/Modules/Audit/Tests/BUnited.Modules.Audit.Tests.csproj`
+  - `?? src/Modules/Billing/Api/BUnited.Modules.Billing.Api.csproj`
+  - `?? src/Modules/Billing/Application/BUnited.Modules.Billing.Application.csproj`
+  - ... and 52 more paths
+
+### 2026-08-07 21:28:35 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+
+- Base commit: `79a4df4`
+- Outcome: A rulat cu succes: `test ok`, directorul curent este `/c/Proiecte/B-united`. Vrei să rulez ceva specific (build, teste, etc.)?
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - `?? .vscode/settings.json`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
+  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
+  - `?? src/BuildingBlocks/Security/BUnited.BuildingBlocks.Security.csproj`
+  - `?? src/Jobs/BUnited.Jobs.csproj`
+  - `?? src/Migrations/BUnited.Migrations.csproj`
+  - `?? src/Modules/Admin/Api/BUnited.Modules.Admin.Api.csproj`
+  - `?? src/Modules/Admin/Application/BUnited.Modules.Admin.Application.csproj`
+  - `?? src/Modules/Admin/Contracts/BUnited.Modules.Admin.Contracts.csproj`
+  - `?? src/Modules/Admin/Domain/BUnited.Modules.Admin.Domain.csproj`
+  - `?? src/Modules/Admin/Infrastructure/BUnited.Modules.Admin.Infrastructure.csproj`
+  - `?? src/Modules/Admin/Tests/BUnited.Modules.Admin.Tests.csproj`
+  - `?? src/Modules/Audit/Api/BUnited.Modules.Audit.Api.csproj`
+  - `?? src/Modules/Audit/Application/BUnited.Modules.Audit.Application.csproj`
+  - `?? src/Modules/Audit/Contracts/BUnited.Modules.Audit.Contracts.csproj`
+  - `?? src/Modules/Audit/Domain/BUnited.Modules.Audit.Domain.csproj`
+  - `?? src/Modules/Audit/Infrastructure/BUnited.Modules.Audit.Infrastructure.csproj`
+  - `?? src/Modules/Audit/Tests/BUnited.Modules.Audit.Tests.csproj`
+  - `?? src/Modules/Billing/Api/BUnited.Modules.Billing.Api.csproj`
+  - `?? src/Modules/Billing/Application/BUnited.Modules.Billing.Application.csproj`
+  - `?? src/Modules/Billing/Contracts/BUnited.Modules.Billing.Contracts.csproj`
+  - ... and 51 more paths
+
+### 2026-08-07 21:27:08 UTC - Session `41ed0245-59c6-41c8-a8b3-106ac28b6224`
+
+- Base commit: `79a4df4`
+- Outcome: ## Summary **P0.32 gate cleared first** (required before any Phase 1 work): recorded explicit approval of the Phase 0 architecture, added [ADR-009](docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md) to formally capture the R3 encryption-...
+- Workspace changes:
+  - ` M .claude/settings.json`
+  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/TASKS.md`
+  - `?? BUnited.sln`
+  - `?? Directory.Build.props`
+  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
+  - `?? frontend/.oxlintrc.json`
+  - `?? frontend/index.html`
+  - `?? frontend/package-lock.json`
+  - `?? frontend/package.json`
+  - `?? frontend/public/favicon.svg`
+  - `?? frontend/public/icons.svg`
+  - `?? frontend/src/App.tsx`
+  - `?? frontend/src/index.css`
+  - `?? frontend/src/main.tsx`
+  - `?? frontend/tsconfig.app.json`
+  - `?? frontend/tsconfig.json`
+  - `?? frontend/tsconfig.node.json`
+  - `?? frontend/vite.config.ts`
+  - `?? global.json`
+  - `?? src/Api/BUnited.Api.csproj`
+  - `?? src/Api/BUnited.Api.http`
+  - `?? src/Api/Program.cs`
+  - `?? src/Api/Properties/launchSettings.json`
+  - `?? src/Api/appsettings.Development.json`
+  - `?? src/Api/appsettings.json`
+  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
+  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
+  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
+  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
+  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
+  - `?? src/BuildingBlocks/Security/BUnited.BuildingBlocks.Security.csproj`
+  - `?? src/Jobs/BUnited.Jobs.csproj`
+  - `?? src/Migrations/BUnited.Migrations.csproj`
+  - `?? src/Modules/Admin/Api/BUnited.Modules.Admin.Api.csproj`
+  - `?? src/Modules/Admin/Application/BUnited.Modules.Admin.Application.csproj`
+  - `?? src/Modules/Admin/Contracts/BUnited.Modules.Admin.Contracts.csproj`
+  - `?? src/Modules/Admin/Domain/BUnited.Modules.Admin.Domain.csproj`
+  - `?? src/Modules/Admin/Infrastructure/BUnited.Modules.Admin.Infrastructure.csproj`
+  - `?? src/Modules/Admin/Tests/BUnited.Modules.Admin.Tests.csproj`
+  - `?? src/Modules/Audit/Api/BUnited.Modules.Audit.Api.csproj`
+  - `?? src/Modules/Audit/Application/BUnited.Modules.Audit.Application.csproj`
+  - `?? src/Modules/Audit/Contracts/BUnited.Modules.Audit.Contracts.csproj`
+  - `?? src/Modules/Audit/Domain/BUnited.Modules.Audit.Domain.csproj`
+  - `?? src/Modules/Audit/Infrastructure/BUnited.Modules.Audit.Infrastructure.csproj`
+  - `?? src/Modules/Audit/Tests/BUnited.Modules.Audit.Tests.csproj`
+  - `?? src/Modules/Billing/Api/BUnited.Modules.Billing.Api.csproj`
+  - `?? src/Modules/Billing/Application/BUnited.Modules.Billing.Application.csproj`
+  - `?? src/Modules/Billing/Contracts/BUnited.Modules.Billing.Contracts.csproj`
+  - `?? src/Modules/Billing/Domain/BUnited.Modules.Billing.Domain.csproj`
+  - ... and 50 more paths
 <!-- SESSION-CHANGES:END -->

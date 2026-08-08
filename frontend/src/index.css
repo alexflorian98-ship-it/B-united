@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens (docs/PROMPT.md §55-59, docs/ARCHITECTURE.md §22).
+ * Tailwind v4 is CSS-first: every custom property below becomes a matching
+ * utility class automatically (e.g. --color-primary -> bg-primary/text-primary/border-primary).
+ * See shared/design-system/README.md for usage rules.
+ */
+@theme {
+  /* Color: Background/Surface -------------------------------------------------------- */
+  --color-background: #fafaf9;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+
+  /* Color: Border --------------------------------------------------------------------- */
+  --color-border-default: #e5e7eb;
+  --color-border-strong: #d1d5db;
+
+  /* Color: Text ------------------------------------------------------------------------ */
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #9ca3af;
+
+  /* Color: Brand ------------------------------------------------------------------------ */
+  --color-primary: #0f6e63;
+  --color-primary-hover: #0b5850;
+
+  /* Color: Semantic status --------------------------------------------------------------- */
+  --color-success: #16794f;
+  --color-warning: #b45309;
+  --color-danger: #b91c1c;
+  --color-info: #1d4e89;
+
+  /* Color: Focus ring (WCAG 2.2 AA — always visible, independent of element color) ------- */
+  --color-focus-ring: #2563eb;
+
+  /* Radius --------------------------------------------------------------------------------- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+
+  /* Shadow (subtle — no heavy drop shadows, per the "calm, not gamified" tone brief) ------- */
+  --shadow-sm: 0 1px 2px 0 rgb(17 24 39 / 0.05);
+  --shadow-md: 0 2px 8px 0 rgb(17 24 39 / 0.08);
+  --shadow-lg: 0 8px 24px -4px rgb(17 24 39 / 0.12);
+
+  /* Breakpoints (§58: Mobile / Tablet / Laptop-Desktop) — named aliases alongside Tailwind's
+     default sm/md/lg/xl scale, for components that want to express intent explicitly. */
+  --breakpoint-tablet: 48rem;   /* 768px */
+  --breakpoint-desktop: 64rem;  /* 1024px */
+
+  /* Typography ------------------------------------------------------------------------------ */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/*
+ * Motion timing: Tailwind v4 doesn't map a custom `--duration-*`/`--ease-*` theme namespace to
+ * the `duration-*`/`ease-*` utilities the way it does for `--color-*`/`--radius-*` (verified —
+ * a custom --duration-fast produced no `.duration-fast` class). Use Tailwind's own built-in
+ * duration/easing scale directly (`duration-150`, `duration-200`, `ease-out`, etc.) instead of
+ * inventing named aliases that wouldn't actually compile to anything. `prefers-reduced-motion`
+ * is still respected globally below, regardless of which duration utility a component uses.
+ */
+
+/*
+ * Dark mode: explicitly deferred (P1.29.b). No dark-mode requirement exists in the product
+ * spec; revisit if/when one is requested rather than half-implementing a second palette now.
+ */
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+/* Consistent, always-visible keyboard focus indicator on every interactive element —
+   WCAG 2.2 AA. Individual components must not need to remember to add this themselves. */
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

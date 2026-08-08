@@ -1,1 +1,168 @@
-{}
+{
+  "content": {
+    "programs": "Programe",
+    "newProgram": "Program nou",
+    "tabs": {
+      "all": "Toate",
+      "draft": "Ciorne",
+      "published": "Publicate",
+      "archived": "Arhivate"
+    },
+    "noPrograms": "Niciun program încă",
+    "noProgramsDescription": "Creează primul tău program pentru a începe.",
+    "columns": {
+      "title": "Titlu",
+      "sections": "Secțiuni",
+      "languages": "Limbi",
+      "status": "Stare",
+      "updated": "Actualizat",
+      "actions": "Acțiuni"
+    },
+    "status": {
+      "draft": "Ciornă",
+      "published": "Publicat",
+      "archived": "Arhivat"
+    },
+    "edit": "Editează",
+    "fields": {
+      "slug": "Slug",
+      "slugInvalid": "Folosește doar litere mici, cifre și cratime.",
+      "defaultLanguage": "Limba implicită",
+      "title": "Titlu",
+      "shortDescription": "Descriere scurtă",
+      "description": "Descriere",
+      "body": "Conținut",
+      "videoReference": "URL YouTube sau ID video"
+    },
+    "programSettings": "Setările programului",
+    "section": "Secțiune",
+    "video": "Video",
+    "richText": "Text",
+    "deleteSection": "Șterge secțiunea",
+    "deleteItem": "Șterge elementul",
+    "addSection": "Adaugă secțiune",
+    "addItem": "Adaugă element",
+    "addItemError": "Elementul nu a putut fi adăugat — verifică câmpurile și încearcă din nou.",
+    "newSectionTitle": "Secțiune nouă",
+    "newSectionDescription": "Adaugă o descriere pentru această secțiune.",
+    "newItemBody": "Adaugă conținut pentru acest element.",
+    "moveUp": "Mută în sus",
+    "moveDown": "Mută în jos",
+    "properties": "Proprietăți",
+    "missing": "lipsă",
+    "publish": "Publică",
+    "unpublish": "Anulează publicarea",
+    "archive": "Arhivează",
+    "videoReferenceNotEditable": "Videoclipul în sine nu poate fi schimbat după creare încă — șterge acest element și adaugă unul nou pentru a folosi alt videoclip."
+  },
+  "questionnaires": {
+    "title": "Chestionare",
+    "newQuestionnaire": "Chestionar nou",
+    "viewQueue": "Coadă de evaluare",
+    "tabs": {
+      "all": "Toate",
+      "draft": "Ciorne",
+      "published": "Publicate",
+      "archived": "Arhivate"
+    },
+    "noQuestionnaires": "Niciun chestionar încă",
+    "noQuestionnairesDescription": "Creează primul tău chestionar pentru a începe.",
+    "columns": {
+      "title": "Titlu",
+      "questions": "Întrebări",
+      "languages": "Limbi",
+      "status": "Stare",
+      "updated": "Actualizat",
+      "actions": "Acțiuni"
+    },
+    "status": {
+      "draft": "Ciornă",
+      "published": "Publicat",
+      "archived": "Arhivat"
+    },
+    "edit": "Editează",
+    "fields": {
+      "defaultLanguage": "Limba implicită",
+      "title": "Titlu",
+      "description": "Descriere",
+      "questionText": "Textul întrebării",
+      "helpText": "Text de ajutor (opțional)",
+      "optionValue": "Valoare",
+      "optionLabel": "Etichetă"
+    },
+    "settings": "Setările chestionarului",
+    "addQuestion": "Adaugă întrebare",
+    "add": "Adaugă",
+    "addOptionError": "Opțiunea nu a putut fi adăugată — verifică câmpurile și încearcă din nou.",
+    "newQuestionText": "Întrebare nouă",
+    "moveUp": "Mută în sus",
+    "moveDown": "Mută în jos",
+    "properties": "Proprietăți",
+    "missing": "lipsă",
+    "publish": "Publică",
+    "unpublish": "Anulează publicarea",
+    "archive": "Arhivează",
+    "questionTypes": {
+      "Text": "Text scurt",
+      "LongText": "Text lung",
+      "SingleChoice": "Alegere unică",
+      "MultiChoice": "Alegere multiplă",
+      "Scale": "Scală"
+    },
+    "options": "Opțiuni",
+    "deleteOption": "Șterge",
+    "deleteQuestion": "Șterge întrebarea",
+    "queue": {
+      "title": "Coadă de răspunsuri",
+      "empty": "Niciun răspuns în așteptarea evaluării.",
+      "review": "Evaluează",
+      "columns": {
+        "client": "Client",
+        "submittedAt": "Trimis la",
+        "waiting": "Timp de așteptare",
+        "action": "Acțiune"
+      },
+      "buckets": {
+        "0": "< 24h",
+        "1": "24–48h",
+        "2": "> 48h"
+      }
+    },
+    "detail": {
+      "answers": "Răspunsuri",
+      "guidance": "Ghidaj",
+      "versionPublished": "Versiunea {{version}} — publicată {{date}}",
+      "draftVersion": "Ciornă (versiunea {{version}})",
+      "newDraft": "Ciornă nouă de ghidaj",
+      "saveDraft": "Salvează ciorna",
+      "publish": "Publică",
+      "followUpQuestion": "Întrebare de urmărire",
+      "answerFollowUp": "Trimite răspunsul"
+    }
+  },
+  "billing": {
+    "title": "Abonați",
+    "noSubscribers": "Niciun abonat încă.",
+    "view": "Vezi",
+    "columns": {
+      "email": "Email",
+      "status": "Stare",
+      "currentPeriodEnd": "Perioada curentă",
+      "accessUntil": "Acces până la",
+      "paymentState": "Starea plății",
+      "created": "Creat",
+      "actions": "Acțiuni"
+    },
+    "status": {
+      "trialing": "Perioadă de probă",
+      "active": "Activ",
+      "pastdue": "Plată restantă",
+      "canceled": "Anulat",
+      "expired": "Expirat"
+    },
+    "payments": "Plăți",
+    "webhookTimeline": "Cronologie webhook",
+    "processed": "Procesat",
+    "notProcessed": "Neprocesat încă"
+  }
+}

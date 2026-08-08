@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\BuildingBlocks\Infrastructure\BUnited.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Identity\Domain\BUnited.Modules.Identity.Domain.csproj" />
+    <ProjectReference Include="..\Modules\Identity\Infrastructure\BUnited.Modules.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Audit\Domain\BUnited.Modules.Audit.Domain.csproj" />
+    <ProjectReference Include="..\Modules\Audit\Infrastructure\BUnited.Modules.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Content\Domain\BUnited.Modules.Content.Domain.csproj" />
+    <ProjectReference Include="..\Modules\Content\Infrastructure\BUnited.Modules.Content.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Progress\Domain\BUnited.Modules.Progress.Domain.csproj" />
+    <ProjectReference Include="..\Modules\Progress\Infrastructure\BUnited.Modules.Progress.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Questionnaires\Domain\BUnited.Modules.Questionnaires.Domain.csproj" />
+    <ProjectReference Include="..\Modules\Questionnaires\Infrastructure\BUnited.Modules.Questionnaires.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Billing\Domain\BUnited.Modules.Billing.Domain.csproj" />
+    <ProjectReference Include="..\Modules\Billing\Infrastructure\BUnited.Modules.Billing.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.2.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

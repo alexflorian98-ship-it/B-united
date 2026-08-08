@@ -59,6 +59,66 @@ See each module's `README.md` under `src/Modules/<Module>/` for layering rules.
 - **Frontend:** React, TypeScript, Vite, React Router, TanStack Query, React Hook Form, Zod, Zustand (minimal), Tailwind CSS, i18next/react-i18next.
 - **Infrastructure:** Docker / Docker Compose, PostgreSQL, video-provider abstraction (Mux/Cloudflare Stream/Vimeo), Stripe (payments), transactional email abstraction.
 
+## Local development setup
+
+### Database
+
+The Api host needs a `ConnectionStrings__Default` PostgreSQL connection string,
+supplied via a repo-root `.env` file (copy `.env.example` to `.env` and fill
+in real values — `.env` is git-ignored and must never be committed).
+
+Two ways to provide PostgreSQL locally:
+
+- **Docker Compose (recommended for a clean, disposable instance):**
+  ```
+  docker compose up -d postgres
+  ```
+  This starts `postgres:16-alpine` on `POSTGRES_PORT` (default `5432`) using
+  the `POSTGRES_DB`/`POSTGRES_USER`/`POSTGRES_PASSWORD` values from `.env`.
+
+- **An existing local PostgreSQL install:** create a dedicated role and
+  database instead of reusing another project's:
+  ```sql
+  CREATE USER bunited WITH PASSWORD '<choose-a-password>';
+  CREATE DATABASE bunited OWNER bunited;
+  ```
+  Then set `ConnectionStrings__Default` in `.env` to match, e.g.:
+  ```
+  ConnectionStrings__Default=Host=localhost;Port=5432;Database=bunited;Username=bunited;Password=<choose-a-password>
+  ```
+
+### Running the Api host
+
+The Api host loads `.env` automatically at startup (via `DotNetEnv`, searching
+upward from the working directory) and fails fast if
+`ConnectionStrings__Default` is missing:
+
+```
+dotnet run --project src/Api/BUnited.Api.csproj
+```
+
+By default this listens on `http://localhost:5000` (`launchSettings.json`) and
+only accepts cross-origin requests from `http://localhost:5173` in the
+`Development` environment (`appsettings.Development.json`'s
+`Cors:AllowedOrigins`) — see `src/BuildingBlocks/Security/Cors/CorsExtensions.cs`.
+Running via `dotnet run --no-launch-profile` skips `launchSettings.json`
+entirely, which also skips the `ASPNETCORE_ENVIRONMENT=Development` it sets —
+pass `ASPNETCORE_ENVIRONMENT=Development` explicitly in that case, or the SPA
+below won't be able to reach the Api (its requests will be rejected by CORS).
+
+### Running the frontend
+
+```
+cd frontend
+cp .env.example .env   # defaults to http://localhost:5000/api/v1, matching the Api host above
+npm install
+npm run dev
+```
+
+This starts the Vite dev server on `http://localhost:5173`. The Api host must
+already be running (see above) for registration/login/etc. to work — the SPA
+makes real HTTP calls, it has no mock backend mode.
+
 ## Next steps
 
 1. Review `docs/PROMPT.md` section 74/75 and produce the architecture review deliverables before writing implementation code.

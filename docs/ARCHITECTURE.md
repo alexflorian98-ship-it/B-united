@@ -459,4 +459,4 @@ into §5, §14, §29 above). No blocking issues were found in the overall
 modular-monolith / single-database / Contracts-boundary approach — it is
 appropriately sized for the stated scale and business model.
 
-**Awaiting explicit approval (P0.32) before Phase 1 implementation begins.**
+**Approved (P0.32) on 2026-08-08 by the project owner (alexflorian98@gmail.com).** R1–R4 are accepted as-is; the R3 encryption-at-rest deferral is recorded in [ADR-009](adr/ADR-009-Data-At-Rest-Encryption-Scope.md). Phase 1 implementation may begin.

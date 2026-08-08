@@ -1,8 +1,3 @@
-version: "3.9"
-
-# Scaffolding only. Application service(s) will be added in Phase 1
-# once the Api host project exists (see docs/PROMPT.md, section 69).
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -16,6 +11,36 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bunited} -d ${POSTGRES_DB:-bunited}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Api/Dockerfile
+    container_name: bunited-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-bunited};Username=${POSTGRES_USER:-bunited};Password=${POSTGRES_PASSWORD:-change-me}"
+      Jwt__Issuer: ${Jwt__Issuer:-bunited}
+      Jwt__Audience: ${Jwt__Audience:-bunited-clients}
+      Jwt__SigningKey: ${Jwt__SigningKey:-change-me}
+      Jwt__AccessTokenLifetimeMinutes: ${Jwt__AccessTokenLifetimeMinutes:-15}
+      Jwt__RefreshTokenLifetimeDays: ${Jwt__RefreshTokenLifetimeDays:-30}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres-data:

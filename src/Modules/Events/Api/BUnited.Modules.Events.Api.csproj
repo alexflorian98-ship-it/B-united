@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Application\BUnited.Modules.Events.Application.csproj" />
+    <ProjectReference Include="..\Infrastructure\BUnited.Modules.Events.Infrastructure.csproj" />
+    <ProjectReference Include="..\Contracts\BUnited.Modules.Events.Contracts.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

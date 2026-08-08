@@ -1,1 +1,64 @@
-{}
+{
+  "app": {
+    "name": "B-United"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "retry": "Retry",
+    "close": "Close",
+    "back": "Back"
+  },
+  "status": {
+    "loading": "Loading…",
+    "saving": "Saving…"
+  },
+  "language": {
+    "ro": "Romanian",
+    "en": "English"
+  },
+  "nav": {
+    "mainNavigation": "Main navigation",
+    "adminNavigation": "Admin navigation",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "home": "Home",
+    "programs": "Programs",
+    "events": "Events",
+    "community": "Community",
+    "guidance": "My Guidance",
+    "billing": "Billing",
+    "profile": "Profile",
+    "dashboard": "Dashboard",
+    "questionnaires": "Questionnaires",
+    "subscribers": "Subscribers",
+    "notifications": "Notifications",
+    "audit": "Audit",
+    "settings": "Settings"
+  },
+  "errors": {
+    "validationFailed": "Some fields need your attention.",
+    "internalServerError": "Something went wrong on our side. Please try again.",
+    "notFound": "We couldn't find what you were looking for.",
+    "rateLimitExceeded": "Too many attempts. Please wait a moment and try again."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or may have moved.",
+    "goHome": "Go to home"
+  },
+  "forbidden": {
+    "title": "Access restricted",
+    "description": "Your account doesn't have permission to view this page.",
+    "goHome": "Go to home"
+  },
+  "unauthorized": {
+    "title": "Sign-in required",
+    "description": "You need to be logged in to view this page.",
+    "goToLogin": "Log in"
+  },
+  "comingSoon": {
+    "description": "This feature isn't available yet — it's on the way in a future update."
+  }
+}

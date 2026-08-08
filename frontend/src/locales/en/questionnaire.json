@@ -1,1 +1,44 @@
-{}
+{
+  "title": "My Guidance",
+  "noQuestionnaires": "No questionnaires are available right now.",
+  "cta": {
+    "start": "Start",
+    "resume": "Continue",
+    "view": "View"
+  },
+  "submissionStatus": {
+    "Draft": "In progress",
+    "Submitted": "Under review",
+    "Answered": "Guidance available"
+  },
+  "consent": {
+    "title": "Before you begin",
+    "body": "Your answers and the guidance you receive are treated as high-sensitivity data, visible only to you and your assigned expert. By continuing, you consent to this data being processed for the purpose of providing you personalized guidance.",
+    "agree": "I agree, continue"
+  },
+  "fill": {
+    "saveDraft": "Save draft",
+    "submit": "Submit",
+    "draftSaved": "Draft saved.",
+    "requiredAnswersMissing": "Please answer all required questions before submitting."
+  },
+  "underReview": {
+    "title": "Your submission is under review",
+    "body": "Your expert will read your answers and prepare personalized guidance. You'll be able to read it here once it's ready."
+  },
+  "response": {
+    "versionLabel": "Guidance (version {{version}})"
+  },
+  "followUp": {
+    "yourQuestion": "Your follow-up question",
+    "expertAnswer": "Expert's answer",
+    "awaitingAnswer": "Waiting for the expert to answer.",
+    "askOne": "You may ask one follow-up question about this guidance.",
+    "submit": "Send question"
+  },
+  "crisis": {
+    "disclaimerTitle": "This is guidance, not emergency care",
+    "disclaimerBody": "The personalized guidance you receive here is educational and supportive in nature. It is not a diagnosis, treatment, or emergency response service.",
+    "emergencyNotice": "If you are in crisis or in danger, please contact your local emergency services immediately."
+  }
+}

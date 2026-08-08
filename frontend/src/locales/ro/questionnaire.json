@@ -1,1 +1,44 @@
-{}
+{
+  "title": "Ghidajul meu",
+  "noQuestionnaires": "Niciun chestionar disponibil momentan.",
+  "cta": {
+    "start": "Începe",
+    "resume": "Continuă",
+    "view": "Vezi"
+  },
+  "submissionStatus": {
+    "Draft": "În desfășurare",
+    "Submitted": "În evaluare",
+    "Answered": "Ghidaj disponibil"
+  },
+  "consent": {
+    "title": "Înainte de a începe",
+    "body": "Răspunsurile tale și ghidajul primit sunt tratate ca date de înaltă sensibilitate, vizibile doar pentru tine și expertul desemnat. Continuând, ești de acord ca aceste date să fie procesate pentru a-ți oferi ghidaj personalizat.",
+    "agree": "Sunt de acord, continuă"
+  },
+  "fill": {
+    "saveDraft": "Salvează ciorna",
+    "submit": "Trimite",
+    "draftSaved": "Ciornă salvată.",
+    "requiredAnswersMissing": "Te rugăm să răspunzi la toate întrebările obligatorii înainte de a trimite."
+  },
+  "underReview": {
+    "title": "Răspunsurile tale sunt în evaluare",
+    "body": "Expertul tău va citi răspunsurile și va pregăti un ghidaj personalizat. Îl vei putea citi aici de îndată ce este gata."
+  },
+  "response": {
+    "versionLabel": "Ghidaj (versiunea {{version}})"
+  },
+  "followUp": {
+    "yourQuestion": "Întrebarea ta de urmărire",
+    "expertAnswer": "Răspunsul expertului",
+    "awaitingAnswer": "În așteptarea răspunsului expertului.",
+    "askOne": "Poți adresa o singură întrebare de urmărire despre acest ghidaj.",
+    "submit": "Trimite întrebarea"
+  },
+  "crisis": {
+    "disclaimerTitle": "Acesta este un ghidaj, nu asistență de urgență",
+    "disclaimerBody": "Ghidajul personalizat primit aici are caracter educațional și de suport. Nu este un diagnostic, un tratament sau un serviciu de intervenție de urgență.",
+    "emergencyNotice": "Dacă te afli într-o situație de criză sau pericol, te rugăm să contactezi imediat serviciile locale de urgență."
+  }
+}

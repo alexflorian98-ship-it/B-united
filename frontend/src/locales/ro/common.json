@@ -1,1 +1,64 @@
-{}
+{
+  "app": {
+    "name": "B-United"
+  },
+  "actions": {
+    "save": "Salvează",
+    "cancel": "Anulează",
+    "submit": "Trimite",
+    "retry": "Încearcă din nou",
+    "close": "Închide",
+    "back": "Înapoi"
+  },
+  "status": {
+    "loading": "Se încarcă…",
+    "saving": "Se salvează…"
+  },
+  "language": {
+    "ro": "Română",
+    "en": "Engleză"
+  },
+  "nav": {
+    "mainNavigation": "Navigare principală",
+    "adminNavigation": "Navigare admin",
+    "openMenu": "Deschide meniul",
+    "closeMenu": "Închide meniul",
+    "home": "Acasă",
+    "programs": "Programe",
+    "events": "Evenimente",
+    "community": "Comunitate",
+    "guidance": "Ghidajul meu",
+    "billing": "Facturare",
+    "profile": "Profil",
+    "dashboard": "Panou principal",
+    "questionnaires": "Chestionare",
+    "subscribers": "Abonați",
+    "notifications": "Notificări",
+    "audit": "Audit",
+    "settings": "Setări"
+  },
+  "errors": {
+    "validationFailed": "Unele câmpuri necesită atenția ta.",
+    "internalServerError": "A apărut o problemă la noi. Te rugăm să încerci din nou.",
+    "notFound": "Nu am găsit ce căutai.",
+    "rateLimitExceeded": "Prea multe încercări. Te rugăm să aștepți puțin și să încerci din nou."
+  },
+  "notFound": {
+    "title": "Pagina nu a fost găsită",
+    "description": "Pagina pe care o cauți nu există sau a fost mutată.",
+    "goHome": "Mergi acasă"
+  },
+  "forbidden": {
+    "title": "Acces restricționat",
+    "description": "Contul tău nu are permisiunea de a vedea această pagină.",
+    "goHome": "Mergi acasă"
+  },
+  "unauthorized": {
+    "title": "Autentificare necesară",
+    "description": "Trebuie să fii conectat pentru a vedea această pagină.",
+    "goToLogin": "Conectează-te"
+  },
+  "comingSoon": {
+    "description": "Această funcționalitate nu este încă disponibilă — urmează într-o actualizare viitoare."
+  }
+}

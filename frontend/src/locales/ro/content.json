@@ -1,1 +1,32 @@
-{}
+{
+  "domainFilter": "Filtrează după domeniu",
+  "allDomains": "Toate",
+  "domains": {
+    "psychology": "Psihologie",
+    "sport": "Sport",
+    "nutrition": "Nutriție",
+    "business": "Business",
+    "financial-education": "Educație Financiară"
+  },
+  "noPrograms": "Niciun program încă",
+  "noProgramsDescription": "Nu există nimic publicat în acest domeniu încă.",
+  "cta": {
+    "start": "Începe",
+    "continue": "Continuă",
+    "completed": "Revizuiește"
+  },
+  "itemCount_one": "{{count}} element",
+  "itemCount_few": "{{count}} elemente",
+  "itemCount_other": "{{count}} de elemente",
+  "progressStatus": {
+    "NotStarted": "Neînceput",
+    "InProgress": "În desfășurare",
+    "Completed": "Finalizat"
+  },
+  "noContent": "Acest program nu are încă niciun conținut.",
+  "curriculum": "Curriculă",
+  "openCurriculum": "Deschide curricula",
+  "next": "Următorul",
+  "markCompleted": "Marchează ca finalizat",
+  "completed": "Finalizat"
+}

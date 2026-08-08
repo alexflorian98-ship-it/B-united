@@ -1,1 +1,168 @@
-{}
+{
+  "content": {
+    "programs": "Programs",
+    "newProgram": "New program",
+    "tabs": {
+      "all": "All",
+      "draft": "Drafts",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "noPrograms": "No programs yet",
+    "noProgramsDescription": "Create your first program to get started.",
+    "columns": {
+      "title": "Title",
+      "sections": "Sections",
+      "languages": "Languages",
+      "status": "Status",
+      "updated": "Updated",
+      "actions": "Actions"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "edit": "Edit",
+    "fields": {
+      "slug": "Slug",
+      "slugInvalid": "Use lowercase letters, numbers and hyphens only.",
+      "defaultLanguage": "Default language",
+      "title": "Title",
+      "shortDescription": "Short description",
+      "description": "Description",
+      "body": "Body",
+      "videoReference": "YouTube URL or video ID"
+    },
+    "programSettings": "Program settings",
+    "section": "Section",
+    "video": "Video",
+    "richText": "Rich text",
+    "deleteSection": "Delete section",
+    "deleteItem": "Delete item",
+    "addSection": "Add section",
+    "addItem": "Add item",
+    "addItemError": "Couldn't add this item — check the fields and try again.",
+    "newSectionTitle": "New section",
+    "newSectionDescription": "Add a description for this section.",
+    "newItemBody": "Add content for this item.",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "properties": "Properties",
+    "missing": "missing",
+    "publish": "Publish",
+    "unpublish": "Unpublish",
+    "archive": "Archive",
+    "videoReferenceNotEditable": "The video itself can't be changed after creation yet — delete this item and add a new one to use a different video."
+  },
+  "questionnaires": {
+    "title": "Questionnaires",
+    "newQuestionnaire": "New questionnaire",
+    "viewQueue": "Review queue",
+    "tabs": {
+      "all": "All",
+      "draft": "Drafts",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "noQuestionnaires": "No questionnaires yet",
+    "noQuestionnairesDescription": "Create your first questionnaire to get started.",
+    "columns": {
+      "title": "Title",
+      "questions": "Questions",
+      "languages": "Languages",
+      "status": "Status",
+      "updated": "Updated",
+      "actions": "Actions"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "edit": "Edit",
+    "fields": {
+      "defaultLanguage": "Default language",
+      "title": "Title",
+      "description": "Description",
+      "questionText": "Question text",
+      "helpText": "Help text (optional)",
+      "optionValue": "Value",
+      "optionLabel": "Label"
+    },
+    "settings": "Questionnaire settings",
+    "addQuestion": "Add question",
+    "add": "Add",
+    "addOptionError": "Couldn't add this option — check the fields and try again.",
+    "newQuestionText": "New question",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "properties": "Properties",
+    "missing": "missing",
+    "publish": "Publish",
+    "unpublish": "Unpublish",
+    "archive": "Archive",
+    "questionTypes": {
+      "Text": "Short text",
+      "LongText": "Long text",
+      "SingleChoice": "Single choice",
+      "MultiChoice": "Multiple choice",
+      "Scale": "Scale"
+    },
+    "options": "Options",
+    "deleteOption": "Delete",
+    "deleteQuestion": "Delete question",
+    "queue": {
+      "title": "Submission queue",
+      "empty": "No submissions waiting for review.",
+      "review": "Review",
+      "columns": {
+        "client": "Client",
+        "submittedAt": "Submitted At",
+        "waiting": "Waiting Time",
+        "action": "Action"
+      },
+      "buckets": {
+        "0": "< 24h",
+        "1": "24–48h",
+        "2": "> 48h"
+      }
+    },
+    "detail": {
+      "answers": "Answers",
+      "guidance": "Guidance",
+      "versionPublished": "Version {{version}} — published {{date}}",
+      "draftVersion": "Draft (version {{version}})",
+      "newDraft": "New guidance draft",
+      "saveDraft": "Save draft",
+      "publish": "Publish",
+      "followUpQuestion": "Follow-up question",
+      "answerFollowUp": "Send answer"
+    }
+  },
+  "billing": {
+    "title": "Subscribers",
+    "noSubscribers": "No subscribers yet.",
+    "view": "View",
+    "columns": {
+      "email": "Email",
+      "status": "Status",
+      "currentPeriodEnd": "Current Period",
+      "accessUntil": "Access Until",
+      "paymentState": "Payment State",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "status": {
+      "trialing": "Trialing",
+      "active": "Active",
+      "pastdue": "Past due",
+      "canceled": "Canceled",
+      "expired": "Expired"
+    },
+    "payments": "Payments",
+    "webhookTimeline": "Webhook timeline",
+    "processed": "Processed",
+    "notProcessed": "Not yet processed"
+  }
+}

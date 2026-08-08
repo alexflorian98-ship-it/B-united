@@ -1,1 +1,40 @@
-{}
+{
+  "title": "Facturare",
+  "noSubscription": "Nu ai încă un abonament activ. Alege un plan pentru a începe.",
+  "subscribe": "Abonează-te",
+  "interval": {
+    "Monthly": "lună",
+    "Yearly": "an"
+  },
+  "currentPeriod": "Perioada curentă",
+  "accessUntil": "Acces până la",
+  "status": {
+    "Trialing": "Perioadă de probă",
+    "Active": "Activ",
+    "PastDue": "Plată restantă",
+    "Canceled": "Anulat",
+    "Expired": "Expirat"
+  },
+  "payments": "Plăți",
+  "noPayments": "Nicio plată încă.",
+  "paymentStatus": {
+    "Pending": "În așteptare",
+    "Succeeded": "Reușită",
+    "Failed": "Eșuată"
+  },
+  "invoices": "Facturi",
+  "noInvoices": "Nicio factură încă.",
+  "invoiceStatus": {
+    "Open": "Deschisă",
+    "Paid": "Plătită",
+    "Void": "Anulată"
+  },
+  "demo": {
+    "title": "Controale de plată simulată",
+    "notice": "Acesta este un sistem de plată simulat (fără taxe reale). Folosește aceste controale pentru a vedea cum se comportă ciclul de viață al abonamentului.",
+    "failPayment": "Simulează plată eșuată",
+    "cancel": "Anulează abonamentul",
+    "renew": "Reînnoiește / recuperează plata",
+    "expire": "Simulează expirarea"
+  }
+}

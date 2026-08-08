@@ -1,0 +1,9 @@
+{
+  "title": "Profile",
+  "email": "Email",
+  "timezone": "Timezone",
+  "language": "Language",
+  "emailNotifications": "Email notifications",
+  "saved": "Your profile has been saved.",
+  "logout": "Log out"
+}
