@@ -11,8 +11,8 @@ export function UnauthorizedPage() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">
-      <h1 className="text-xl font-semibold text-text-primary">{t("common:unauthorized.title")}</h1>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-6 text-center">
+      <h1 className="text-2xl font-semibold text-text-primary">{t("common:unauthorized.title")}</h1>
       <p className="max-w-md text-sm text-text-secondary">{t("common:unauthorized.description")}</p>
       <Link to="/login" className={primaryButtonLinkClassName}>
         {t("common:unauthorized.goToLogin")}

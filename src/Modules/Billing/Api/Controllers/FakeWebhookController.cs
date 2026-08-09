@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 
 namespace BUnited.Modules.Billing.Api.Controllers;
 
-public sealed record FakeWebhookEventRequest(string ProviderEventId, string Type, Guid SubscriptionId, decimal? Amount, string? Currency, DateTime ProviderTimestampUtc);
+public sealed record FakeWebhookEventRequest(string ProviderEventId, string Type, Guid PurchaseId, decimal? Amount, string? Currency, DateTime ProviderTimestampUtc);
 
 /// <summary>P3.07: the demo fake-provider event endpoint. Deliberately unauthenticated (no
 /// `[Authorize]`) — a real webhook endpoint never carries a user's bearer token either; trust
@@ -61,7 +61,7 @@ public sealed class FakeWebhookController(
             return BadRequest();
         }
 
-        var providerEvent = new ProviderEvent(payload.ProviderEventId, eventType, payload.SubscriptionId, payload.Amount, payload.Currency, payload.ProviderTimestampUtc, rawBody);
+        var providerEvent = new ProviderEvent(payload.ProviderEventId, eventType, payload.PurchaseId, payload.Amount, payload.Currency, payload.ProviderTimestampUtc, rawBody);
         await processProviderEventHandler.HandleAsync(providerEvent, cancellationToken);
 
         return NoContent();

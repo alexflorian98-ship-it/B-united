@@ -14,6 +14,10 @@
     <ProjectReference Include="..\Modules\Questionnaires\Infrastructure\BUnited.Modules.Questionnaires.Infrastructure.csproj" />
     <ProjectReference Include="..\Modules\Billing\Domain\BUnited.Modules.Billing.Domain.csproj" />
     <ProjectReference Include="..\Modules\Billing\Infrastructure\BUnited.Modules.Billing.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Events\Domain\BUnited.Modules.Events.Domain.csproj" />
+    <ProjectReference Include="..\Modules\Events\Infrastructure\BUnited.Modules.Events.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Chat\Domain\BUnited.Modules.Chat.Domain.csproj" />
+    <ProjectReference Include="..\Modules\Chat\Infrastructure\BUnited.Modules.Chat.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

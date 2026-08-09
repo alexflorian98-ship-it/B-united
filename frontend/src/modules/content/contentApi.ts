@@ -14,9 +14,26 @@ export interface ClientProgramSummary {
   shortDescription: string;
   coverAssetId: string | null;
   sortOrder: number;
+  activeOffer: ClientProgramOffer | null;
+  ownershipState: "Owned" | "NotOwned" | null;
 }
 
-export type ContentItemTypeName = "Video" | "RichText";
+export interface ClientProgramOffer { amount: number; currency: string }
+
+export type ContentItemTypeName = "Video" | "RichText" | "Quiz";
+
+export interface ClientQuizOption {
+  id: string;
+  sortOrder: number;
+  label: string;
+}
+
+export interface ClientQuizQuestion {
+  id: string;
+  sortOrder: number;
+  text: string;
+  options: ClientQuizOption[];
+}
 
 export interface ClientContentItem {
   id: string;
@@ -26,6 +43,7 @@ export interface ClientContentItem {
   title: string;
   body: string | null;
   mediaAssetId: string | null;
+  quizQuestions?: ClientQuizQuestion[];
 }
 
 export interface ClientSection {
@@ -44,12 +62,31 @@ export interface ClientProgramDetail {
   shortDescription: string;
   description: string;
   coverAssetId: string | null;
+  activeOffer: ClientProgramOffer | null;
+  ownershipState: "Owned" | "NotOwned" | null;
   sections: ClientSection[];
 }
 
 export interface VideoPlaybackResult {
   playbackUrl: string;
   thumbnailUrl: string | null;
+}
+
+export interface QuizAnswerInput {
+  questionId: string;
+  selectedOptionId: string;
+}
+
+export interface QuizQuestionResult {
+  questionId: string;
+  wasCorrect: boolean;
+  correctOptionId: string;
+}
+
+export interface QuizSubmissionResult {
+  correctCount: number;
+  totalQuestions: number;
+  perQuestionResults: QuizQuestionResult[];
 }
 
 export const contentApi = {
@@ -66,4 +103,10 @@ export const contentApi = {
 
   getVideoPlayback: (contentItemId: string) =>
     apiRequest<VideoPlaybackResult>(`/content/content-items/${contentItemId}/playback`),
+
+  submitQuiz: (contentItemId: string, answers: QuizAnswerInput[]) =>
+    apiRequest<QuizSubmissionResult>(`/content/content-items/${contentItemId}/quiz/submit`, {
+      method: "POST",
+      body: { answers },
+    }),
 };

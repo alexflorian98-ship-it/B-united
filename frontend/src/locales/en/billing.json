@@ -1,40 +1,9 @@
 {
-  "title": "Billing",
-  "noSubscription": "You don't have an active subscription yet. Choose a plan to get started.",
-  "subscribe": "Subscribe",
-  "interval": {
-    "Monthly": "month",
-    "Yearly": "year"
-  },
-  "currentPeriod": "Current period",
-  "accessUntil": "Access until",
-  "status": {
-    "Trialing": "Trialing",
-    "Active": "Active",
-    "PastDue": "Payment past due",
-    "Canceled": "Canceled",
-    "Expired": "Expired"
-  },
-  "payments": "Payments",
-  "noPayments": "No payments yet.",
-  "paymentStatus": {
-    "Pending": "Pending",
-    "Succeeded": "Succeeded",
-    "Failed": "Failed"
-  },
-  "invoices": "Invoices",
-  "noInvoices": "No invoices yet.",
-  "invoiceStatus": {
-    "Open": "Open",
-    "Paid": "Paid",
-    "Void": "Void"
-  },
-  "demo": {
-    "title": "Simulated payment controls",
-    "notice": "This is a simulated payment system (no real charges). Use these controls to see how the subscription lifecycle behaves.",
-    "failPayment": "Simulate failed payment",
-    "cancel": "Cancel subscription",
-    "renew": "Renew / recover payment",
-    "expire": "Simulate expiration"
-  }
+  "title": "My purchases",
+  "myPurchases": { "title": "Purchase history", "empty": "You have not purchased a program yet.", "program": "Program {{id}}", "programUnavailable": "Program unavailable in catalogue" },
+  "ownedPrograms": { "title": "Owned programs" },
+  "invoices": { "title": "Invoices" },
+  "purchase": { "status": { "Pending": "Pending", "Succeeded": "Succeeded", "Failed": "Failed", "Refunded": "Refunded", "Chargeback": "Charged back" } },
+  "entitlement": { "status": { "Active": "Permanent access", "Revoked": "Access revoked" } },
+  "demo": { "title": "Payment testing options", "Succeed": "Simulate success", "Fail": "Simulate failure", "Refund": "Simulate refund", "ChargeBack": "Simulate chargeback" }
 }

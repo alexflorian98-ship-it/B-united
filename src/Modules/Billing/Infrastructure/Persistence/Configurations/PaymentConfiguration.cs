@@ -17,8 +17,8 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.Property(p => p.CreatedAt).IsRequired();
         builder.Property(p => p.UpdatedAt).IsRequired();
 
-        builder.HasIndex(p => p.SubscriptionId);
+        builder.HasIndex(p => p.PurchaseId);
         builder.HasIndex(p => p.ProviderPaymentId).IsUnique();
-        builder.HasOne<Subscription>().WithMany().HasForeignKey(p => p.SubscriptionId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<Purchase>().WithMany().HasForeignKey(p => p.PurchaseId).OnDelete(DeleteBehavior.Cascade);
     }
 }

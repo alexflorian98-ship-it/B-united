@@ -49,7 +49,7 @@ export function ExpertSubmissionPage() {
 
   if (detailQuery.isLoading) {
     return (
-      <div className="flex flex-col gap-3 p-4">
+      <div className="flex flex-col gap-3">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-24 w-full" />
       </div>
@@ -57,19 +57,15 @@ export function ExpertSubmissionPage() {
   }
 
   if (!detailQuery.data) {
-    return (
-      <div className="p-4">
-        <Alert tone="danger" title={t("common:errors.notFound")} />
-      </div>
-    );
+    return <Alert tone="danger" title={t("common:errors.notFound")} />;
   }
 
   const detail = detailQuery.data;
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-lg font-semibold text-text-primary">{detail.clientEmail ?? detail.userId}</h1>
+        <h1 className="text-2xl font-semibold text-text-primary tablet:text-3xl">{detail.clientEmail ?? detail.userId}</h1>
         {detail.submittedAt && (
           <p className="text-xs text-text-muted">
             {t("admin:questionnaires.queue.columns.submittedAt")}: {new Date(detail.submittedAt).toLocaleString()}

@@ -14,30 +14,30 @@ public sealed class FakePaymentProvider : IPaymentProvider, IDemoOnlyAdapter
     public Task<string> EnsureCustomerAsync(Guid userId, CancellationToken cancellationToken) =>
         Task.FromResult($"fake_cus_{userId:N}");
 
-    public ProviderEvent? SimulateCheckout(Guid subscriptionId, decimal amount, string currency, CheckoutOutcome outcome, DateTime utcNow) =>
+    public ProviderEvent? SimulateCheckout(Guid purchaseId, decimal amount, string currency, CheckoutOutcome outcome, DateTime utcNow) =>
         outcome switch
         {
-            CheckoutOutcome.Success => CreateDemoEvent(subscriptionId, ProviderEventType.SubscriptionActivated, amount, currency, utcNow),
-            CheckoutOutcome.Decline => CreateDemoEvent(subscriptionId, ProviderEventType.PaymentFailed, amount, currency, utcNow),
+            CheckoutOutcome.Success => CreateDemoEvent(purchaseId, ProviderEventType.PaymentSucceeded, amount, currency, utcNow),
+            CheckoutOutcome.Decline => CreateDemoEvent(purchaseId, ProviderEventType.PaymentFailed, amount, currency, utcNow),
             // A real provider that errors out or times out never successfully delivers a
             // checkout-completed webhook at all — modeled here as "no event produced."
             CheckoutOutcome.ProviderError or CheckoutOutcome.Timeout => null,
             _ => throw new ArgumentOutOfRangeException(nameof(outcome)),
         };
 
-    public ProviderEvent CreateDemoEvent(Guid subscriptionId, ProviderEventType type, decimal amount, string currency, DateTime utcNow)
+    public ProviderEvent CreateDemoEvent(Guid purchaseId, ProviderEventType type, decimal amount, string currency, DateTime utcNow)
     {
         var providerEventId = $"fake_evt_{Guid.NewGuid():N}";
         var payload = JsonSerializer.Serialize(new
         {
             id = providerEventId,
             type = type.ToString(),
-            subscriptionId,
+            purchaseId,
             amount,
             currency,
             timestamp = utcNow,
         });
 
-        return new ProviderEvent(providerEventId, type, subscriptionId, amount, currency, utcNow, payload);
+        return new ProviderEvent(providerEventId, type, purchaseId, amount, currency, utcNow, payload);
     }
 }

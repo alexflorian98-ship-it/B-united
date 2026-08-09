@@ -43,6 +43,7 @@ public sealed class ListQuestionnairesHandler(DbContext dbContext)
 
             return new QuestionnaireSummaryDto(
                 questionnaire.Id,
+                questionnaire.ProgramId,
                 questionnaire.Status.ToString(),
                 questionnaire.DefaultLanguage,
                 title,

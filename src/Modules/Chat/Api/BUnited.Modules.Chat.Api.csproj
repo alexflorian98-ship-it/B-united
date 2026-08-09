@@ -4,6 +4,11 @@
     <ProjectReference Include="..\Application\BUnited.Modules.Chat.Application.csproj" />
     <ProjectReference Include="..\Infrastructure\BUnited.Modules.Chat.Infrastructure.csproj" />
     <ProjectReference Include="..\Contracts\BUnited.Modules.Chat.Contracts.csproj" />
+    <ProjectReference Include="..\..\Identity\Contracts\BUnited.Modules.Identity.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <PropertyGroup>

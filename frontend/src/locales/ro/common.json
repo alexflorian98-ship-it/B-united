@@ -21,6 +21,9 @@
   "nav": {
     "mainNavigation": "Navigare principală",
     "adminNavigation": "Navigare admin",
+    "openAdmin": "Administrare",
+    "adminShort": "Admin",
+    "backToApp": "Înapoi în aplicație",
     "openMenu": "Deschide meniul",
     "closeMenu": "Închide meniul",
     "home": "Acasă",
@@ -32,16 +35,59 @@
     "profile": "Profil",
     "dashboard": "Panou principal",
     "questionnaires": "Chestionare",
-    "subscribers": "Abonați",
-    "notifications": "Notificări",
-    "audit": "Audit",
-    "settings": "Setări"
+    "clients": "Clienți",
+    "audit": "Audit"
   },
   "errors": {
     "validationFailed": "Unele câmpuri necesită atenția ta.",
     "internalServerError": "A apărut o problemă la noi. Te rugăm să încerci din nou.",
     "notFound": "Nu am găsit ce căutai.",
-    "rateLimitExceeded": "Prea multe încercări. Te rugăm să aștepți puțin și să încerci din nou."
+    "rateLimitExceeded": "Prea multe încercări. Te rugăm să aștepți puțin și să încerci din nou.",
+    "billing": {
+      "programNotPublished": "Acest program nu este încă publicat.",
+      "programOfferAlreadyActive": "Acest program are deja o ofertă activă.",
+      "programIdRequired": "Selectează un program.",
+      "amountMustBePositive": "Suma trebuie să fie mai mare decât zero.",
+      "currencyRequired": "Moneda este obligatorie.",
+      "currencyInvalid": "Folosește un cod de monedă din 3 litere (ex. RON).",
+      "programOfferHasNoPrice": "Această ofertă nu are încă un preț — setează unul înainte de activare.",
+      "programOfferConcurrencyConflict": "Această ofertă a fost modificată de altcineva. Reîmprospătează și încearcă din nou.",
+      "programAlreadyOwned": "Deții deja acest program.",
+      "invalidCheckoutOutcome": "Rezultat de finalizare a comenzii invalid.",
+      "invalidStatusTransition": "Această acțiune nu este permisă pentru starea curentă a achiziției."
+    },
+    "contentItem": {
+      "languageRequired": "Limba este obligatorie.",
+      "titleRequired": "Titlul este obligatoriu.",
+      "videoReferenceInvalid": "Aceasta nu pare o referință video validă.",
+      "videoReferenceRequired": "O referință video este obligatorie pentru un element video.",
+      "bodyRequired": "Conținutul textual este obligatoriu pentru un element de tip text.",
+      "videoReferenceNotAllowed": "O referință video nu este permisă pentru acest tip de element.",
+      "bodyNotAllowed": "Conținutul textual nu este permis pentru acest tip de element.",
+      "reorderSetMismatch": "Cererea de reordonare nu corespunde setului curent de elemente. Reîncarcă pagina și încearcă din nou.",
+      "notAVideo": "Acest element de conținut nu este un video.",
+      "notAQuiz": "Acest element de conținut nu este un quiz."
+    },
+    "quiz": {
+      "noQuestions": "Acest quiz nu are întrebări de trimis.",
+      "answerSetMismatch": "Răspunsurile tale nu corespund întrebărilor curente ale acestui quiz. Reîncarcă pagina și încearcă din nou.",
+      "questionHasNoCorrectOption": "Una dintre întrebările acestui quiz nu are încă un răspuns corect setat.",
+      "answerOptionInvalid": "Unul dintre răspunsurile trimise nu aparține întrebării sale."
+    },
+    "quizQuestion": {
+      "languageRequired": "Limba este obligatorie.",
+      "textRequired": "Textul întrebării este obligatoriu.",
+      "reorderSetMismatch": "Cererea de reordonare nu corespunde întrebărilor curente ale quizului. Reîncarcă pagina și încearcă din nou."
+    },
+    "quizOption": {
+      "languageRequired": "Limba este obligatorie.",
+      "labelRequired": "Eticheta opțiunii este obligatorie.",
+      "reorderSetMismatch": "Cererea de reordonare nu corespunde opțiunilor curente ale întrebării. Reîncarcă pagina și încearcă din nou.",
+      "correctAnswerAlreadySet": "Această întrebare are deja un răspuns corect — șterge-l înainte de a marca o altă opțiune ca fiind corectă."
+    },
+    "identity": {
+      "lastAdministratorProtected": "Rolul ultimului Administrator rămas nu poate fi eliminat."
+    }
   },
   "notFound": {
     "title": "Pagina nu a fost găsită",
@@ -57,8 +103,5 @@
     "title": "Autentificare necesară",
     "description": "Trebuie să fii conectat pentru a vedea această pagină.",
     "goToLogin": "Conectează-te"
-  },
-  "comingSoon": {
-    "description": "Această funcționalitate nu este încă disponibilă — urmează într-o actualizare viitoare."
   }
 }

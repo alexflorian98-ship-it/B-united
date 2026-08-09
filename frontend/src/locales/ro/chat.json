@@ -1,1 +1,33 @@
-{}
+{
+  "rooms": {
+    "General": "General",
+    "Psychology": "Psihologie",
+    "Sport": "Sport",
+    "Nutrition": "Nutriție",
+    "Business": "Business",
+    "FinancialEducation": "Educație Financiară"
+  },
+  "locked": "Blocat",
+  "selectRoom": "Selectează o cameră disponibilă a programului",
+  "privacyNotice": {
+    "title": "Spațiu comun al programului",
+    "body": "Acest spațiu este vizibil clienților care dețin programul asociat. Nu posta informații medicale, financiare sau personale sensibile."
+  },
+  "unknownUser": "Utilizator necunoscut",
+  "pinned": "Fixat",
+  "messageDeleted": "Acest mesaj a fost șters de un moderator.",
+  "report": "Raportează",
+  "messagePlaceholder": "Scrie un mesaj…",
+  "send": "Trimite",
+  "reportModal": {
+    "title": "Raportează mesajul",
+    "reason": "Motiv",
+    "reasons": {
+      "spam": "Spam",
+      "harassment": "Hărțuire",
+      "sensitiveInfo": "Informații sensibile",
+      "other": "Altceva"
+    },
+    "submit": "Trimite raportarea"
+  }
+}

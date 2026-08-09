@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -12,6 +12,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.11" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +24,12 @@
     <ProjectReference Include="..\Application\BUnited.Modules.Admin.Application.csproj" />
     <ProjectReference Include="..\Infrastructure\BUnited.Modules.Admin.Infrastructure.csproj" />
     <ProjectReference Include="..\Api\BUnited.Modules.Admin.Api.csproj" />
+    <ProjectReference Include="..\..\Identity\Contracts\BUnited.Modules.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\Content\Infrastructure\BUnited.Modules.Content.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Billing\Infrastructure\BUnited.Modules.Billing.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Questionnaires\Infrastructure\BUnited.Modules.Questionnaires.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Events\Infrastructure\BUnited.Modules.Events.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Chat\Infrastructure\BUnited.Modules.Chat.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -604,13 +604,32 @@ this.
   - [ ] P2.35.a Test playback URL denied when access stub returns false — not automated, see above
   - [ ] P2.35.b Test playback URL issued (short-lived) when access stub returns true — not automated (live-verified only); "short-lived" doesn't apply to the YouTube embed URL per ADR-005's documented gap
 
+### 2.F Post-launch addition: Quiz content-item type (2026-08-10, out of original V1 scope)
+
+> §18-22 of docs/PROMPT.md states V1 supports only `Video`/`RichText` content-item types and explicitly says new types should be added "as explicit enum members + handlers, not a plugin system" — this addition follows that exact stated extension mechanism at the user's explicit request, rather than silently bypassing the documented boundary. Distinct from the Questionnaires module (open-ended, expert-reviewed): a Quiz is auto-scored, single-correct-answer/single-select multiple choice, authored inline in the program editor.
+
+- [x] P2.36 `ContentItemType.Quiz` domain model — `QuizQuestion`/`QuizQuestionTranslation`/`QuizOption`/`QuizOptionTranslation` (mirroring `Questionnaires.Question`/`QuestionOption`'s shape) plus `QuizOption.IsCorrect` (the first "correct answer" concept anywhere in this codebase) and an append-only `QuizAttempt` (owned by Content, not Progress, since grading requires the correct-answer data only Content has). Migration `AddQuizContentModel` (renamed 2026-08-10 from `SyncProgramCommerceModel`, which never matched its quiz-only content — see `docs/IMPLEMENTATION_PLAN.md` Slice A0) applied and verified against the real local `bunited` Postgres DB (all 5 `quiz_*` tables confirmed present).
+- [x] P2.37 Admin quiz authoring — 8 new endpoints on `AdminContentController` (add/translate/delete/reorder for both questions and options) under the existing `content.edit` policy; `AddQuizOptionHandler` enforces exactly one `IsCorrect=true` per question at add-time (`QUIZ_OPTION_ALREADY_HAS_CORRECT_ANSWER` on a second attempt) — there is no toggle-correct endpoint, changing the correct answer requires delete+re-add, a real documented UX limitation, not a bug. `GetProgramDetailHandler`/`ProgramDetailDto` extended to include quiz questions/options **with** `IsCorrect` (admin-only — a real gap found by the Phase 3 UI slice and closed same-day: the admin builder had no way to show current quiz state after a page refresh without this).
+- [x] P2.38 Client-facing quiz read + grading — `GetPublishedProgramDetailHandler` includes quiz question/option **text** for every caller regardless of ownership (not paywall-gated, unlike Body/media) but `IsCorrect` is stripped at the query-projection level, never even loaded into memory for this path, let alone serialized. New `SubmitQuizAttemptHandler`/`POST /api/v1/content/content-items/{id}/quiz/submit`: resolves `ContentItem → Section → Program` server-side, gates on `IProgramAccessContext.RequireProgramAccessAsync` (same pattern as `GetVideoPlaybackHandler`), grades server-side (never trusts a client-reported score), validates every submitted option belongs to the claimed question via `QuizQuestion.ContentItemId` join (rejects tampering — an option id from a different content item's question — rather than silently mis-scoring), rejects a partial/mismatched answer set (`QUIZ_ANSWER_SET_MISMATCH`), persists an append-only `QuizAttempt` per submission (retakes allowed, prior attempts preserved).
+- [x] P2.39 Admin quiz builder UI — `adminContentApi.ts`/`AdminProgramEditorPage.tsx` gain a `QuizBuilder` for add/edit/delete/reorder of questions and options, a "mark as correct" checkbox reflecting the real single-correct-per-question backend constraint, new `admin:content.quiz.*` locale keys.
+- [x] P2.40 Client quiz-taking UI — `ProgramPlayerPage.tsx` renders each question as a `<fieldset>`/`<legend>`-grouped native radio-button set (keyboard-accessible by construction), a Submit button gated client-side on every question being answered, post-submit correct/incorrect-per-question feedback plus overall score, a retake action, and the existing `progressApi.markCompleted(...)` call on successful submission (same completion call RichText already makes — no Progress-module backend changes needed for this whole feature). New `content:quiz.*` locale keys.
+- [x] P2.41 Tests — `QuizFlowTests.cs` (8 tests): admin single-correct-option enforcement, question-reorder set-mismatch rejection, admin read includes `IsCorrect`, client read never exposes `IsCorrect` (including a reflection-based regression guard on the DTO shape itself), grading correctness for mixed correct/incorrect answers, cross-program access denial on submit, tampering rejection (an option id from a different content item's question), retake creates a new attempt without losing history. Live-verified end-to-end via curl against the real API/DB for every one of these scenarios, by both the implementing agents and independently by the coordinating session, with exact score/response-shape matches each time.
+
+Verification: `dotnet build BUnited.sln` 0 warnings/errors; `dotnet test BUnited.sln` 333/333 passing (8 new, zero regressions); frontend `tsc -b`/`vite build`/60 tests/locale-parity all pass.
+
 ---
 
-## Phase 3 — Simulated billing and real local access
+## Phase 3 — Program commerce and per-program access
 
-Deliverable: the full subscription and entitlement lifecycle is demonstrable without
-external credentials, and only locally valid subscribers can access protected platform
-functionality. Provider-specific production integrations are deferred to Category B.
+Revised deliverable: admins create one-time offers for individual programs; clients can
+purchase programs separately; validated payment events grant permanent access only to
+the purchased program. Provider-specific production integrations are deferred to Category B.
+
+> Architecture correction (2026-08-09): P3.01–P3.32 below document the already-built
+> global recurring-subscription implementation. Their completed state is retained as
+> historical evidence, but `Plan`/`Subscription`/`SubscriptionPeriod`/`PlatformAccess`
+> are superseded by ADR-003 and are not the target V1 model. P3.33 onward migrates the
+> product to one-time `ProgramOffer`/`Purchase`/`ProgramEntitlement` behavior.
 
 ### 3.A Schema (§15)
 
@@ -733,6 +752,81 @@ functionality. Provider-specific production integrations are deferred to Categor
   - [x] P3.31.c Test duplicate and out-of-order fake events through the real HTTP/application pipeline — live-verified via curl against the real `/billing/webhooks/fake` endpoint (not just the in-process handler)
 - [x] P3.32 Demo-provider production safety gate
   - [x] P3.32.a Fail application startup in `Production` when any fake payment/email/video/storage adapter is registered — **video is not gated**: `YouTubeVideoProvider` (ADR-005) is a real, working integration choice, not a simulation — there is nothing "fake" about it to gate. Payment (`FakePaymentProvider`) and email (`LoggingIdentityEmailSender`, `LoggingNotificationSender`) are gated via a shared `IDemoOnlyAdapter` marker interface; no fake storage adapter exists yet (Files module is still an empty scaffold) so there's nothing to mark there either. Live-verified: booting with `ASPNETCORE_ENVIRONMENT=Production` throws `InvalidOperationException` naming all three real demo adapters and the process never starts listening; `Development` boots normally.
+
+### 3.G Architecture correction: one-time program commerce
+
+> **Slice boundary note (2026-08-09, superseded — kept for history):** the first implementation
+> slice covered only P3.33/P3.34/P3.40 plus the Billing-internal checkout/webhook rewrite and the
+> minimum Content/Events cutover needed to keep the solution building. Every item this note
+> originally listed as deferred (P3.35-P3.37 admin offers/catalogue, P3.41 Progress, P3.42
+> Questionnaires, P3.43 Events/Chat, P3.44 frontend) was completed in five further slices the same
+> day, each independently build+test+live-verified before the next began. P3.38.d/P3.39.c's
+> concurrent-delivery gap was closed 2026-08-09 (a real 500-error bug was found and fixed while
+> closing it — see their notes below), and P3.45's full acceptance sweep (empty-DB migration
+> chain, consolidated Chat/Events journey) was completed the same day. As of 2026-08-09 the only
+> remaining open item in this entire section is P3.34.b (flagged, accepted data-loss deviation —
+> not a gap requiring further work, a documented decision).
+
+- [x] P3.33 Replace the global subscription model with program-scoped commerce
+  - [x] P3.33.a Introduce `ProgramOffer`, `ProgramPrice`, `Purchase`, `PurchaseStatus` and `ProgramEntitlement` using the schema and ownership rules from ADR-003
+  - [x] P3.33.b Use opaque `ProgramId` references across Billing/Content boundaries and prohibit Billing from referencing Content Domain or Infrastructure
+  - [x] P3.33.c Add database constraints and indexes for active offers, immutable purchase price snapshots, provider identifiers and unique `(UserId, ProgramId)` entitlements
+  - [x] P3.33.d Remove recurring-only concepts from the target model: trials, billing intervals, subscription periods, grace periods, cancellation-at-period-end and automatic expiration
+- [ ] P3.34 Design and implement a safe migration from the existing billing schema
+  - [x] P3.34.a Define how the seeded `Standard` plan and any existing demo subscriptions map to programs, or explicitly classify them as disposable demo data — classified disposable; recorded in a prominent comment in the migration file and in this note
+  - [ ] P3.34.b Add forward-only migrations that preserve payment/invoice/audit history and never silently grant all programs — **amended, not fully met:** `payments`/`invoices`/`webhook_events` tables are preserved (columns repointed to `purchase_id`), but their pre-migration demo *rows* are deleted, not preserved — the real Postgres `bunited` dev DB had legacy `subscription_id` values with no corresponding `Purchase` row, which would otherwise violate the new NOT NULL `fk_*_purchases_purchase_id` constraints. This was a genuine blocker discovered during real-database verification (not anticipated in the original plan text), addressed the same way as the confirmed Plan/Subscription disposal (documented in the migration file); no real subscriber/payment data exists yet so nothing of business value was lost, but it is a deviation from "preserve ... history" as literally written and is flagged here rather than silently accepted.
+  - [x] P3.34.c Remove obsolete registrations, options, DTOs and endpoints only after the new flow is operational — done in one slice rather than staged, since this is the only place using them
+  - [x] P3.34.d Verify clean-database migration and upgrade migration from the current schema — both verified for real: upgrade against the real local `bunited` Postgres DB, and a clean apply against a throwaway `bunited_clean` Postgres 16 database (Docker), all 10 migrations in history applying cleanly from empty
+- [x] P3.35 Admin program-offer management API — implemented in the second slice, live-verified again 2026-08-09 (create → activate → price-update round trip via curl against the real API/DB, catalogue reflects the new price immediately)
+  - [x] P3.35.a `AdminBillingController`: `POST/GET offers`, `GET offers/{id}`, `PUT offers/{id}/price`, `POST offers/{id}/activate|deactivate`, all behind the existing `billing.manage` policy
+  - [x] P3.35.b `CreateProgramOfferHandler` validates positive amount, ISO currency, program existence/published status via `IProgramLookup`, and rejects a duplicate active offer; `ProgramOfferStatusHandler` uses optimistic concurrency (xmin), surfaced as `PROGRAM_OFFER_CONCURRENCY_CONFLICT`
+  - [x] P3.35.c `UpdateProgramOfferPriceHandler` appends a new `ProgramPrice` row rather than mutating an existing one — verified a completed purchase keeps its original snapshotted amount after a later price change
+  - [x] P3.35.d `program_offer.created/price_changed/activated/deactivated` audit actions, metadata-only (no payment data)
+- [x] P3.36 Admin commercial UI in the program workflow
+  - [~] P3.36.a **Partial, different shape than originally specified**: rather than embedding the commercial section inside the program editor itself, offer create/price-update/activate/deactivate live on the dedicated `AdminBillingListPage` (`/admin/billing`), which lists offers by `programId`. Functionally equivalent (admins can manage every program's commercial state from one screen) but not physically inside `AdminProgramEditorPage` — flagged as a deliberate UX deviation, not a gap, since the plan didn't mandate the exact screen location.
+  - [x] P3.36.b Loading (`Skeleton`), empty (`EmptyState`), validation (zod + `applyApiErrorToForm`), conflict (409 xmin mismatch surfaces as a field/form error), success (`Alert tone="success"`) and unauthorized (route already gated on `billing.manage`) states all present on the create-offer/update-price forms
+  - [x] P3.36.c `AdminBillingListPage` offers section: filtering is server-side (`GET /admin/billing/offers`), links each purchase row to `/admin/billing/purchases/{id}` detail
+  - [x] P3.36.d `admin.json` `billing.createOffer.*`/`billing.updatePrice.*` keys added to both `en`/`ro` in the same change, verified via `check-locale-parity.mjs`; existing responsive/accessible `Input`/`Button`/`Card` primitives reused, no bespoke styling
+- [x] P3.37 Program catalogue and commercial detail contract — implemented in the second slice
+  - [x] P3.37.a `ListPublishedProgramsHandler`/`GetPublishedProgramDetailHandler` return `ActiveOffer{Amount,Currency}?` (via `IProgramOfferLookup`) and `OwnershipState` (via `IProgramAccessContext`); detail handler strips `Body`/`MediaAssetId` for non-owners and anonymous callers, structure/titles stay visible to everyone — covered by `Non_owning_and_anonymous_callers_never_see_body_or_media_content`
+  - [x] P3.37.b Frontend `ProgramsPage`/`ProgramDetailPage` show Buy/View for unowned, Start/Continue/Completed for owned (P3.44 frontend slice)
+  - [x] P3.37.c `CreateProgramPurchaseHandler` resolves the active offer/price server-side; no active offer means checkout has nothing to resolve and fails closed; existing entitlements are never affected by offer/price changes (verified by the price-change-after-purchase test)
+- [x] P3.38 One-time checkout per program
+  - [x] P3.38.a Create checkout from a server-resolved active `ProgramOffer`/`ProgramPrice`; never accept amount, currency or `ProgramId` as trusted browser values — `CreateProgramPurchaseCommand` carries no amount/currency field at all, only `ProgramId` (route) + `Outcome` (demo-only)
+  - [x] P3.38.b Create/reuse a pending purchase safely and prevent accidental duplicate purchase of an already entitled program — reuse implemented + partial unique `(UserId, ProgramId) WHERE Pending` index; `PROGRAM_ALREADY_OWNED` rejects an already-owned program
+  - [x] P3.38.c Treat checkout success as informational and grant no client-side access — response only echoes `Purchase.Status`; granting happens exclusively inside `ProcessProviderEventHandler`
+  - [x] P3.38.d Adapt the deterministic fake provider to success, decline, provider error, timeout, retry and duplicate delivery for purchases — success/decline/provider-error/timeout covered by `FakePaymentProvider`/tests. Retry/concurrent duplicate delivery: a real bug was found and fixed 2026-08-09. A 12-way parallel `Task.WhenAll` of identical webhook deliveries against the real local Postgres API showed **11 of 12 requests returning 500**, not the intended graceful idempotent response — `GrantOrReactivateEntitlementAsync` did an early nested `SaveChangesAsync` (contradicting the class's own "same transaction" doc comment); when that failed and was caught, the outer `HandleAsync` still re-attempted `SaveChangesAsync` on the same already-tracked `WebhookEvent`/`Payment`/`Invoice` entities from the aborted transaction, which then failed a second time on the `WebhookEvent.ProviderEventId` unique constraint — uncaught, surfaced as 500. Fixed by removing the inner save (the whole unit of work now saves exactly once, matching the doc comment) and replacing it with a single outer `catch (DbUpdateException)` that distinguishes a same-event race (checks `WebhookEvent` existence, safe no-op) from a same-entitlement-different-event race (detaches only the conflicting `ProgramEntitlement` add and retries once, so the `WebhookEvent`/`Payment`/`Invoice` audit data for that event is never silently lost). Re-verified twice after the fix: 12/12 and 12/12 concurrent requests both returned 204 with 0 server errors, exactly one `webhook_events` row and one `Active` `program_entitlements` row each time.
+- [x] P3.39 Webhook fulfilment and permanent entitlement
+  - [x] P3.39.a Process validated provider events idempotently and mark the correlated purchase `Succeeded`, `Failed`, `Refunded` or `Chargeback`
+  - [x] P3.39.b Grant exactly one permanent `ProgramEntitlement` for the purchase's `UserId` and `ProgramId` in the same transaction as successful fulfilment
+  - [x] P3.39.c Handle concurrent duplicate and out-of-order events without duplicate purchases, payments, invoices or entitlements — sequential duplicate delivery and out-of-order events tested and pass (`ProgramCommerceFlowTests`); true concurrent duplicate delivery fixed and live-verified, see P3.38.d for the full account of the bug found and fixed. No automated SQLite unit test was added for the interleaved-race path specifically — SQLite's single-writer model can't produce a genuine concurrent race, and this codebase's established precedent (e.g. Events' P5.06.c) is to rely on live verification against real Postgres for genuinely concurrency-dependent behavior rather than build a synthetic/non-representative unit test. The live-Postgres evidence above is the regression coverage for this item.
+  - [x] P3.39.d Implement audited refund/chargeback/admin-revocation behavior while preserving account and historical learning data — refund/chargeback tested; status flips only, no row deletion. "Admin-revocation" (an explicit admin action independent of a payment event) is not implemented — only provider-event-driven revocation exists this slice
+- [x] P3.40 Replace global access with `IProgramAccessContext`
+  - [x] P3.40.a Define `HasProgramAccessAsync(userId, programId)` and `RequireProgramAccessAsync(userId, programId)` in the allowed shared contract layer — `src/BuildingBlocks/Application/Access/IProgramAccessContext.cs`, `RequireProgramAccessAsync` as a default interface method
+  - [x] P3.40.b Implement the contract in Billing and retire `HasActivePlatformAccessAsync` after all consumers migrate — `BillingProgramAccessContext`; old `IAccessContext`/`BillingAccessContext` deleted (both consumers, Content and Events, migrated first)
+  - [x] P3.40.c Return stable `PROGRAM_ACCESS_REQUIRED` and `PROGRAM_ALREADY_OWNED` errors with localized frontend handling — error codes defined as `ProgramAccessErrorCodes` constants; localized frontend handling is explicitly deferred (P3.44, frontend out of scope this slice)
+- [x] P3.41 Enforce program access throughout Content and Progress
+  - [x] P3.41.a Catalogue/detail preview stays open (P3.37.a); video playback gated since the first slice; all 4 Progress handlers (`RecordVideoProgressHandler`, `MarkContentCompletedHandler`, `GetContentProgressHandler`, `GetSectionProgressHandler`) now require program access via a new `IContentItemProgramLookup` cross-module contract — closed a real, previously-exploitable gap where any authenticated user could read/write any user's progress on any content item regardless of ownership
+  - [x] P3.41.b Content's `GetVideoPlaybackHandler` resolves `ContentItem -> Section -> Program` server-side; Progress's 4 handlers resolve the owning `ProgramId` via `IContentItemProgramLookup` before touching any row; both throw `NotFoundAppException` for an unresolvable id rather than silently trusting it
+  - [x] P3.41.c Cross-program negative tests added: `Video_playback_requires_access_to_the_owning_program_not_just_any_program` (Content, added 2026-08-09 — owning a different program, and owning none at all, are both denied; owning the actual program succeeds) plus 4 cross-program-denial tests covering all Progress handlers in `ProgressFlowTests.cs`
+- [x] P3.42 Associate Questionnaires and Guidance with programs
+  - [x] P3.42.a Add/verify `ProgramId` ownership for questionnaires and submissions with a safe data migration — `Questionnaire.ProgramId` (plain `Guid`, no FK, same convention as `ProgramOffer.ProgramId`/`Purchase.ProgramId`); `AddProgramIdToQuestionnaire` migration adds it `NOT NULL` directly (verified against the real local Postgres dev database first: `questionnaires`/`questions`/`questionnaire_submissions`/`questionnaire_answers`/`guidance_responses`/`guidance_follow_ups` all had zero rows, so no backfill was needed); `CreateQuestionnaireCommand` now requires `ProgramId`, validated via `IProgramLookup` (must exist and be `Published`, mirroring `CreateProgramOfferHandler`)
+  - [x] P3.42.b Require program access for client draft, resume, submit, submission status, guidance read and follow-up operations — `GetClientQuestionnaireHandler` (full question content), `StartOrResumeSubmissionHandler`, `SaveDraftAnswersHandler`, `SubmitQuestionnaireHandler`, `GetGuidanceHandler`, `SubmitFollowUpHandler`, `GetMySubmissionHandler` all call `IProgramAccessContext.RequireProgramAccessAsync` in addition to existing ownership-by-`UserId` checks. `ListMySubmissionsHandler` filters out (does not throw for) submissions whose program is no longer owned, mirroring Progress's `GetContentProgressHandler` multi-row precedent. Two deliberate exceptions, documented in each handler's XML doc: `ListPublishedQuestionnairesHandler` (browsable catalogue metadata only, mirrors Content's open catalogue) and `ExportMyQuestionnaireDataHandler` (GDPR-style full personal-data export, must return complete history regardless of current entitlement) stay ungated. Live-verified end-to-end via curl against the real API/DB: consent → denied start/detail without a purchase (`PROGRAM_ACCESS_REQUIRED`) → real `FakePaymentProvider` checkout → start/answer/submit/guidance-read/follow-up all succeed post-purchase → expert queue/guidance-publish path unaffected.
+  - [x] P3.42.c Preserve expert permissions and high-sensitivity ownership checks independently of commercial entitlement — `ExpertQuestionnairesController` and its handlers (queue, submission detail, guidance draft/publish, follow-up answer) left completely untouched; live-verified an Expert-role user with no purchase for the program can still review/guide a submission.
+- [x] P3.43 Associate Chat and Events with programs — verified with a clean solution build, 19 Chat tests, 27 Events tests, and the applied `AssociateEventsWithPrograms` forward migration.
+  - [x] P3.43.a Add program ownership to chat rooms and require program access for room discovery, history, posting and reporting — active rooms expose `hasAccess`; all room payload/mutation handlers enforce `IProgramAccessContext`; moderator handlers remain independently permissioned.
+  - [x] P3.43.b Support public-authenticated events or explicit program associations; require access to at least one associated program for restricted registration — zero associations remain public-authenticated; restricted registration accepts ownership of any associated program.
+  - [x] P3.43.c Migrate or explicitly reseed existing category chat rooms and existing events without granting unintended access — six legacy rooms are preserved inactive, and `AssociateEventsWithPrograms` safely creates/records the event join table for both clean and drifted development databases.
+- [x] P3.44 Client purchase/paywall experience — frontend production build, 59 tests, and Romanian/English locale parity verified.
+  - [x] P3.44.a Add centralized handling for `PROGRAM_ACCESS_REQUIRED` with a clear localized paywall and Buy CTA — catalogue/detail commercial state drives the CTA and the player handles both ownership state and stable access errors.
+  - [x] P3.44.b Add checkout processing/success/failure states that refresh server-owned purchase and entitlement state — checkout shows pending/error UI and invalidates program, purchase, and entitlement queries after success.
+  - [x] P3.44.c Add My Purchases/invoices UI; remove recurring subscription controls and terminology — client and admin routes/types/UI now use purchases, offers, permanent entitlements, invoices, refunds and chargebacks only.
+- [x] P3.45 Program-commerce security and acceptance suite
+  - [x] P3.45.a Test tampered offer/price/program identifiers, cross-user purchase access and cross-program entitlement bypass — covered per-module as each slice landed: `ProgramCommerceFlowTests` (tampered checkout amount/currency/program ignored, cross-user IDOR on purchase/entitlement ids denied), `ContentFlowTests.Video_playback_requires_access_to_the_owning_program_not_just_any_program`, 4 cross-program-denial tests in `ProgressFlowTests`, cross-program tests in `QuestionnaireFlowTests`, plus the consolidated live journey below exercising Chat/Events cross-program denial end-to-end.
+  - [x] P3.45.b Test duplicate checkout, concurrent webhook delivery, retry, out-of-order success/refund and price changes after purchase — duplicate checkout/out-of-order/refund/price-change-after-purchase covered by `ProgramCommerceFlowTests`; concurrent webhook delivery: see P3.38.d/P3.39.c — a real bug (11/12 concurrent duplicate deliveries returning 500) was found and fixed 2026-08-09, re-verified twice with 12/12 clean 204 responses against real Postgres.
+  - [x] P3.45.c Test permanent access across time and application restart, plus explicit revocation without historical-data deletion — no expiration field exists on `ProgramEntitlement` at all (permanence by construction, not a timer); the consolidated journey below explicitly confirms refund revokes access (`ownershipState` flips to `NotOwned`, further chat access denied) while the `Purchase` (status `Refunded`), `ProgramEntitlement` (status `Revoked`), chat message history, and event registration rows are all still present in the database, not deleted.
+  - [x] P3.45.d Run focused Billing/Content/Questionnaires/Chat/Events tests, full backend/frontend suites, migration verification and a manual buy-program-A/deny-program-B journey
+    - 2026-08-09 final evidence: solution build 0 warnings/0 errors; **307 backend tests / 59 frontend tests, all passing**; ro/en locale parity passing; frontend `vite build` succeeds. **Migration verification, both directions**: applied cleanly against the real local `bunited` Postgres dev DB (incremental, per-slice, throughout); additionally re-verified from a **truly empty database** this pass — spun up a disposable Postgres 16 container, applied all 12 migrations from scratch in one run (`InitialIdentity` → `AssociateEventsWithPrograms`), confirmed the resulting 50-table schema contains every expected `program_*`/`purchases`/`chat_rooms`/`event_programs` table and zero leftover `plans`/`subscriptions`/old-`entitlements` tables, app started and served `/health/live` with 200. **Consolidated buy-A/deny-B/refund-revoke journey**, run end-to-end via a live HTTP harness against the real API/DB, all 12 assertions passed: bought program A → `ownershipState=Owned` → posting to a program-A-scoped chat room succeeded → posting to a program-B-scoped room denied with `PROGRAM_ACCESS_REQUIRED` → registering for a program-A-restricted event succeeded → registering for a program-B-restricted event denied → demo refund on A succeeded → `ownershipState=NotOwned` → chat room A access now denied → `Purchase` row preserved (`Refunded`) → `ProgramEntitlement` row preserved (`Revoked`) → chat message history preserved → event registration preserved. Test rooms/events deactivated/canceled afterward; no lingering demo-data pollution beyond the pre-existing, already-documented `e2e-*` convention.
   - [x] P3.32.b Add an automated configuration test proving the fail-fast behavior — `ProductionSafetyExtensionsTests` (3 tests: throws in Production with a demo adapter registered, does not throw in Production without one, does not throw outside Production even with one registered)
 
 ---
@@ -809,9 +903,9 @@ Deliverable: expert-led personalization works end-to-end.
 - [x] P4.19 Self-service export of questionnaire/guidance data — `GET /api/v1/questionnaires/export`
   - [x] P4.19.a Implement export endpoint producing the user's own submissions + guidance as JSON — `ExportMyQuestionnaireDataHandler`, always filters on the caller's own `UserId` by construction (never a caller-supplied id)
   - [x] P4.19.b Integration test verifying no other user's data leaks into the export — live-verified (own submissions/answers/guidance only); no dedicated automated test for cross-user export isolation specifically — a narrow gap, the underlying query shape is identical to the already-tested `GetMySubmissionHandler`'s ownership filter
-- [ ] P4.20 Deletion workflow for questionnaire data respecting retention policy — **not built**: P7.06 (the retention policy this depends on) doesn't exist yet, so there is nothing to implement against. Left unchecked, not stubbed.
-  - [ ] P4.20.a Implement deletion/anonymization per the retention policy from P7.06 — blocked on P7.06
-  - [ ] P4.20.b Integration test verifying deletion doesn't break subscription/account integrity — blocked on P7.06
+- [x] P4.20 Deletion workflow for questionnaire data respecting retention policy — built as part of P7.05/P7.06 (Slice 7.B): `QuestionnairesUserDataEraser` (`src/Modules/Questionnaires/Application/UseCases/DataRights/QuestionnairesUserDataParticipant.cs`) hard-deletes the caller's `QuestionnaireSubmission` rows on account deletion; the database cascade (`QuestionnaireAnswerConfiguration`/`GuidanceResponseConfiguration`/`GuidanceFollowUpConfiguration`) removes answers and guidance together with it. Reasoning documented in `docs/DATA_RETENTION_POLICY.md` ("Questionnaires — submissions/answers", "Guidance authored by the Expert").
+  - [x] P4.20.a Implemented per docs/DATA_RETENTION_POLICY.md — hard delete, not anonymize (no legal retention reason identified).
+  - [x] P4.20.b Covered by `DataRightsTests` (Identity.Tests — orchestration, cross-user isolation) and live-verified end to end: a real submission/answer was deleted from Postgres by `POST /api/v1/profile/delete`, while the account's `Purchase`/`ProgramEntitlement` rows and overall account integrity were confirmed intact afterwards.
 
 ### 4.D Crisis-related guardrails (§36)
 
@@ -871,73 +965,75 @@ Deliverable: subscribers can discover and register for live activities.
 
 ### 5.A Schema (§29–31)
 
-- [ ] P5.01 `Event`/`EventTranslation` entities (LocationType, Status enums)
-  - [ ] P5.01.a Define `Event` entity per §29 fields
-  - [ ] P5.01.b Define `EventTranslation`
-  - [ ] P5.01.c EF configuration and migration
-- [ ] P5.02 `EventRegistration` entity + state enum (Registered/Waitlisted/Canceled)
-  - [ ] P5.02.a Define entity with unique (UserId, EventId) constraint
-  - [ ] P5.02.b EF configuration and migration
-- [ ] P5.03 `EventReminder` entity
-  - [ ] P5.03.a Define entity tracking scheduled/sent reminder state per registration
-  - [ ] P5.03.b EF configuration and migration
+- [x] P5.01 `Event`/`EventTranslation` entities (LocationType, Status enums)
+  - [x] P5.01.a `Event` entity: Id, DefaultLanguage, StartsAtUtc, EndsAtUtc, DisplayTimezone, LocationType, Location, MeetingUrl, Capacity, Status, CreatedAt/By, UpdatedAt/By, PublishedAt. `Status` (Draft/Published/Canceled) never persists `Completed` — `EffectiveStatus(utcNow)` derives it from `Published && EndsAtUtc <= utcNow`, avoiding a background sweep job (mirrors Billing's `Entitlement.IsActiveAt`).
+  - [x] P5.01.b `EventTranslation` (Id, EventId, Language, Title, Description) — unique (EventId, Language).
+  - [x] P5.01.c EF configuration + migration `AddEventsModel`, applied to real Postgres and reviewed (all FKs indexed, `xmin` optimistic concurrency on Event/EventRegistration).
+- [x] P5.02 `EventRegistration` entity + state enum (Registered/Waitlisted/Canceled)
+  - [x] P5.02.a One row per (EventId, UserId) — unique index; a cancel-then-re-register flow reactivates the same row (`Reactivate()`) rather than inserting a duplicate.
+  - [x] P5.02.b EF configuration + migration.
+- [x] P5.03 `EventReminder` entity
+  - [x] P5.03.a Rows are created up front at registration time (both 24h/1h offsets, skipping any whose fire time has already passed) with `ScheduledForUtc`/`SentAtUtc` — the job only ever polls, never recomputes schedules.
+  - [x] P5.03.b EF configuration + migration; unique (EventRegistrationId, Type) is the idempotency guard for job re-runs.
 
 ### 5.B Backend logic
 
-- [ ] P5.04 Event authoring endpoints (expert, translations, timezone-aware)
-  - [ ] P5.04.a CRUD endpoints behind `events.manage`
-  - [ ] P5.04.b Validate `StartsAtUtc`/`EndsAtUtc`/`DisplayTimezone` consistency
-- [ ] P5.05 Registration endpoint requiring active `PlatformAccess`
-  - [ ] P5.05.a Implement registration endpoint calling `IAccessContext.RequirePlatformAccessAsync`
-  - [ ] P5.05.b Integration test denying registration without access
-- [ ] P5.06 Capacity + waitlist logic; promote oldest waitlisted user on cancellation
-  - [ ] P5.06.a Implement capacity check → Registered vs Waitlisted assignment
-  - [ ] P5.06.b Implement promotion-on-cancellation logic (oldest waitlisted first)
-  - [ ] P5.06.c Concurrency test: simultaneous registrations near capacity limit
-- [ ] P5.07 Registration closes at event start
-  - [ ] P5.07.a Enforce the cutoff server-side on the registration endpoint
-- [ ] P5.08 Hangfire jobs: 24h and 1h reminders — idempotent, retryable, locale-aware, timezone-aware
-  - [ ] P5.08.a Implement scheduling logic computing reminder fire times from `StartsAtUtc`
-  - [ ] P5.08.b Implement idempotent job execution (checked against `EventReminder` sent state)
-  - [ ] P5.08.c Implement locale-aware, timezone-aware email content
-- [ ] P5.09 Respect notification preferences for reminders
-  - [ ] P5.09.a Check `UserPreference` notification opt-in before sending
-- [ ] P5.10 Outbox events: `EventPublished`, `EventRegistrationCreated`
-  - [ ] P5.10.a Wire both outbox events at their trigger points
+- [x] P5.04 Event authoring endpoints (admin, translations, timezone-aware)
+  - [x] P5.04.a `AdminEventsController` (create/upsert-translation/update-schedule/publish/cancel/list/detail) behind `events.manage`.
+  - [x] P5.04.b `EndsAtUtc > StartsAtUtc` and a real IANA `DisplayTimezone` (validated via `TimeZoneInfo.FindSystemTimeZoneById`) enforced by FluentValidation on both create and schedule-update.
+- [x] P5.05 Registration endpoint requiring active `PlatformAccess`
+  - [x] P5.05.a `RegisterForEventHandler` calls `IAccessContext.HasActivePlatformAccessAsync` and throws `PLATFORM_ACCESS_REQUIRED` (same pattern as Content's video playback gate) — no `RequirePlatformAccessAsync` method exists on the shared `IAccessContext`, so this mirrors Content's existing call-and-throw idiom instead.
+  - [x] P5.05.b `Registration_is_denied_without_active_platform_access` test + live-verified via curl against real Postgres (400 `PLATFORM_ACCESS_REQUIRED` before checkout, 200 immediately after).
+- [x] P5.06 Capacity + waitlist logic; promote oldest waitlisted user on cancellation
+  - [x] P5.06.a Registered vs Waitlisted assigned by comparing the live `Registered` count against `Capacity` (null = unlimited).
+  - [x] P5.06.b `CancelRegistrationHandler` promotes the oldest (`CreatedAt`-ordered) waitlisted registration only when the canceled registration actually held a seat; canceling a waitlisted registration promotes nobody.
+  - [x] P5.06.c `SELECT ... FOR UPDATE` on the event row (PostgreSQL only, skipped on the Sqlite test harness) serializes concurrent registration attempts for the same event within a DB transaction. Not covered by an automated concurrent-load test — the Sqlite unit-test harness has no real concurrent-writer story, and the row lock itself is provider-specific (docs/DEVELOPMENT_INSTRUCTIONS.md §9). Live-verified only sequentially (2 users, capacity 1 → Registered + Waitlisted, confirmed against real Postgres). **Gap**: a true concurrent-load regression test against real Postgres is not written — flagged as residual risk.
+- [x] P5.07 Registration closes at event start
+  - [x] P5.07.a Enforced server-side (`EVENT_REGISTRATION_CLOSED` once `StartsAtUtc <= utcNow`) — `Registration_closes_once_the_event_has_started` test + live-verified.
+- [x] P5.08 Hangfire jobs: 24h and 1h reminders — idempotent, retryable, locale-aware, timezone-aware
+  - [x] P5.08.a Real Hangfire (`Hangfire.AspNetCore` + `Hangfire.PostgreSql`) wired in `EventsModuleExtensions`/`Program.cs` — this is the first real background-job infrastructure in the codebase (the `src/Jobs` scaffold was and remains empty/unused). Recurring job `send-due-event-reminders` runs every 5 minutes via the DI-scoped `IRecurringJobManager` (the static `RecurringJob` API doesn't work with the DI-based `AddHangfire()` overload — found live, see bug log below). Verified live: Hangfire's own `hangfire` schema auto-creates in Postgres on boot, `BackgroundJobServer` starts, and `recurring-job:send-due-event-reminders` is persisted in storage.
+  - [x] P5.08.b `SendDueEventRemindersHandler` claims a reminder (`MarkSent`) before sending — a job crash mid-send leaves it marked sent (safe failure: a missed email, never a duplicate). 6 tests cover: due→sent, triple re-run→still 1 send, already-sent→skipped, opted-out→suppressed-but-marked-sent, canceled-registration→never selected.
+  - [x] P5.08.c Locale: template data carries the event's own default-language title (not the recipient's UI language — no per-user notification-language contract exists yet, documented as-is). Timezone: template data carries the raw `DisplayTimezone` string and UTC instant, not a server-local rendering — actual localized formatting is `LoggingNotificationSender`'s job (still a logging stand-in per ADR-010, same as every other notification type in this codebase).
+- [x] P5.09 Respect notification preferences for reminders
+  - [x] P5.09.a New `Identity.Contracts.INotificationPreferenceLookup` (implemented by `IdentityNotificationPreferenceLookup`, mirroring `IUserLookup`'s cross-module read-only pattern) — checked before sending; opted-out users still get their reminder marked sent (no retry loop) but no email fires. Covered by `Reminder_is_suppressed_but_still_marked_sent_when_user_opted_out`.
+- [~] P5.10 Outbox events: `EventPublished`, `EventRegistrationCreated`
+  - [ ] P5.10.a **Not implemented.** No transactional-outbox infrastructure exists anywhere in this codebase (consistent, pre-existing gap noted in every prior phase's HANDOVER — no `OutboxMessage` table, no dispatcher). `EventStatusHandler.PublishAsync`/`CancelAsync` do write metadata-only `Audit` entries (`event.published`/`event.canceled`, already-existing `AuditActions` constants) in the same request, which is lower-risk than a missing outbox event since there's no downstream consumer yet to miss it.
 
 ### 5.C Client UI
 
-- [ ] P5.11 Event listing + detail screens
-  - [ ] P5.11.a Build listing screen with upcoming/past filter
-  - [ ] P5.11.b Build detail screen with registration status and capacity/waitlist info
-- [ ] P5.12 Registration/waitlist UI with status feedback
-  - [ ] P5.12.a Wire register/cancel actions with immediate status feedback
-  - [ ] P5.12.b Handle waitlist-promotion notification UX
-- [ ] P5.13 Dashboard "upcoming event" card (§41)
-  - [ ] P5.13.a Build the card showing the nearest registered event
+- [x] P5.11 Event listing + detail screens
+  - [x] P5.11.a `EventsListPage` — upcoming/past tab filter, capacity/registered-count, per-user registration-status badge.
+  - [x] P5.11.b `EventDetailPage` — full description, capacity + waitlist counts, join link (shown only once actually `Registered`, not just waitlisted).
+- [x] P5.12 Registration/waitlist UI with status feedback
+  - [x] P5.12.a Register/cancel wired as mutations with immediate query invalidation + an inline success `Alert` distinguishing "Registered" vs "full — waitlisted" feedback.
+  - [~] P5.12.b **Partial.** A promoted user's own `EventDetailPage`/`EventsListPage` reflects the new "Registered" status on next fetch (react-query refetch on focus/navigation), but no push/toast notification is sent *at promotion time* — `CancelRegistrationHandler` schedules the promoted registration's reminders but does not call `INotificationSender`. Documented gap, not wired this pass.
+- [x] P5.13 Dashboard "upcoming event" card (§41)
+  - [x] P5.13.a Added to `ClientHomePage` (still Phase 1's minimal dashboard — the full §41 hero/progress-overview redesign remains a pre-existing, separately-tracked gap, not in this phase's scope) — shows the nearest registered/waitlisted event, its own `DisplayTimezone`, and status.
 
 ### 5.D Admin UI (§52)
 
-- [ ] P5.14 Event list (Title, Date, Type, Registrations, Capacity, Status, Actions)
-  - [ ] P5.14.a Build the table per §52 columns
-- [ ] P5.15 Event editor (translations, date/time, timezone, location, capacity, publication status, reminders)
-  - [ ] P5.15.a Build the editor form with translation switcher (reuse P4.27 pattern)
-  - [ ] P5.15.b Wire timezone-aware date/time inputs
-- [ ] P5.16 Event detail: registered users, waitlist, attendance, reminders
-  - [ ] P5.16.a Build registered-users + waitlist views
-  - [ ] P5.16.b Build reminder-status view
+- [x] P5.14 Event list (Title, Date, Type, Registrations, Capacity, Status, Actions)
+  - [x] P5.14.a `AdminEventsListPage` — exact §52 columns.
+- [x] P5.15 Event editor (translations, date/time, timezone, location, capacity, publication status, reminders)
+  - [x] P5.15.a `AdminEventEditorPage` — translation switcher (ro/en) reusing the ro/en-tab pattern from Content/Questionnaires editors; `AdminNewEventPage` for creation.
+  - [x] P5.15.b Timezone-aware date/time inputs: `<input type="datetime-local">` values are interpreted as wall-clock time in the selected `DisplayTimezone` and converted to/from UTC via `zonedInputValueToUtcIso`/`utcIsoToZonedInputValue` (no timezone npm package is a project dependency yet — implemented with the standard `Intl.DateTimeFormat`-diff trick). Editing the schedule reschedules any still-pending (unsent) `EventReminder` rows to the new fire times; already-sent reminders are left as history (`UpdateEventScheduleHandlerTests`).
+- [x] P5.16 Event detail: registered users, waitlist, attendance, reminders
+  - [x] P5.16.a Registered-users + waitlist lists (email, registered-at) in `AdminEventEditorPage`.
+  - [x] P5.16.b Reminder-status view (recipient, type, scheduled time in the event's own timezone, sent/not-sent) — no separate "attendance" tracking exists (not in the entity model; §29-31 doesn't define an attendance concept beyond registration status).
 
 ### 5.E Tests
 
-- [ ] P5.17 Capacity + waitlist promotion tests
-  - [ ] P5.17.a Full capacity → new registration is waitlisted
-  - [ ] P5.17.b Cancellation → oldest waitlisted user promoted
-- [ ] P5.18 Timezone handling tests (display vs UTC storage)
-  - [ ] P5.18.a Verify storage is UTC and display honors `DisplayTimezone`/user locale
-- [ ] P5.19 Reminder scheduling idempotency tests
-  - [ ] P5.19.a Job re-run does not send duplicate reminders
-- [ ] P5.20 Registration-requires-access tests
-  - [ ] P5.20.a Registration denied for users without active `PlatformAccess`
+- [x] P5.17 Capacity + waitlist promotion tests
+  - [x] P5.17.a `Registration_beyond_capacity_is_waitlisted`.
+  - [x] P5.17.b `Canceling_a_registered_seat_promotes_the_oldest_waitlisted_user` + `Canceling_a_waitlisted_registration_does_not_promote_anyone`.
+- [x] P5.18 Timezone handling tests (display vs UTC storage)
+  - [x] P5.18.a `Storage_is_always_UTC_while_DisplayTimezone_is_kept_separately` (domain) + live-verified via curl/psql that `StartsAtUtc` persists as a UTC instant independent of the chosen `DisplayTimezone`.
+- [x] P5.19 Reminder scheduling idempotency tests
+  - [x] P5.19.a `Re_running_the_job_never_sends_a_duplicate_reminder` (3x re-run → 1 send) + `Already_sent_reminder_is_not_reprocessed`.
+- [x] P5.20 Registration-requires-access tests
+  - [x] P5.20.a `Registration_is_denied_without_active_platform_access`.
+
+20 automated Events tests total (Sqlite-backed, same pattern as Billing/Questionnaires), all passing, plus the full pre-existing 208 backend tests unaffected. Full registration→waitlist→cancel→promotion→re-registration cycle live-verified end-to-end against real Postgres via curl (not just the in-process handler), including confirming reminder rows correctly reschedule on promotion. Frontend: `tsc -b`, `vite build`, all 59 pre-existing component tests, and locale-parity all pass. **No browser-level (Playwright) verification of the Events UI was performed this pass** — no Playwright tool was available in this session; this is a residual verification gap, not a claim of UI correctness beyond build/type success.
 
 ---
 
@@ -947,152 +1043,351 @@ May move after launch under delivery pressure (§69).
 
 ### 6.A Schema (§33)
 
-- [ ] P6.01 Fixed room definitions (General, Psychology, Sport, Nutrition, Business, FinancialEducation) — no dynamic room creation
-  - [ ] P6.01.a Define `Room` entity/enum and seed the 6 fixed rooms
-  - [ ] P6.01.b Confirm no create-room endpoint exists (by design)
-- [ ] P6.02 Message entity (soft delete, pin flag)
-  - [ ] P6.02.a Define entity with `IsDeleted`, `IsPinned` flags
-  - [ ] P6.02.b EF configuration + FK index on `RoomId`
-- [ ] P6.03 Report entity, Mute entity
-  - [ ] P6.03.a Define `Report` entity (message, reporter, reason, status)
-  - [ ] P6.03.b Define `Mute` entity (user, expiry, moderator)
+- [x] P6.01 Fixed room definitions (General, Psychology, Sport, Nutrition, Business, FinancialEducation) — no dynamic room creation
+  - [x] P6.01.a `ChatRoom` is a plain enum (not a DB-backed entity) — there is no create/edit/delete-room use case to support, so a table would only add an unnecessary join for a value that never changes at runtime.
+  - [x] P6.01.b Confirmed by construction: no create-room endpoint exists anywhere in `ChatController`/`AdminChatController`, and the enum has exactly 6 fixed members.
+- [x] P6.02 Message entity (soft delete, pin flag)
+  - [x] P6.02.a `IsDeleted`/`IsPinned` flags, plus `DeletedAtUtc`/`DeletedBy` for the audit trail.
+  - [x] P6.02.b EF configuration + index on `(Room, CreatedAt)` (the actual room-history query pattern) and `UserId`.
+- [x] P6.03 Report entity, Mute entity
+  - [x] P6.03.a `Report` (MessageId, ReporterId, Reason, Status: Open/Dismissed/Resolved, ResolvedAt/By).
+  - [x] P6.03.b `Mute` (UserId, ModeratorId, Reason, ExpiresAtUtc) — no `IsActive` flag; `IsActiveAt(utcNow)` derives it, the same "no background sweep job" pattern as Billing's `Entitlement`/Events' `Event`.
 
 ### 6.B Backend
 
-- [ ] P6.04 SignalR hub (fallback to polling if it becomes a blocker)
-  - [ ] P6.04.a Implement the SignalR hub for message broadcast per room
-  - [ ] P6.04.b Time-box the effort; fall back to a polling endpoint if SignalR risks the schedule
-- [ ] P6.05 Paginated message history endpoint
-  - [ ] P6.05.a Implement cursor/offset-based pagination for room history
-- [ ] P6.06 Basic unread-state tracking
-  - [ ] P6.06.a Implement last-read-timestamp tracking per user per room
-- [ ] P6.07 Pin/unpin endpoint (moderation permission)
-  - [ ] P6.07.a Implement endpoint behind `chat.moderate`
-- [ ] P6.08 Delete-message moderation endpoint (soft delete)
-  - [ ] P6.08.a Implement soft-delete endpoint behind `chat.moderate`
-  - [ ] P6.08.b Emit `chat.message_moderated` audit event
-- [ ] P6.09 Temporary mute endpoint
-  - [ ] P6.09.a Implement mute endpoint with expiry, behind `chat.moderate`
-  - [ ] P6.09.b Emit `chat.user_muted` audit event
-- [ ] P6.10 Report-message endpoint
-  - [ ] P6.10.a Implement report-submission endpoint behind `chat.use`
-- [ ] P6.11 Anonymize deleted user's identity in message history (preserve continuity, §66)
-  - [ ] P6.11.a Implement anonymization on account deletion, preserving message text/order
-  - [ ] P6.11.b Test that room history remains coherent after anonymization
+- [~] P6.04 SignalR hub (fallback to polling if it becomes a blocker)
+  - [ ] P6.04.a **Not built.** Went straight to polling — the spec explicitly permits this ("polling is acceptable if SignalR becomes a launch blocker — do not delay release for real-time perfection"), and given this session's already-large scope (two full phases), SignalR's added complexity (hub auth, per-room groups, connection lifecycle on the frontend) wasn't judged worth it for a V1 community feature. Revisit if real-time latency becomes a real user complaint.
+  - [x] P6.04.b Frontend polls `GET /chat/rooms` and `GET /chat/rooms/{room}/messages` every 5s via TanStack Query's `refetchInterval` while `ChatPage` is mounted.
+- [x] P6.05 Paginated message history endpoint
+  - [x] P6.05.a Cursor-based (`before` = oldest-loaded message's `CreatedAt`), 50 messages/page, oldest-first for display.
+- [x] P6.06 Basic unread-state tracking
+  - [x] P6.06.a `ChatReadState` (UserId, Room) → `LastReadAtUtc`; unread count = messages newer than that timestamp. `ChatPage` marks the active room read on room switch.
+- [x] P6.07 Pin/unpin endpoint (moderation permission)
+  - [x] P6.07.a `POST /admin/chat/messages/{id}/pin` and `/unpin`, behind `chat.moderate`.
+- [x] P6.08 Delete-message moderation endpoint (soft delete)
+  - [x] P6.08.a `POST /admin/chat/messages/{id}/delete` — soft delete; the room-history endpoint masks a deleted message's `Body` (returns `null`) for ordinary members, but the row and its original text are never erased (needed for the admin report queue and for §66-style continuity).
+  - [x] P6.08.b `chat.message_moderated` audit event (the `AuditActions` constant already existed from Phase 1's scaffolding).
+- [x] P6.09 Temporary mute endpoint
+  - [x] P6.09.a `POST /admin/chat/users/{id}/mute` (duration in minutes + optional reason), behind `chat.moderate`. Enforced server-side in `SendMessageHandler` (`CHAT_USER_MUTED`), not just hidden in the client UI.
+  - [x] P6.09.b `chat.user_muted` audit event.
+- [x] P6.10 Report-message endpoint
+  - [x] P6.10.a `POST /chat/messages/{id}/report`, behind `chat.use`.
+- [x] P6.11 Anonymize deleted user's identity in message history (preserve continuity, §66) — built as part of P7.05/P7.06 (Slice 7.B), now that account deletion exists. No `AnonymizeAuthor` method was needed on `Message` itself: `Message.UserId` was already an opaque reference with no FK to `User` (by design, per its own doc comment), and `User.AnonymizeForDeletion` (Identity) scrambles the `User` row's email in place rather than deleting it (forced by `UserConsent`'s `Restrict` FK — see docs/DATA_RETENTION_POLICY.md). The existing `GetMessagesHandler` author-resolution path (`IUserLookup`) therefore already renders the anonymized placeholder email with zero Chat-specific code change. `ChatUserDataEraser` (`src/Modules/Chat/Application/UseCases/DataRights/ChatUserDataParticipant.cs`) additionally erases the user's own `Mute`/`Report`/`ChatReadState` rows, never `Message`.
+  - [x] P6.11.a Implemented via cross-module composition (Identity anonymization + Chat's pre-existing opaque `UserId` reference), not a new domain method — see reasoning above.
+  - [x] P6.11.b Covered by `ChatUserDataParticipantTests.Erase_never_touches_message_rows` (Chat.Tests) and live-verified end to end via curl: after deleting the posting account, `GET /api/v1/chat/rooms/{roomId}/messages` (as a different authorized user) still returned the message with its original body/timestamp/ordering, with `email` rendered as `deleted-<userId>@deleted.bunited.local` instead of the real address.
 
 ### 6.C Client UI
 
-- [ ] P6.12 Room list/switcher
-  - [ ] P6.12.a Build the fixed room-switcher UI
-- [ ] P6.13 Message list with pagination + pinned message highlight
-  - [ ] P6.13.a Build the message list with infinite/paginated scroll
-  - [ ] P6.13.b Highlight pinned message(s) at the top
-- [ ] P6.14 Persistent localized privacy notice per room (§34)
-  - [ ] P6.14.a Build the persistent notice component with the required warning copy (ro/en)
-- [ ] P6.15 Report-message action in UI
-  - [ ] P6.15.a Wire the report action with a reason selector
+- [x] P6.12 Room list/switcher
+  - [x] P6.12.a `ChatPage`'s room sidebar (desktop) / horizontal scroller (mobile), with an unread-count badge per room.
+- [x] P6.13 Message list with pagination + pinned message highlight
+  - [x] P6.13.a Polling-refreshed message list (see P6.04 note — infinite/paginated *scroll* specifically wasn't wired; the initial 50-message page loads and polling keeps it current, but "load older" via the `nextBeforeCursor` isn't wired to a UI control yet). **Gap**: no "load older messages" button.
+  - [x] P6.13.b Pinned messages are sorted to the top and visually distinguished (amber border + "Pinned" label).
+- [x] P6.14 Persistent localized privacy notice per room (§34)
+  - [x] P6.14.a A persistent `Alert` at the top of `ChatPage`, ro/en, the exact §34 warning ("shared public subscriber area... avoid posting sensitive health/financial/personal information").
+- [x] P6.15 Report-message action in UI
+  - [x] P6.15.a A `Modal` with a reason `<select>` (spam/harassment/sensitive-info/other), wired to `POST /chat/messages/{id}/report`.
 
 ### 6.D Admin moderation UI (§53)
 
-- [ ] P6.16 Reported Messages screen
-  - [ ] P6.16.a Build the list with message context, author, reporter, reason, timestamp
-- [ ] P6.17 Muted Users screen
-  - [ ] P6.17.a Build the list of currently muted users with expiry
-- [ ] P6.18 Recent Moderator Actions screen
-  - [ ] P6.18.a Build the audit-derived recent-actions list
-- [ ] P6.19 Per-report actions: Dismiss, Delete Message, Mute User
-  - [ ] P6.19.a Wire the three actions from the report detail view
+- [x] P6.16 Reported Messages screen
+  - [x] P6.16.a `AdminChatModerationPage` — message body (or "already removed"), author, reporter, reason, timestamp, per §53.
+- [x] P6.17 Muted Users screen
+  - [x] P6.17.a List of currently-active mutes (query already filters `ExpiresAtUtc > now`) with expiry and moderator.
+- [x] P6.18 Recent Moderator Actions screen
+  - [x] P6.18.a Built directly from Chat's own tables (deleted messages + mutes + resolved reports, merged and time-sorted) — **not** from a generic Audit read-model, since no admin-facing Audit read API exists anywhere in this codebase yet (audit reads are a separate, explicitly authorized concern per CLAUDE.md, and Chat already has everything it needs in its own schema).
+- [x] P6.19 Per-report actions: Dismiss, Delete Message, Mute User
+  - [x] P6.19.a All three wired from `AdminChatModerationPage`; Delete/Mute reuse `DeleteMessageHandler`/`MuteUserHandler` internally (via `ResolveReportHandler`) so the audit trail is identical to acting on a message/user directly, not a parallel code path.
 
 ### 6.E Tests
 
-- [ ] P6.20 Moderation action tests (delete, mute, pin) with permission checks
-  - [ ] P6.20.a Authorized moderator can act; regular user cannot
-- [ ] P6.21 Report flow test
-  - [ ] P6.21.a Report submission → appears in admin queue → dismissible
-- [ ] P6.22 Anonymization-on-delete test preserving message continuity
-  - [ ] P6.22.a Deleted user's prior messages remain visible with anonymized identity
+- [~] P6.20 Moderation action tests (delete, mute, pin) with permission checks
+  - [x] Delete/mute/pin business logic: `Deleting_a_message_soft_deletes_it_and_hides_its_body_from_the_room_feed`, `A_muted_user_cannot_send_a_message`, `An_expired_mute_no_longer_blocks_sending`, `Pinning_and_unpinning_a_message_toggles_its_flag`.
+  - [ ] P6.20.a **Not covered**: an HTTP-level "authorized moderator can act; regular user cannot" test (the `PermissionEnforcementTests`/`TestServer` pattern from `Identity.Tests`) — not built this pass; `chat.moderate` gating was live-verified via curl (an admin token succeeded, no unauthorized-token negative case was driven through curl either). A hollow placeholder test was deliberately not written — an assertion-free test would be worse than an honest gap note.
+- [x] P6.21 Report flow test
+  - [x] P6.21.a `Report_flow_appears_in_the_queue_and_can_be_dismissed` + live-verified via curl (report → admin open-reports list → resolve).
+- [x] P6.22 Anonymization-on-delete test preserving message continuity
+  - [x] P6.22.a `ChatUserDataParticipantTests.Erase_never_touches_message_rows` (Chat.Tests) plus the live curl verification described under P6.11.b.
+
+9 automated Chat tests (Sqlite-backed), all passing; 257 backend tests total across the solution now. Full send→report→resolve(dismiss/delete/mute)→mute-enforcement→pin cycle live-verified end-to-end against real Postgres via curl. Frontend `tsc -b`/`vite build`/59 component tests/locale-parity all pass. As with Phase 5, **no browser-level (Playwright) verification was performed** — no Playwright tool was available in this session.
 
 ---
 
 ## Phase 7 — MVP presentation readiness
 
-### 7.A Expert dashboard & admin views (§46, §38)
+### 7.A Expert dashboard & admin views (§46, §38, §442)
 
-- [ ] P7.01 Expert dashboard: pending questionnaires, oldest unanswered, upcoming events, active subscribers, recent subscription changes, reported messages, recent published content
-  - [ ] P7.01.a Build the dashboard layout with the specified widgets
-  - [ ] P7.01.b Wire each widget to its owning module's query endpoint
-- [ ] P7.02 KPI cards: active subscribers, pending questionnaires, upcoming events, monthly subscription revenue
-  - [ ] P7.02.a Implement the KPI aggregation queries
-  - [ ] P7.02.b Build the KPI card components
-- [ ] P7.03 `SubscriberAdminView` cross-module read-only projection (Identity + Billing + Progress + last activity)
-  - [ ] P7.03.a Implement the read-model query joining the specified module data (read-only, per ADR-007)
-  - [ ] P7.03.b Verify the query cannot mutate any module's state
+Note: this section's original wording predated ADR-003's per-program-purchase migration
+("active subscribers", "monthly subscription revenue", `SubscriberAdminView`). Delivered against
+the corrected spec in docs/PROMPT.md §442 instead: "pending questionnaires, oldest unanswered
+submission, upcoming events, recent purchases/refunds, reported chat messages, recent published
+content" plus KPI cards for "customers with purchases, completed purchases, pending
+questionnaires, upcoming events, purchase revenue".
+
+- [x] P7.01 Expert dashboard: pending questionnaires + oldest unanswered, upcoming events, recent purchases/refunds, reported chat messages, recently published content — `GET /api/v1/admin/dashboard`
+  - [x] P7.01.a Build the dashboard layout with the specified widgets — `frontend/src/modules/admin/AdminHomePage.tsx`
+  - [x] P7.01.b Wire each widget to its owning module's query endpoint — `GetDashboardHandler` queries Questionnaires/Events/Billing/Chat/Content directly (see P7.03)
+- [x] P7.02 KPI cards: customers with purchases, completed purchases, pending questionnaires, upcoming events, purchase revenue (grouped by currency — purchases are genuinely multi-currency, see `DashboardKpiDto.RevenueByCurrency` doc comment)
+  - [x] P7.02.a Implement the KPI aggregation queries — `GetDashboardHandler`
+  - [x] P7.02.b Build the KPI card components — `AdminHomePage.tsx` `KpiCard`
+- [x] P7.03 Cross-module read-only dashboard projection (Questionnaires + Events + Billing + Chat + Content), placed in the (previously empty-scaffold) Admin module per ADR-007/README.md
+  - [x] P7.03.a Implement the read-model query joining the specified module data (read-only, per ADR-007) — `src/Modules/Admin/Application/UseCases/GetDashboardHandler.cs`
+  - [x] P7.03.b Verify the query cannot mutate any module's state — `GetDashboardHandlerTests.Never_writes_to_any_row_it_reads`
 
 ### 7.B GDPR / data rights (§66)
 
-- [ ] P7.04 Self-service data export (JSON archive + owned attachments)
-  - [ ] P7.04.a Implement the full-account export endpoint aggregating all modules' user-owned data
-  - [ ] P7.04.b Include owned attachments/media references where applicable
-- [ ] P7.05 Deletion workflow: hard delete vs anonymization vs retained billing records
-  - [ ] P7.05.a Define per-module deletion/anonymization rules
-  - [ ] P7.05.b Implement the orchestrated deletion workflow respecting legally-required billing retention
-- [ ] P7.06 Documented retention policy
-  - [ ] P7.06.a Write the retention-policy document per data category
-  - [ ] P7.06.b Cross-reference it from the Questionnaires deletion workflow (P4.20)
+- [x] P7.04 Self-service data export (JSON archive + owned attachments)
+  - [x] P7.04.a `GET /api/v1/profile/export` (`ExportMyDataHandler`, Identity) fans out over the new `IUserDataExporter` cross-module contract (`src/BuildingBlocks/Application/DataRights/IUserDataExporter.cs`), implemented by Identity/Progress/Questionnaires/Billing/Events/Chat, always scoped to the caller's own `UserId`. Live-verified: a real archive was pulled containing all six sections with real data in each.
+  - [x] P7.04.b Files module confirmed to still be an empty scaffold with no real implementation — there are no attachments to include; documented as a deliberate no-op in docs/DATA_RETENTION_POLICY.md rather than built speculatively.
+- [x] P7.05 Deletion workflow: hard delete vs anonymization vs retained billing records
+  - [x] P7.05.a Rules defined and documented per category in docs/DATA_RETENTION_POLICY.md.
+  - [x] P7.05.b `POST /api/v1/profile/delete` (`DeleteMyAccountHandler`, Identity) requires the current password, fans out over the `IUserDataEraser` contract (Progress/Questionnaires/Events/Chat — Billing deliberately excluded), anonymizes the `User` row, revokes all refresh tokens, and writes a metadata-only audit entry — all staged on the shared `DbContext` and committed in one `SaveChangesAsync` transaction. Architectural placement: contract-based fan-out (mirroring `IUserLookup`), not a direct multi-module reference like Admin's ADR-007 read-model exception — ADR-007 explicitly scopes that exception to read-only projections, not mutations. Live-verified end to end with a real Postgres-backed test user: purchase, questionnaire submission, chat message, and event registration were created; wrong-password delete was rejected (`ACCOUNT_DELETION_PASSWORD_INVALID`); correct-password delete succeeded; the account could no longer log in and its refresh token was rejected; `Purchase`/`Payment`/`Invoice`/`ProgramEntitlement` rows survived under the original `UserId`; the chat message survived with an anonymized author email; the event registration was canceled, not deleted.
+- [x] P7.06 Documented retention policy
+  - [x] P7.06.a `docs/DATA_RETENTION_POLICY.md` — per-category hard-delete/anonymize/retain decision with reasoning, including why the `User` row must be anonymized rather than hard-deleted (`UserConsent`'s pre-existing `Restrict` FK).
+  - [x] P7.06.b Cross-referenced from both this entry and P4.20/P6.11 above.
 
 ### 7.C Accessibility (§59)
 
-- [ ] P7.07 WCAG 2.2 AA audit pass: keyboard nav, focus states, semantic HTML, labels, contrast
-  - [ ] P7.07.a Run an automated accessibility scan across key screens
-  - [ ] P7.07.b Manually verify keyboard-only navigation on critical flows
-- [ ] P7.08 Accessible dialogs/tables audit
-  - [ ] P7.08.a Verify modal/drawer focus trapping and ARIA roles
-  - [ ] P7.08.b Verify table semantics on both desktop and mobile card views
-- [ ] P7.09 Video captions/subtitles support
-  - [ ] P7.09.a Verify the video provider supports captions and wire caption upload/display
-- [ ] P7.10 Reduced-motion preference support
-  - [ ] P7.10.a Respect `prefers-reduced-motion` in animations/transitions
+- [~] P7.07 WCAG 2.2 AA audit pass: keyboard nav, focus states, semantic HTML, labels, contrast
+  - [~] P7.07.a Run an automated accessibility scan across key screens — **no automated tool available this pass** (no Playwright/axe-core browser-automation tool offered in this environment); a thorough manual code-level review was substituted instead (every page in `frontend/src/modules/**/*.tsx`, every design-system primitive, `index.css`) — a real automated axe scan remains a residual gap, not done
+  - [x] P7.07.b Manually verify keyboard-only navigation on critical flows — verified by code review: `Modal.tsx` uses the native `<dialog>` element (focus trap/return/Escape all handled by the browser), `IconButton` requires a `label` prop, `Input`/`PasswordInput` correctly wire `<label htmlFor>`, focus-visible ring is a global CSS rule not overridden anywhere
+  - Fixed this pass: `LanguageSwitcher.tsx` had a hardcoded English `aria-label="Language"` silently overriding its own already-localized label (screen readers always announced English regardless of UI language); `Alert.tsx`/`Toast.tsx` had a hardcoded English `aria-label="Dismiss"` (added a required/optional `dismissLabel` prop instead, since no call site used `onDismiss` yet, so this was a safe non-breaking fix); `ChatPage.tsx`'s message composer gained an `aria-label` reusing the existing translated placeholder key. Contrast checked against the token palette (`--color-text-primary`/`--color-text-secondary` on `--color-background`/`--color-surface`) — comfortably exceeds 4.5:1; app has no dark mode so only one palette needed checking.
+  - **Documented residual gap**: `ProgramsPage.tsx`/`AdminProgramListPage.tsx`/`AdminQuestionnaireListPage.tsx` use `role="tablist"`/`role="tab"` on what are functionally filter-toggle buttons, with no associated `tabpanel` and no arrow-key roving-tabindex per the ARIA APG tab pattern — basic keyboard operability (Tab/Enter/Space, correct `aria-selected`) works, so not a hard blocker, but not a fully compliant ARIA widget. Left as-is rather than restructuring three components' interaction model in this pass.
+- [~] P7.08 Accessible dialogs/tables audit
+  - [x] P7.08.a Verify modal/drawer focus trapping and ARIA roles — `Modal.tsx` verified correct as built (native `<dialog>`), no changes needed
+  - [~] P7.08.b Verify table semantics on both desktop and mobile card views — added `<caption>` (new `sr-only` locale keys, ro/en) and `<th scope="col">` to all 5 hand-rolled admin tables (`AdminBillingListPage` purchases, `AdminEventsListPage`, `AdminQuestionnaireListPage`, `AdminProgramListPage`, `ExpertQueuePage`). **Mobile card-view adaptation was NOT built** — all 5 are horizontally-scrollable within their own `overflow-x-auto` container (confirmed pre-existing, satisfies "page itself never scrolls sideways") but none has a genuine card/drawer mobile presentation per DEVELOPMENT_INSTRUCTIONS §7's "adapt intentionally" bar. A full per-page redesign was judged out of scope for an accessibility-focused pass; flagged as a real residual gap, not silently skipped.
+- [x] P7.09 Video captions/subtitles support
+  - [x] P7.09.a Verify the video provider supports captions and wire caption upload/display — verified via code, not built: `YouTubePlayer.tsx` passes no `playerVars` at all to the YouTube IFrame API, so nothing suppresses YouTube's native CC button/captions when a video has them. Caption creation/upload is entirely YouTube's own creator-tool surface (ADR-005), outside this app's scope — there is no "upload" step on B-United's side to wire. Forcing `cc_load_policy=1` was considered and rejected as a UX regression (it would override each viewer's own caption preference).
+- [x] P7.10 Reduced-motion preference support
+  - [x] P7.10.a Respect `prefers-reduced-motion` in animations/transitions — already fully implemented as a global blanket rule in `frontend/src/index.css` (`@media (prefers-reduced-motion: reduce)` forcing near-zero animation/transition duration and `scroll-behavior: auto` on every element) — covers `Skeleton`'s pulse animation and every `transition-*`/`duration-*` utility without needing per-component `motion-reduce:` variants. No changes needed, verified pre-existing and correct.
 
 ### 7.D Performance (§67)
 
-- [ ] P7.11 Load-test representative scenario (~2,000 subscribers / ~200 concurrent)
-  - [ ] P7.11.a Build a load-test scenario against the most-used endpoints
-  - [ ] P7.11.b Verify response times stay in the low-hundreds-of-ms target
-- [ ] P7.12 Dashboard query performance pass
-  - [ ] P7.12.a Profile the client and expert dashboard queries; optimize as needed
-- [ ] P7.13 Chat pagination performance check
-  - [ ] P7.13.a Verify pagination performs well against a large seeded room history
-- [ ] P7.14 CDN video delivery verification
-  - [ ] P7.14.a Confirm video is served via the provider's CDN, not the app server
-- [ ] P7.15 Index review against real query patterns
-  - [ ] P7.15.a Review slow-query logs / EXPLAIN plans and adjust indexes accordingly
+- [x] P7.11 Load-test representative scenario (~2,000 subscribers / ~200 concurrent) — measured on a single dev laptop (API + Postgres + load generator sharing one CPU), NOT a distributed-infra/production capacity claim; numbers are directionally reliable only
+  - [x] P7.11.a Built via `npx autocannon` (no separate binary/global install needed) against real local Postgres, temporarily seeded to 2,000 users/purchases + 5,000 chat messages (cleaned up afterward, verified: DB back to 19 users/10 purchases/4 messages)
+  - [x] P7.11.b Response times: catalogue list (the hot path) was **404ms p50 / 2372ms p99 at c=200 before a fix**; a real N+1 bug was found and fixed (see P7.12), after which the same test measured **73ms p50 / 1256ms p99** (~4x throughput). Program detail (c=100): 62ms p50. Chat pagination on a 5,000-message room (c=100): 20ms p50, ~3000 req/s. Admin dashboard (c=100, 2,000 purchases): 50ms p50 (single-admin endpoint, not a 200-concurrent-user path in practice). Login is correctly rate-limited to 5/min/IP by design (brute-force protection) — not bypassed for the test, reported as a real security control rather than a measurement gap. The global per-IP rate limiter (100 req/min) was temporarily raised to run the single-machine test and fully reverted afterward (verified clean `git diff`).
+- [x] P7.12 Dashboard query performance pass
+  - [x] P7.12.a `GetDashboardHandler` profiled via `EXPLAIN ANALYZE` at 2,000-purchase scale — all queries index-backed, sub-millisecond, no fix needed. **Found and fixed a genuine N+1** in a different hot path: `ListPublishedProgramsHandler` (Content catalogue) made ~19 sequential DB round trips for 6 programs (2 offer-lookup queries + 1 ownership query per program). Fixed by adding batch methods (`GetActiveOffersAsync`, `GetAccessibleProgramIdsAsync`) to `IProgramOfferLookup`/`IProgramAccessContext` as additive default-interface-method-backed extensions (existing callers/test doubles unaffected), with real single-query implementations in `ProgramOfferLookup`/`BillingProgramAccessContext` — cut the handler from ~19 round trips to 4. Verified via before/after `autocannon` runs (above) and `dotnet test` (325/325 passing, zero regressions).
+- [x] P7.13 Chat pagination performance check
+  - [x] P7.13.a Confirmed `GetMessagesHandler`'s query is served by `ix_messages_room_id_created_at (room_id, created_at)` exactly matching its `WHERE room_id = … [AND created_at < …] ORDER BY created_at DESC` shape — `EXPLAIN ANALYZE` at 5,000 rows in one room shows `Index Scan Backward`, not a sequential scan.
+- [x] P7.14 CDN video delivery verification
+  - [x] P7.14.a Confirmed by reading `YouTubeVideoProvider.cs`/`YouTubePlayer.tsx`: the API only ever returns a `youtube.com/embed/{id}` URL and an `img.youtube.com` thumbnail URL; no video bytes are proxied or re-hosted through the B-United API. Delivery is entirely YouTube's own CDN.
+- [x] P7.15 Index review against real query patterns
+  - [x] P7.15.a Queried `pg_constraint`/`pg_index` directly against the live local Postgres DB — every foreign key across every module already has a matching leading index. No gap found, no migration needed.
 
 ### 7.E Local/demo operational readiness
 
-- [ ] P7.16 Local error visibility
-  - [ ] P7.16.a Provide structured backend logs and a user-safe frontend error state without an external monitoring provider
-- [ ] P7.17 Demo environment configuration (local secrets, CORS, rate limits)
-  - [ ] P7.17.a Document one-command startup and required local configuration
-  - [ ] P7.17.b Restrict CORS to the configured demo frontend origin
-  - [ ] P7.17.c Review demo rate-limit thresholds so scripted scenarios remain usable
-- [ ] P7.18 Demo database reset and seed strategy
-  - [ ] P7.18.a Add a safe, repeatable reset/reseed command for the dedicated demo database
-  - [ ] P7.18.b Seed Client/Expert/Admin accounts, one complete ro/en program and representative progress/subscription states
-- [ ] P7.19 Reproducible demo package
-  - [ ] P7.19.a Verify `docker compose up` starts the complete local MVP without third-party credentials
-  - [ ] P7.19.b Document and rehearse the primary presentation journey and recovery/reset procedure
-- [ ] P7.20 Full security pass (§65 checklist end-to-end)
-  - [ ] P7.20.a Walk the full §65 checklist against the shipped implementation
-  - [ ] P7.20.b Remediate any gaps found
-- [ ] P7.21 Full audit-log coverage review against §37 action list
-  - [ ] P7.21.a Verify every §37-listed action actually emits an audit entry in the shipped code
-- [ ] P7.22 Deterministic external-integration simulations
-  - [ ] P7.22.a Add `FakeIdentityEmailSender` delivery success, transient failure and permanent failure scenarios; expose generated verification/reset links safely in Demo only
-  - [ ] P7.22.b Add `FakeVideoProvider` ready, processing and failed scenarios without external HTTP calls, while retaining YouTube URL mode for the presentation
-  - [ ] P7.22.c Add `FakeFileStorage` upload/download success, unavailable-storage and invalid-object scenarios when Files gains its first MVP consumer
-  - [ ] P7.22.d Select scenarios only through server-side Demo configuration or an authorized demo-admin control; never trust arbitrary client-reported success
-  - [ ] P7.22.e Add contract tests proving fake and future production adapters return the same provider-neutral result/error shapes
-  - [ ] P7.22.f Reset every simulation to a documented deterministic baseline as part of the demo database reset
+- [x] P7.16 Local error visibility
+  - [x] P7.16.a Verified, no gap found: `SerilogConfigurationExtensions`/`CorrelationIdMiddleware` (BuildingBlocks/Observability) give every backend log a stable event name + correlation ID, with no external sink required. `frontend/src/app/ErrorBoundary.tsx` never renders the caught error/stack — only a localized generic message (`common:errors.internalServerError`) plus a reload action. Every TanStack Query call site already surfaces its own error/empty/loading state (established pattern from Phase 1 on); there is no silent console-only failure path.
+- [x] P7.17 Demo environment configuration (local secrets, CORS, rate limits)
+  - [x] P7.17.a `README.md` "Demo / one-command startup" section (new) documents `docker compose up --build` + `npm run dev`, required local config, and that no third-party credentials are needed.
+  - [x] P7.17.b Verified, no gap: `CorsExtensions.AddBUnitedCors` allows only origins explicitly listed in `Cors:AllowedOrigins` (never `*`), and `appsettings.Development.json` scopes it to `http://localhost:5173` only.
+  - [x] P7.17.c Verified, no gap: global 100 req/min per IP (health excluded) and a stricter 5 req/min auth-endpoint policy (`RateLimitingExtensions`) are generous enough for a presenter's own scripted clicking while still meaningful abuse protection.
+- [ ] P7.18 Demo database reset and seed strategy — **partial**
+  - [ ] P7.18.a Not built: no dedicated `reset-demo` command exists yet. Today's only reset path is `docker compose down -v && docker compose up --build`, which drops the whole `postgres-data` Docker volume and re-runs migrations + the idempotent startup seeders (`IdentitySeeder`/`ContentSeeder`/`ProgramOfferSeeder`) — safe (it only ever targets the Compose-managed disposable Postgres container, never a `.env`-configured native install) but coarse-grained, and documented as the interim procedure in `README.md`. A finer-grained, explicitly-`--environment Demo`-gated in-process reset (per the brief's `IDemoOnlyAdapter`-style safety convention) is left as a follow-up.
+  - [ ] P7.18.b Partially covered by existing seeders: `IdentitySeeder` seeds roles/permissions (not accounts — the `admin@bunited.local` account used throughout this project's manual verification sessions was created via the normal registration/role-assignment flow, not a seeder), `ContentSeeder`/`ProgramOfferSeeder` seed content domains and one program + active offer. No seeder yet creates representative Client/Expert accounts or purchase/progress states — left open, same follow-up as P7.18.a.
+- [x] P7.19 Reproducible demo package — **partial, one real bug found and fixed**
+  - [x] P7.19.a **Bug found and fixed**: `docker-compose.yml`'s `Jwt__SigningKey` default was `change-me` (9 bytes) — `JwtAuthenticationExtensions` requires ≥32 bytes for HS256 (RFC 7518 §3.2) and fails fast at startup otherwise, so a clean `docker compose up` with no `.env` file would crash-loop the `api` container. Replaced the default with a 53-byte dev-only placeholder (`local-dev-only-jwt-signing-key-not-for-production-use`, same "committed dev-only, not for production" convention as `Billing:DemoWebhookSecret`), still overridable via `.env`. Not re-verified against a live `docker compose up --build` run in this pass (Docker Desktop availability not reconfirmed this session) — build/test evidence is at the `dotnet build`/`dotnet test` level only; re-running the actual Compose flow is a residual verification gap.
+  - [x] P7.19.b `README.md`'s new "Demo / one-command startup" section documents the primary client-side presentation journey (register → verify → browse → buy → consume content → questionnaire → guidance → chat → event) and the reverse admin/expert journey, plus the `docker compose down -v` reset note.
+- [x] P7.20 Full security pass (§65 checklist end-to-end)
+  - [x] P7.20.a/b Walked against the shipped code, no regressions introduced:
+    - Password hashing: PASS — `PasswordHasher` wraps ASP.NET Core Identity's PBKDF2 hasher (`src/Modules/Identity/Infrastructure/Security/PasswordHasher.cs`).
+    - Email verification / reset tokens: PASS — dedicated token entities, never logged raw (`ConfirmPasswordResetHandler`/`RequestPasswordResetHandler` log only `UserId`).
+    - Refresh-token rotation/hashing/revocation: PASS — `RefreshToken` persists only a SHA-256 hash, rotates via `IssueRotated`, tracks `FamilyId` for reuse detection, and `RevokeTokenHandler` exists.
+    - Rate limiting / CORS: PASS — see P7.17.b/c above.
+    - Resource ownership / permission checks: PASS, not re-audited line-by-line this pass — already covered by P1.35's 48 permission-gating tests and per-module `IProgramAccessContext` ownership checks verified across Phases 2–6.
+    - File upload validation: N/A, unchanged — Files module is still an empty scaffold with no MVP consumer (verified: `src/Modules/Files/**/*.cs` contains no source files, only build output).
+    - Secret configuration: PASS — JWT signing key, DB connection string, `DemoWebhookSecret` all come from configuration/`.env`, never hardcoded (aside from the now-fixed Compose fallback above, which is an explicitly-labeled dev-only value).
+    - Webhook signature verification: PASS — `DemoWebhookSignature.Verify` uses HMAC-SHA256 with `CryptographicOperations.FixedTimeEquals` (constant-time comparison).
+    - Account lockout: PASS — `User.RegisterFailedLoginAttempt`/`IsLockedOut` with configurable `AccountLockout__MaxFailedAttempts`/`LockoutDurationMinutes`.
+    - Audit logging: PASS after this pass's fixes — see P7.21 below.
+    - Never-log grep sweep: PASS — spot-checked every `LogInformation`/`LogDebug`/`LogWarning` call site referencing "token"/"password" across `src/Modules`; all log only `UserId`/event names, never the raw secret. No questionnaire/guidance/card-referencing log statement found anywhere in `src/Modules`.
+- [x] P7.21 Full audit-log coverage review against §37 action list
+  - [x] P7.21.a Walked every §37 action against `AuditActions` + real call sites. Found and fixed four genuine gaps (constants existed or were added, but no reachable call site emitted them):
+    - `purchase.succeeded` / `program_access.granted` — now emitted from `ProcessProviderEventHandler.HandleSuccessfulPaymentAsync`/`GrantOrReactivateEntitlementAsync`.
+    - `purchase.refunded` / `program_access.revoked` — now emitted from `ProcessProviderEventHandler.ApplyTransitionAsync`/`RevokeEntitlementAsync` (chargeback revokes access but is not a "refund" business event, so it emits only `program_access.revoked`, matching the spec list literally).
+    - `content.published` — the constant already existed but had no call site; now emitted from `ProgramStatusHandler.PublishAsync` only (not unpublish/archive, which aren't in the §37 list).
+    - Regression tests added: `ProgramCommerceFlowTests.Successful_checkout_grants_program_entitlement`/`Refund_flips_status_and_revokes_access_without_deleting_history` now assert the new actions; `ContentFlowTests.Draft_program_is_invisible_to_clients_but_visible_after_publish_with_translation_fallback` asserts `content.published`.
+    - `user.role_changed`: confirmed still correctly N/A — no admin role-assignment feature exists anywhere in the codebase (documented at P1.33.c already; re-verified, still true).
+    - `program_offer.updated`: the codebase intentionally emits more granular `program_offer.price_changed`/`activated`/`deactivated` instead of one generic `updated` (P3.35.d, already `[x]`) — a deliberate, reasonable interpretation, not a gap.
+    - All other §37 actions (`user.login`, `user.failed_login`, `user.password_reset`, `program_offer.created`, `payment.webhook_processed`, `questionnaire.submitted`, `questionnaire.read`, `guidance.published`, `event.published`, `event.canceled`, `chat.message_moderated`, `chat.user_muted`) confirmed already wired to a real, reachable call site.
+    - Verification: `dotnet build BUnited.sln` (0 errors) and `dotnet test BUnited.sln` — all 325 tests passed (new assertions were added to 3 existing tests rather than new `[Fact]`s, so the count is unchanged; 0 regressions).
+- [ ] P7.22 Deterministic external-integration simulations — **partial**
+  - [ ] P7.22.a Not built this pass: `LoggingIdentityEmailSender` still only logs "would be sent" with no success/transient/permanent-failure scenario selection and no safe way to retrieve the raw verification/reset link in Demo. Real, confirmed gap — left open; the smallest correct fix (a Demo-only, server-side-selected scenario enum plus a way to surface the link without ever logging it) is scoped but not implemented in this pass.
+  - [x] P7.22.b Verified N/A, not a gap: per ADR-005, V1 uses real YouTube URL registration (`YouTubeVideoProvider`), not an uploaded/transcoded asset — every `MediaAsset` goes straight to `Ready` synchronously, there is no processing pipeline for a "processing"/"failed" `FakeVideoProvider` scenario to simulate. Correctly out of scope, same convention as P2.08/P2.17.
+  - [x] P7.22.c Verified N/A, unchanged: Files module still has no source files at all (only build output) — no MVP consumer exists yet, so `FakeFileStorage` scenarios have nothing to attach to.
+  - [ ] P7.22.d Not built — depends on P7.22.a existing first.
+  - [ ] P7.22.e Not built — no contract test exists proving `FakePaymentProvider` and a future real provider return the same shape; `FakePaymentProvider` is the only adapter with a real/fake distinction today (video is real-only per P7.22.b, files N/A per P7.22.c, email has only one implementation). Left open.
+  - [ ] P7.22.f Not built — depends on P7.22.a/e.
+
+---
+
+## Post-launch: docs/IMPLEMENTATION_PLAN.md Milestone A, Slices A0/A1/A3 (2026-08-10)
+
+> The 2026-08-09 audit that produced `docs/IMPLEMENTATION_PLAN.md` predated the quiz feature
+> landing (2.F above) — Slice A2 in that plan is stale and does not need implementation; it was
+> already done. Slices A0, A1, A3 below were genuine gaps and are now closed.
+
+- [x] A0 — Repository and migration stabilization.
+  - Renamed migration `20260809195723_SyncProgramCommerceModel` → `AddQuizContentModel` (its
+    content was 100% quiz tables — the old name was a leftover from an earlier, unrelated
+    working-tree state, not a description of what it actually does). Verified: no other
+    migration follows it, the local `bunited` database's `__EFMigrationsHistory` row was
+    updated to match, `dotnet ef migrations list` shows no pending migrations, and
+    `dotnet ef migrations has-pending-model-changes` confirms the EF model matches the last
+    migration exactly. Full migration chain re-verified via `dotnet ef migrations script`
+    (0 → current, 807 lines, no errors) — a genuinely empty *physical* database could not be
+    created for this pass because the local `bunited` Postgres role lacks `CREATEDB` (documented
+    residual risk below).
+  - Fixed `README.md`'s two stale `:5000` references to the real `:5080` launch-profile port
+    (`frontend/.env.example` was already correct in the working tree before this pass).
+  - Rewrote ADR-005, ADR-008, ADR-010 to reflect the current per-program purchase model
+    (`Purchase`/`ProgramEntitlement`/`IProgramAccessContext`) instead of the retired
+    subscription model; ADR-008 now documents that V1 has no outbox at all (none was ever
+    built) rather than a candidate event list that was never wired up.
+  - `docs/TASKS.md` (this file): corrected the stale `SyncProgramCommerceModel` migration
+    name reference in 2.F/P2.36.
+  - Verification: `dotnet build BUnited.sln` (Release) 0 warnings/errors; `dotnet test
+    BUnited.sln` (Release) all passing; frontend `tsc -b`, `npm run lint`, `npm run
+    check:locale-parity`, `vitest run` (67/67) all pass.
+
+- [x] A1 — Permission-aware administration shell.
+  - Added `RequireAnyPermission` (`frontend/src/shared/auth/RequireAnyPermission.tsx`) — same
+    shape as `RequirePermission` but passes if the user holds *any* of a permission list.
+  - `app/router.tsx`: the `/admin` shell now opens for anyone holding at least one permission
+    in `ADMIN_SHELL_PERMISSIONS` (derived from `layouts/navigation.ts`'s
+    `ADMIN_NAV_PERMISSIONS` map), replacing the old single-permission `content.create` proxy
+    gate. Programs and Questionnaires route groups gained their own `RequireAnyPermission`
+    (`content.create`/`edit`/`publish`; `questionnaire.review`/`answer` respectively) —
+    previously they rode on the same `content.create` proxy as the shell itself, so an Expert
+    (who holds `questionnaire.review`/`answer` but not `content.create`... note: in practice
+    Experts hold both, but the guard no longer *requires* `content.create` to reach
+    Questionnaires).
+  - `layouts/AdminLayout.tsx`: sidebar/drawer nav now filters `ADMIN_NAV_ITEMS` by the caller's
+    real permissions (reading `useAuthStore` directly, matching `RequirePermission`'s own
+    pattern) instead of always rendering all ten destinations regardless of what the signed-in
+    account can actually open.
+  - Fixed a real bug found while building this: the first filtering implementation selected a
+    derived `state.user?.permissions ?? []` from the zustand store, which returns a new array
+    literal on every call and breaks `useSyncExternalStore`'s identity check — this produced an
+    infinite render loop (caught by the new tests before merge, not shipped). Fixed by selecting
+    the stable `user` object and deriving permissions in the component body instead.
+  - Tests: `AdminLayout.test.tsx` (permission-filtering cases for moderator-only,
+    billing-manager-only, event-manager-only, expert accounts) and
+    `shared/auth/routeGuards.test.tsx` (`RequireAnyPermission` unauthenticated/wrong-permission/
+    any-one-of cases). Frontend suite: 67/67 passing (up from 60).
+
+- [x] A3 — Client and role administration.
+  - Backend (Identity module, self-contained — list/detail/role mutation needs only identity +
+    role data): `ListClientsHandler` (paginated, email search + role filter),
+    `GetClientDetailHandler`, `ListRolesHandler`, `AssignClientRoleHandler`/
+    `RemoveClientRoleHandler` (both idempotent no-ops when the role is already/not
+    assigned), exposed via `AdminUsersController`/`AdminRolesController` under the
+    `users.manage` policy. `RemoveClientRoleHandler` rejects removing the `Administrator` role
+    from the last remaining Administrator (`LAST_ADMINISTRATOR_PROTECTED`). Both mutations
+    audit `user.role_changed` with metadata-only payload (`{role, change}` — no PII beyond the
+    entity id already on every audit row).
+  - Backend (Admin module, cross-module read per ADR-007 — purchases/entitlements live in
+    Billing): `GetClientCommerceSummaryHandler`/`AdminClientCommerceController` at
+    `GET /api/v1/admin/clients/{userId}/commerce-summary`, scoped to exactly one user,
+    read-only (proven by a `Never_writes_to_any_row_it_reads` test matching
+    `GetDashboardHandlerTests`' own pattern). Never includes questionnaire/guidance data.
+  - Tests: `AdminClientsFlowTests.cs` (10 tests — search, role filter, not-found, assign/remove
+    with audit-entry assertions, idempotent no-ops, unknown-role rejection, last-administrator
+    protection both ways) and `GetClientCommerceSummaryHandlerTests.cs` (2 tests). Backend
+    suite: Identity 122/122 (was 112), Admin 10/10 (was 8) — solution-wide 0 failures.
+  - Frontend: `modules/admin/users/adminUsersApi.ts`, `AdminClientListPage.tsx` (search + role
+    filter + pagination), `AdminClientDetailPage.tsx` (identity metadata, role assign/remove
+    with server-error surfacing including the last-administrator rejection message, purchases
+    and program-access sections from the commerce-summary endpoint). "Subscribers" renamed to
+    "Clients" throughout (`nav.subscribers` → `nav.clients`, ro/en locale parity kept,
+    `/admin/subscribers` → `/admin/clients`), replacing the `ComingSoonPage` placeholder.
+  - Live-verified end-to-end against the real API + local Postgres (not just automated tests):
+    logged in as an Administrator, listed/searched/filtered real clients, fetched a real
+    client's detail and commerce summary (real historical purchases/entitlements, including a
+    `Refunded` purchase correctly excluded from active entitlements), assigned then removed a
+    role on a real account with the audit entries taking effect, confirmed anonymous → 401 and
+    wrong-permission (plain Client) → 403. Did not live-test the last-administrator rejection
+    against the real shared dev database (would have required temporarily de-roling real
+    Administrator accounts) — that invariant is covered by the automated test instead.
+  - Residual risk: no browser/UI-level verification was performed for the new frontend pages in
+    this pass (no browser automation tool was available in this session) — covered instead by
+    `tsc -b`, lint, locale-parity, component tests, and live API verification of everything the
+    UI calls.
+
+- [x] A4 — Audit, notifications, and settings navigation.
+  - Audit (real screen, not a placeholder): `ListAuditLogsHandler`/`AdminAuditController` at
+    `GET /api/v1/admin/audit`, under the `audit.view` policy, filterable by action, actor,
+    entity type, and a UTC date range (all optional, AND-combined), paginated. Lives in the
+    Audit module itself (reading its own `AuditLog` table is not a cross-module boundary
+    crossing) and resolves actor emails via `IUserLookup` for display only. Every metadata key
+    was already guarded against secrets/tokens/questionnaire content at write time
+    (`AuditEntry.Create`) — nothing further to filter at read time, proven by
+    `ListAuditLogsHandlerTests.cs` (7 tests: pagination, each filter independently, actor-email
+    resolution, null-actor handling, and a `Never_writes_to_any_row_it_reads` regression guard).
+    Frontend: `modules/admin/audit/AdminAuditPage.tsx` + `adminAuditApi.ts`, wired to
+    `/admin/audit` behind `RequireAnyPermission[audit.view]`, replacing the `ComingSoonPage`.
+  - Found and fixed a real bug while wiring this up: `src/Api/BUnited.Api.csproj` referenced
+    `Modules/Audit/Infrastructure` but never `Modules/Audit/Api` — harmless before this slice
+    (Audit had no controllers, write-only via `IAuditLogger`), but it meant the new
+    `AdminAuditController` silently 404'd at runtime despite building cleanly, because ASP.NET
+    Core's controller discovery only sees assemblies actually in the host's dependency graph.
+    Caught by live verification against the real API, not by the automated test suite (which
+    doesn't exercise the host's assembly wiring) — fixed by adding the missing
+    `<ProjectReference>`.
+  - Notifications and Settings: removed both as `ComingSoonPage` placeholders (nav items, routes,
+    icon-map entries, and the now-fully-unused `ComingSoonPage` component itself and its
+    `common:comingSoon.*` locale key) instead of leaving them as permanent dead ends. Per this
+    plan's own instruction ("remove the navigation destination instead of leaving a
+    placeholder" when there is no current consumer): Notifications has no persisted history at
+    all today (`LoggingIdentityEmailSender`/`INotificationSender` are fire-and-forget, nothing
+    stored to list), and no admin-level settings exist anywhere in the codebase to manage — both
+    conditions were verified by inspecting the actual code, not assumed.
+  - Live-verified end-to-end against the real API + local Postgres: listed/filtered real audit
+    entries (including the exact `user.role_changed` rows the A3 live-verification pass had just
+    produced, with metadata intact and actor email correctly resolved), filtered by entity type
+    and a UTC date range, confirmed anonymous → 401 and wrong-permission (plain Client) → 403.
+  - Verification: `dotnet build BUnited.sln` (Release) 0 warnings/errors; `dotnet test
+    BUnited.sln` (Release) all passing (Audit module 25/25, up from 18); frontend `tsc -b`,
+    `npm run lint`, `npm run check:locale-parity`, `vitest run` (67/67) all pass.
+
+- [x] A5 — Commercial history and billing UX (partial scope: the immutable-label problem the
+  plan's motivating example describes; pagination/filtering/sorting for admin billing history
+  and the full refund/chargeback/duplicate-event/concurrent-event/retry test matrix were already
+  covered by pre-existing Billing tests before this slice and were not revisited here).
+  - `Purchase.ProgramTitleSnapshot` (nullable, max 300 chars, matching `ProgramTranslation.Title`'s
+    own column size): captured once at purchase creation from `IProgramLookup` (Content's
+    cross-module contract, already used elsewhere in Billing) and never touched again — immutable
+    like `Amount`/`Currency`. `IProgramLookup.ProgramSummary` gained an optional `Title` field
+    (defaulted, so every existing implementer/caller kept compiling unchanged) resolved from the
+    program's current default-language `ProgramTranslation` in `ProgramLookup.cs`.
+  - Migration `AddPurchaseProgramTitleSnapshot`: adds the column, then backfills every existing
+    purchase from its program's current translation in the same migration (a one-time schema-level
+    data fix, not application code reading across module boundaries at runtime). Verified against
+    the real local `bunited` Postgres: all 15 pre-existing purchases backfilled with real titles,
+    `dotnet ef migrations has-pending-model-changes` confirms the model matches.
+  - Propagated the snapshot through every DTO that displays historical purchase/invoice data:
+    `PurchaseDto` (client "my purchases"), `PurchaseSummaryDto`/`PurchaseDetailDto` (admin billing
+    list/detail), `MyInvoiceDto` (client invoices, via the existing Purchase join),
+    `ClientPurchaseSummaryDto` (A3's client commerce summary), `RecentPurchaseDto` (admin
+    dashboard widget).
+  - Frontend: `BillingPage.tsx` (client purchases/invoices), `AdminBillingListPage.tsx`/
+    `AdminBillingSubscriptionDetailPage.tsx`, `AdminClientDetailPage.tsx`, `AdminHomePage.tsx` all
+    now prefer `programTitleSnapshot` over a live published-catalogue lookup — the actual bug this
+    slice fixes: a purchased program that's later renamed, unpublished, or archived no longer
+    shows as "unavailable" in a client's own purchase history despite the client still owning it.
+  - Tests: `ProgramCommerceFlowTests.cs` gained 2 tests (checkout captures the program's current
+    title; the snapshot is provably unaffected by a later rename via the fake lookup, simulating
+    what a real program rename after purchase would do). Billing suite: 46/46 (was 44).
+  - Live-verified end-to-end against the real API + local Postgres: confirmed the backfill on
+    real historical purchases (admin billing list and the A3 client commerce-summary endpoint both
+    now return real Romanian program titles instead of only a program id/slug), then performed an
+    actual new checkout end-to-end (`POST /billing/programs/{id}/checkout` → `GET
+    /billing/my-purchases`) and confirmed the newly created purchase carried the correct title
+    snapshot immediately.
+  - Verification: `dotnet build BUnited.sln` (Release) 0 warnings/errors; `dotnet test
+    BUnited.sln` (Release) all passing; frontend `tsc -b`, `npm run lint`,
+    `npm run check:locale-parity`, `vitest run` (67/67) all pass.
 
 ---
 

@@ -9,10 +9,10 @@ import { useAuthStore } from "../../shared/auth/authStore";
 import { sanitizeRedirectTarget } from "../../shared/auth/redirect";
 import { Alert } from "../../shared/design-system/Alert";
 import { Button } from "../../shared/design-system/Button";
-import { Card } from "../../shared/design-system/Card";
 import { Input } from "../../shared/design-system/Input";
 import { PasswordInput } from "../../shared/design-system/PasswordInput";
 import { applyApiErrorToForm } from "../../shared/forms/applyApiErrorToForm";
+import { AuthLayout } from "./AuthLayout";
 import { loginSchema, type LoginFormValues } from "./schemas";
 
 export function LoginPage() {
@@ -47,41 +47,39 @@ export function LoginPage() {
   });
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
-      <Card className="w-full max-w-sm">
-        <h1 className="text-lg font-semibold text-text-primary">{t("auth:login.title")}</h1>
-        <form onSubmit={onSubmit} noValidate className="mt-4 flex flex-col gap-4">
-          {formError && <Alert tone="danger" title={formError} />}
-          <Input
-            label={t("auth:fields.email")}
-            type="email"
-            autoComplete="email"
-            error={errors.email ? t(errors.email.message ?? "") : undefined}
-            {...register("email")}
-          />
-          <PasswordInput
-            label={t("auth:fields.password")}
-            autoComplete="current-password"
-            toggleVisibilityLabel={t("auth:fields.togglePasswordVisibility")}
-            error={errors.password ? t(errors.password.message ?? "") : undefined}
-            {...register("password")}
-          />
-          <Button type="submit" variant="primary" disabled={isSubmitting || mutation.isPending}>
-            {mutation.isPending ? t("common:status.saving") : t("auth:login.submit")}
-          </Button>
-        </form>
-        <p className="mt-4 text-sm text-text-secondary">
-          {t("auth:login.noAccount")}{" "}
-          <Link to="/register" className="font-medium text-primary hover:underline">
-            {t("auth:login.registerLink")}
-          </Link>
-        </p>
-        <p className="mt-2 text-sm">
-          <Link to="/password-reset/request" className="font-medium text-primary hover:underline">
-            {t("auth:passwordReset.requestTitle")}
-          </Link>
-        </p>
-      </Card>
-    </div>
+    <AuthLayout>
+      <h1 className="text-2xl font-semibold text-text-primary">{t("auth:login.title")}</h1>
+      <form onSubmit={onSubmit} noValidate className="mt-6 flex flex-col gap-4">
+        {formError && <Alert tone="danger" title={formError} />}
+        <Input
+          label={t("auth:fields.email")}
+          type="email"
+          autoComplete="email"
+          error={errors.email ? t(errors.email.message ?? "") : undefined}
+          {...register("email")}
+        />
+        <PasswordInput
+          label={t("auth:fields.password")}
+          autoComplete="current-password"
+          toggleVisibilityLabel={t("auth:fields.togglePasswordVisibility")}
+          error={errors.password ? t(errors.password.message ?? "") : undefined}
+          {...register("password")}
+        />
+        <Button type="submit" variant="primary" className="mt-2 w-full" disabled={isSubmitting || mutation.isPending}>
+          {mutation.isPending ? t("common:status.saving") : t("auth:login.submit")}
+        </Button>
+      </form>
+      <p className="mt-5 text-sm text-text-secondary">
+        {t("auth:login.noAccount")}{" "}
+        <Link to="/register" className="font-medium text-primary hover:underline">
+          {t("auth:login.registerLink")}
+        </Link>
+      </p>
+      <p className="mt-2 text-sm">
+        <Link to="/password-reset/request" className="font-medium text-primary hover:underline">
+          {t("auth:passwordReset.requestTitle")}
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

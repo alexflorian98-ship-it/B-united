@@ -10,7 +10,11 @@ public sealed record PublishedQuestionnaireSummaryDto(Guid Id, string Title, str
 /// <summary>Lets a client discover which questionnaire(s) they can start — not covered by
 /// docs/PROMPT.md §25–28's flow description directly (it assumes a known questionnaire), but
 /// required for the client UI to have anything to link to; kept minimal (id + title +
-/// description only, no question content) since starting still goes through the consent gate.</summary>
+/// description only, no question content) since starting still goes through the consent gate.
+/// Deliberately left unfiltered by <c>IProgramAccessContext</c> (ADR-003): this is browsable
+/// catalogue metadata, not the protected resource, mirroring Content's published-programs
+/// catalogue staying open while only the detail (here: <see cref="GetClientQuestionnaireHandler"/>'s
+/// full question content) and every downstream submission/guidance action are paywalled.</summary>
 public sealed class ListPublishedQuestionnairesHandler(DbContext dbContext)
 {
     public async Task<IReadOnlyList<PublishedQuestionnaireSummaryDto>> HandleAsync(string requestedLanguage, CancellationToken cancellationToken)

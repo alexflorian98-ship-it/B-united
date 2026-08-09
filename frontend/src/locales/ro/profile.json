@@ -5,5 +5,24 @@
   "language": "Limbă",
   "emailNotifications": "Notificări prin email",
   "saved": "Profilul tău a fost salvat.",
-  "logout": "Deconectează-te"
+  "logout": "Deconectează-te",
+  "dataRights": {
+    "title": "Datele tale",
+    "exportTitle": "Exportă datele mele",
+    "exportDescription": "Descarcă o arhivă JSON cu tot ce ține de contul tău: profil, progres, istoric chestionare, achiziții, înscrieri la evenimente și mesajele tale din chat.",
+    "exportButton": "Exportă datele mele",
+    "exportPending": "Se pregătește exportul…",
+    "exportError": "Nu am putut pregăti exportul. Te rugăm să încerci din nou.",
+    "deleteTitle": "Șterge contul meu",
+    "deleteDescription": "Șterge definitiv contul tău. Această acțiune nu poate fi anulată.",
+    "deleteButton": "Șterge contul meu",
+    "deleteModal": {
+      "title": "Ștergerea contului tău",
+      "warning": "Această acțiune este permanentă și nu poate fi anulată. Profilul, progresul și istoricul chestionarelor tale vor fi șterse. Înregistrările de achiziții și facturare sunt păstrate conform legii. Mesajele tale din chat vor rămâne vizibile pentru ceilalți, dar nu vor mai fi asociate cu numele tău.",
+      "passwordLabel": "Confirmă parola",
+      "confirm": "Șterge definitiv contul meu",
+      "cancel": "Anulează",
+      "errorInvalidPassword": "Parola curentă este incorectă."
+    }
+  }
 }

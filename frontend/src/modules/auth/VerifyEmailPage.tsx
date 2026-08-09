@@ -5,8 +5,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { authApi } from "../../shared/auth/authApi";
 import { Alert } from "../../shared/design-system/Alert";
 import { Button } from "../../shared/design-system/Button";
-import { Card } from "../../shared/design-system/Card";
 import { Input } from "../../shared/design-system/Input";
+import { AuthLayout } from "./AuthLayout";
 
 export function VerifyEmailPage() {
   const { t } = useTranslation(["auth", "common"]);
@@ -35,61 +35,59 @@ export function VerifyEmailPage() {
 
   if (!token || verifyMutation.isError) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <Card className="w-full max-w-sm">
-          <h1 className="text-lg font-semibold text-text-primary">{t("auth:verifyEmail.title")}</h1>
-          <div className="mt-3">
-            <Alert tone="danger" title={t("auth:errors.emailVerificationTokenInvalid")} />
-          </div>
-          {resendMutation.isSuccess ? (
-            <p className="mt-4 text-sm text-text-secondary">{t("auth:verifyEmail.resendSent")}</p>
-          ) : (
-            <form
-              className="mt-4 flex flex-col gap-3"
-              onSubmit={(event) => {
-                event.preventDefault();
-                resendMutation.mutate(resendEmail);
-              }}
-              noValidate
-            >
-              <p className="text-sm text-text-secondary">{t("auth:verifyEmail.resendGuidance")}</p>
-              <Input
-                label={t("auth:fields.email")}
-                type="email"
-                autoComplete="email"
-                value={resendEmail}
-                onChange={(event) => setResendEmail(event.target.value)}
-                required
-              />
-              <Button type="submit" variant="secondary" disabled={resendMutation.isPending}>
-                {resendMutation.isPending ? t("common:status.saving") : t("auth:verifyEmail.resend")}
-              </Button>
-            </form>
-          )}
-          <Link to="/login" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
-            {t("auth:login.title")}
-          </Link>
-        </Card>
-      </div>
+      <AuthLayout>
+        <h1 className="text-2xl font-semibold text-text-primary">{t("auth:verifyEmail.title")}</h1>
+        <div className="mt-3">
+          <Alert tone="danger" title={t("auth:errors.emailVerificationTokenInvalid")} />
+        </div>
+        {resendMutation.isSuccess ? (
+          <p className="mt-4 text-sm text-text-secondary">{t("auth:verifyEmail.resendSent")}</p>
+        ) : (
+          <form
+            className="mt-4 flex flex-col gap-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              resendMutation.mutate(resendEmail);
+            }}
+            noValidate
+          >
+            <p className="text-sm text-text-secondary">{t("auth:verifyEmail.resendGuidance")}</p>
+            <Input
+              label={t("auth:fields.email")}
+              type="email"
+              autoComplete="email"
+              value={resendEmail}
+              onChange={(event) => setResendEmail(event.target.value)}
+              required
+            />
+            <Button type="submit" variant="secondary" disabled={resendMutation.isPending}>
+              {resendMutation.isPending ? t("common:status.saving") : t("auth:verifyEmail.resend")}
+            </Button>
+          </form>
+        )}
+        <Link to="/login" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
+          {t("auth:login.title")}
+        </Link>
+      </AuthLayout>
     );
   }
 
   if (verifyMutation.isSuccess) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <Card className="w-full max-w-sm text-center">
-          <h1 className="text-lg font-semibold text-text-primary">{t("auth:verifyEmail.title")}</h1>
+      <AuthLayout>
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-text-primary">{t("auth:verifyEmail.title")}</h1>
           <p className="mt-2 text-sm text-success">{t("auth:verifyEmail.success")}</p>
           <Link to="/login" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
             {t("auth:login.title")}
           </Link>
-        </Card>
-      </div>
+        </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6" role="status" aria-live="polite">
+    <div className="flex min-h-screen items-center justify-center bg-background p-6" role="status" aria-live="polite">
       <p className="text-sm text-text-muted">{t("common:status.loading")}</p>
     </div>
   );

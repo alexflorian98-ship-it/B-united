@@ -256,12 +256,103 @@ conversations. Read this first, then `CLAUDE.md` (auto-loaded project instructio
     test (the client API has no by-ID lookup surface at all, so the leak is prevented by
     construction — but that's a different, untested guarantee than an explicit ownership check).
   - See `docs/TASKS.md` P3.01–P3.32 for the exact per-subtask notes.
-- **Next open task**: Phase 5 (Events) or Phase 6 (Community/Chat), or closing this session's
-  flagged gaps (P4.22.b's product-owner sign-off on crisis-disclaimer wording, P4.27.c's missing
-  questionnaire preview mode, a real transactional outbox, the Serilog status-code logging bug
-  above, or any of Phase 3's honest gaps listed just above), or Phase 8 once real provider
-  credentials (Stripe, a real video/email/storage provider) become available. Whichever the user
-  wants next.
+- **Phase 5 (Events, P5.01–P5.20)**: complete. New `Events` module (Domain/Application/
+  Infrastructure/Api/Contracts/Tests, same 6-layer shape as every other module) — `Event`/
+  `EventTranslation`/`EventRegistration`/`EventReminder` schema, admin authoring (create/
+  translate/reschedule/publish/cancel), client registration with capacity/waitlist assignment
+  and a start-time cutoff, and idempotent 24h/1h reminder scheduling. Client `/events` (list +
+  detail + register/cancel) and admin `/admin/events` (list + editor + registrations/waitlist/
+  reminders) UI, plus a dashboard "upcoming event" card. 20 new backend tests, all passing;
+  228→248 backend tests total. Frontend `tsc -b`/`vite build`/59 component tests/locale-parity
+  all pass.
+  - **This is the first phase with a real background-job system.** `src/Jobs` had existed as an
+    empty, unreferenced scaffold since Phase 1 — Hangfire (`Hangfire.AspNetCore` +
+    `Hangfire.PostgreSql`) is wired for real here, in `EventsModuleExtensions`/`Program.cs`, with
+    its own auto-created `hangfire` Postgres schema. The reminder sweep
+    (`SendDueEventRemindersHandler`) runs as a recurring job every 5 minutes.
+  - **`EventReminder` rows are pre-scheduled, not computed at job-run time**: both offsets (24h,
+    1h) are created at registration time with their fire time already computed, skipping any
+    offset whose lead time has already passed (registering 30 minutes before an event schedules
+    no reminders at all — a "24h before" promise made 30 minutes out isn't a reminder worth
+    sending). The job only ever polls for due, unsent rows. Editing an event's schedule
+    reschedules pending (unsent) reminders and leaves already-sent ones alone as history.
+  - **`Event.Status` never persists `Completed`** — `EffectiveStatus(utcNow)` derives it from
+    `Published && EndsAtUtc <= utcNow`, the same trick Billing's `Entitlement.IsActiveAt` uses to
+    avoid a background sweep job for state that's purely a function of the current time.
+  - **New cross-module contract**: `Identity.Contracts.INotificationPreferenceLookup`
+    (implemented by `IdentityNotificationPreferenceLookup`), mirroring `IUserLookup`'s pattern —
+    the reminder job checks it before emailing, so an opted-out user's reminder is still marked
+    sent (no infinite retry) but no email fires.
+  - **Two real bugs found only via live curl against real Postgres**, neither caught by the (all
+    green, written first) unit tests — see items 24–25 below.
+  - **Timezone conversion has no library dependency**: `<input type="datetime-local">` values are
+    converted to/from UTC using the standard `Intl.DateTimeFormat`-diff trick
+    (`zonedInputValueToUtcIso`/`utcIsoToZonedInputValue` in `modules/events/eventFormatting.ts`),
+    since no timezone npm package is a project dependency yet. Worth revisiting if the admin ever
+    needs DST-boundary-exact scheduling — the trick is correct for ordinary cases but not
+    rigorously proven at DST transition instants.
+  - **Real, honest gaps**: no outbox events (P5.10, same pre-existing infrastructure gap as every
+    other phase — no `OutboxMessage` table/dispatcher exists anywhere); no automated concurrent-
+    load test for the capacity/waitlist race (P5.06.c — the `SELECT ... FOR UPDATE` Postgres lock
+    is real and live-verified sequentially, but the Sqlite unit-test harness can't meaningfully
+    exercise real concurrent writers, and a proper concurrent-load Postgres integration test
+    wasn't written this pass); a promoted waitlisted user gets no push/toast notification at the
+    moment of promotion (P5.12.b — their own next page load reflects the new status via react-
+    query's normal refetch, but nothing proactively tells them); no "attendance" tracking beyond
+    registration status (not in the entity model — §29-31 doesn't define one); **no browser-level
+    (Playwright) verification of the Events UI was performed** — no Playwright tool was available
+    in this session, unlike every prior phase.
+  - See `docs/TASKS.md` P5.01–P5.20 for the exact per-subtask notes.
+- **Phase 6 (Community/Chat, P6.01–P6.22)**: complete, with two deliberate scope cuts (see below).
+  New `Chat` module — `Message`/`Report`/`Mute`/`ChatReadState` schema (`ChatRoom` is a plain
+  6-member enum, not a DB-backed entity — no dynamic room creation, so a table would only add an
+  unneeded join), 6 fixed rooms, paginated room history, temporary mute enforced server-side on
+  send, soft-delete/pin moderation, a report → resolve (Dismiss/Delete Message/Mute User) flow,
+  and a Recent Moderator Actions view built directly from Chat's own tables. Client `/community`
+  (room switcher, message feed, persistent §34 privacy notice, report modal) and admin
+  `/admin/community` (Reported Messages / Muted Users / Recent Actions per §53) UI. 9 new backend
+  tests, all passing; 248→257 backend tests total. Frontend build/tests/locale-parity all pass.
+  - **Two deliberate scope cuts, both explicitly permitted by the spec**: (1) **No SignalR** —
+    the frontend polls `/chat/rooms` and `/chat/rooms/{room}/messages` every 5s via TanStack
+    Query instead (docs/PROMPT.md §33-34: "polling is acceptable if SignalR becomes a launch
+    blocker — do not delay release for real-time perfection"). Given this session had just
+    delivered a full second phase (Events) beforehand, SignalR's added complexity (hub auth,
+    per-room groups, frontend connection lifecycle) wasn't judged worth it for a V1 community
+    feature — revisit if real-time latency becomes an actual complaint. (2) **No account-deletion
+    anonymization (P6.11)** — there is no account-deletion feature anywhere in this codebase yet,
+    so an `AnonymizeAuthor` domain method would have no real call site (dead code); same "blocked
+    on a feature that doesn't exist yet" pattern as P4.20.
+  - **A deleted message's body is masked, not erased**: `GetMessagesHandler` returns `Body: null`
+    for a soft-deleted message in the ordinary room-history response, but the row and its
+    original text are never actually removed from the database — needed so the admin report
+    queue can still show reviewers what was actually posted, and so room ordering/pinning state
+    stays coherent.
+  - **Report resolution reuses the real moderation handlers, not a parallel code path**:
+    `ResolveReportHandler`'s "Delete Message"/"Mute User" actions call the exact same
+    `DeleteMessageHandler`/`MuteUserHandler` a direct moderation action would, so the audit trail
+    (`chat.message_moderated`/`chat.user_muted`) is identical either way.
+  - **No new bugs found this pass** — unlike every other phase, live verification (send, mute-
+    enforcement, pin, report → resolve via Dismiss/DeleteMessage/MuteUser, recent-actions) worked
+    correctly on the first real curl run. Most likely explanation: Chat reused every pattern
+    already proven and bug-fixed in Billing/Events (the `IsActiveAt`-style derived-state trick,
+    the route-parameter-enum-binds-by-string-name convention, `IUserLookup`-style cross-module
+    projections) rather than introducing new mechanisms.
+  - **Real, honest gaps**: P6.04.a (no SignalR, see above), P6.11 (no anonymization, see above,
+    blocked on account deletion not existing), P6.13.a ("load older messages" isn't wired to a UI
+    control — the cursor-pagination API exists and is tested, but only the newest 50-message page
+    ever loads in the client), P6.20.a (no HTTP-level "moderator can act, regular user can't"
+    permission test — `chat.moderate` gating was live-verified with an admin token only, no
+    negative case driven through curl), P6.22 (blocked on P6.11). As with Phase 5, **no browser-
+    level (Playwright) verification of the Chat UI was performed** — no Playwright tool was
+    available in this session.
+  - See `docs/TASKS.md` P6.01–P6.22 for the exact per-subtask notes.
+- **Next open task**: Phase 7 (MVP presentation readiness — expert dashboard, GDPR data
+  rights/export, accessibility audit, performance) or Phase 8 (real Stripe/video/email provider
+  integrations, once credentials exist), or closing any of this session's flagged gaps: Phase 3's
+  (P3.19.b/P3.20.b/P3.23.b/P3.30/P3.31.b), Phase 4's (P4.22.b/P4.27.c), Phase 5's
+  (P5.06.c/P5.12.b), Phase 6's (P6.04.a SignalR/P6.11 anonymization/P6.13.a load-older-messages/
+  P6.20.a permission test), the real transactional outbox, or the Serilog status-code logging bug
+  above. Whichever the user wants next.
 
 `docs/TASKS.md` has a `[x]`/`[ ]` checkbox per subtask with an inline note on what was actually
 done and how it was verified — that's the precise source of truth, not this document.
@@ -457,6 +548,24 @@ Each of these was caught by actually running the code, not by reading it:
     (`Activate_while_already_active_is_a_no_op_transition`) added specifically because this class
     of bug — "the common case wasn't in the test matrix" — is exactly what live testing exists to
     catch.
+24. **The DI-based `services.AddHangfire(config => ...)` overload does not populate the legacy
+    static `JobStorage.Current`.** Calling the static `RecurringJob.AddOrUpdate<T>(...)` API right
+    after `AddHangfire`/`AddHangfireServer` threw `InvalidOperationException: Current JobStorage
+    instance has not been initialized yet` at startup — Hangfire's own exception message pointed
+    at the fix (use the DI-scoped `IRecurringJobManager` instead of the static API when using the
+    DI-based configuration overload). Fixed by resolving `IRecurringJobManager` from
+    `app.Services` after `builder.Build()`, mirroring where the seeders already run.
+25. **Postgres row-locking via `FromSqlInterpolated` + `SELECT *` breaks on entities with a shadow
+    `xmin` concurrency column.** `SELECT * FROM events WHERE id = {id} FOR UPDATE` materialized
+    into an `Event` failed live with `42703: column b.xmin does not exist` — EF wraps `FromSql`
+    results in an outer `SELECT b.col1, ..., b.xmin FROM (raw sql) AS b`, and Postgres system
+    columns (like `xmin`) aren't visible through a derived table's `SELECT *`, only through the
+    base table directly. None of the 20 Sqlite-backed unit tests could have caught this — Sqlite
+    silently took the non-Postgres code path. Fixed by acquiring the lock as a throwaway,
+    unmapped `ExecuteSqlInterpolatedAsync` command (`SELECT 1 FROM events WHERE id = {id} FOR
+    UPDATE`, discarding the result) instead of trying to materialize an entity through it, then
+    doing the normal tracked EF query afterward within the same transaction — the row lock
+    persists for the rest of the transaction either way.
 
 ## Environment-specific notes
 
@@ -501,10 +610,12 @@ Each of these was caught by actually running the code, not by reading it:
 - **P2.H frontend component tests**: no Vitest coverage exists yet for the new Content/Progress/
   Admin pages — only backend tests + manual Playwright verification. A real gap versus the P1
   precedent.
-- **No transactional-outbox infrastructure exists** (referenced by P3.11.b/P4.09.b/P4.11.c and
-  ADR-008): no `OutboxMessage` table, no dispatcher, despite `src/Jobs`' empty Hangfire scaffold.
-  Questionnaire notifications are sent in-process/synchronously instead (P4.13), which is a real
-  reliability gap (no retry on a post-commit failure) — building a real outbox is its own project.
+- **No transactional-outbox infrastructure exists** (referenced by P3.11.b/P4.09.b/P4.11.c/P5.10
+  and ADR-008): no `OutboxMessage` table, no dispatcher. `src/Jobs` is still an empty, unreferenced
+  scaffold — Phase 5 wired real Hangfire, but directly inside `Events.Infrastructure`/`Program.cs`,
+  not through `src/Jobs`. Questionnaire notifications are sent in-process/synchronously instead
+  (P4.13), which is a real reliability gap (no retry on a post-commit failure) — building a real
+  outbox is its own project.
 - **P4.18** (encryption at rest for questionnaire data): correctly not built, per ADR-009 (decided
   in Phase 0) — infra-level disk encryption + TLS is the V1 baseline, pending legal classification.
 - **P4.20** (questionnaire data deletion/retention workflow): blocked on P7.06 (the retention
@@ -519,10 +630,31 @@ Each of these was caught by actually running the code, not by reading it:
   test — prevented by construction, not by an explicit checked guard), **P3.31.b** (checkout-retry
   test): all real, narrow gaps — see the Phase 3 summary above and `docs/TASKS.md` for the exact
   per-subtask notes.
-- **P3.H / P4.H / P2.H frontend component tests**: the same gap, now spanning Content/Progress
-  (Phase 2), Questionnaires (Phase 4), and Billing (Phase 3) — no Vitest coverage exists for any
-  of these modules' pages, only backend tests + manual Playwright verification. Worth a dedicated
-  pass at some point rather than continuing to let it compound phase over phase.
+- **P3.H / P4.H / P2.H / P5.H / P6.H frontend component tests**: the same gap, now spanning
+  Content/Progress (Phase 2), Questionnaires (Phase 4), Billing (Phase 3), Events (Phase 5), and
+  Chat (Phase 6) — no Vitest coverage exists for any of these modules' pages, only backend tests +
+  manual/live verification. Worth a dedicated pass at some point rather than continuing to let it
+  compound phase over phase.
+- **P5.06.c** (concurrent-load test for the capacity/waitlist race): the `SELECT ... FOR UPDATE`
+  Postgres lock is real (see bug #25 above) and live-verified sequentially, but there's no
+  automated concurrent-request regression test — the Sqlite unit-test harness has no real
+  concurrent-writer story, and this specific behavior is provider-specific.
+- **P5.12.b** (waitlist-promotion notification): a promoted user isn't proactively notified at the
+  moment of promotion — only via their next normal page load/refetch. `CancelRegistrationHandler`
+  schedules the promoted registration's reminders but never calls `INotificationSender`.
+- **P6.04.a** (no SignalR): the client polls every 5s instead — explicitly permitted by
+  docs/PROMPT.md §33-34, not silently skipped.
+- **P6.11** (no account-deletion message anonymization): blocked on account deletion not existing
+  as a feature anywhere in this codebase yet — same category as P4.20/P7.06.
+- **P6.13.a** ("load older messages" not wired): the cursor-pagination API exists and is tested,
+  but the client only ever loads the newest 50-message page — no "load older" UI control.
+- **P6.20.a** (no HTTP-level Chat permission test): `chat.moderate` gating was live-verified with
+  an admin token only; no `PermissionEnforcementTests`-style negative case (`chat.use`-only user
+  hitting an admin endpoint) was written for Chat specifically.
+- **No browser-level (Playwright) verification of the Events or Chat UI**: no Playwright tool was
+  available in this session, unlike every prior phase's frontend verification. Backend was fully
+  live-verified via curl against real Postgres for both phases; frontend has build/type/component-
+  test/locale-parity coverage only.
 
 ## Working-style notes for this repo
 

@@ -10,6 +10,7 @@
     },
     "noPrograms": "No programs yet",
     "noProgramsDescription": "Create your first program to get started.",
+    "tableCaption": "Programs",
     "columns": {
       "title": "Title",
       "sections": "Sections",
@@ -53,7 +54,28 @@
     "publish": "Publish",
     "unpublish": "Unpublish",
     "archive": "Archive",
-    "videoReferenceNotEditable": "The video itself can't be changed after creation yet — delete this item and add a new one to use a different video."
+    "videoReferenceNotEditable": "The video itself can't be changed after creation yet — delete this item and add a new one to use a different video.",
+    "quiz": {
+      "label": "Quiz",
+      "questions": "Quiz questions",
+      "question": "Question",
+      "options": "Options",
+      "addQuestion": "Add question",
+      "addOption": "Add option",
+      "deleteQuestion": "Delete question",
+      "deleteOption": "Delete",
+      "markAsCorrect": "This is the correct answer",
+      "correctAnswer": "Correct answer",
+      "correctAlreadySetHint": "This question already has a correct answer. To change it, delete the current correct option first, then add the new one as correct.",
+      "noQuestionsThisSession": "No questions added in this session yet. Use the form below to add the first one.",
+      "noOptionsYet": "No options yet.",
+      "fields": {
+        "questionText": "Question text",
+        "optionLabel": "Option label"
+      },
+      "sessionOnlyWarningTitle": "Questions and options shown here are only from this editing session",
+      "sessionOnlyWarningBody": "Everything you add is saved on the server immediately, but this page currently has no way to re-fetch a quiz's existing questions and options — so if you leave this item and come back, or reload the page, this list resets to empty even though your previously added questions are still saved and will be shown to clients. Avoid reloading while authoring a quiz; add all questions and options in one sitting."
+    }
   },
   "questionnaires": {
     "title": "Questionnaires",
@@ -67,6 +89,7 @@
     },
     "noQuestionnaires": "No questionnaires yet",
     "noQuestionnairesDescription": "Create your first questionnaire to get started.",
+    "tableCaption": "Questionnaires",
     "columns": {
       "title": "Title",
       "questions": "Questions",
@@ -116,6 +139,7 @@
       "title": "Submission queue",
       "empty": "No submissions waiting for review.",
       "review": "Review",
+      "tableCaption": "Submission queue",
       "columns": {
         "client": "Client",
         "submittedAt": "Submitted At",
@@ -141,11 +165,18 @@
     }
   },
   "billing": {
-    "title": "Subscribers",
-    "noSubscribers": "No subscribers yet.",
+    "title": "Program commerce",
+    "purchases": "Purchases",
+    "offers": "Program offers",
+    "noPurchases": "No purchases yet.",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
     "view": "View",
+    "purchasesTableCaption": "Purchases",
     "columns": {
       "email": "Email",
+      "program": "Program",
+      "amount": "Amount",
       "status": "Status",
       "currentPeriodEnd": "Current Period",
       "accessUntil": "Access Until",
@@ -161,8 +192,170 @@
       "expired": "Expired"
     },
     "payments": "Payments",
+    "invoices": "Invoices",
     "webhookTimeline": "Webhook timeline",
     "processed": "Processed",
-    "notProcessed": "Not yet processed"
+    "notProcessed": "Not yet processed",
+    "noOffers": "No program offers yet.",
+    "createOffer": {
+      "title": "Create program offer",
+      "program": "Program",
+      "selectProgram": "Select a program",
+      "amount": "Amount",
+      "currency": "Currency",
+      "activateImmediately": "Activate immediately",
+      "submit": "Create offer",
+      "success": "Offer created."
+    },
+    "updatePrice": {
+      "title": "Update price",
+      "amount": "New amount",
+      "currency": "Currency",
+      "submit": "Save price",
+      "success": "Price updated."
+    }
+  },
+  "events": {
+    "title": "Events",
+    "newEvent": "New event",
+    "noEvents": "No events yet",
+    "noEventsDescription": "Create your first event to get started.",
+    "view": "View",
+    "tableCaption": "Events",
+    "columns": {
+      "title": "Title",
+      "date": "Date",
+      "type": "Type",
+      "registrations": "Registrations",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "Draft": "Draft",
+      "Published": "Published",
+      "Canceled": "Canceled",
+      "Completed": "Completed"
+    },
+    "fields": {
+      "defaultLanguage": "Default language",
+      "title": "Title",
+      "description": "Description",
+      "startsAt": "Starts at",
+      "endsAt": "Ends at",
+      "displayTimezone": "Display timezone",
+      "locationType": "Location type",
+      "location": "Location",
+      "meetingUrl": "Meeting link",
+      "capacity": "Capacity",
+      "capacityHint": "Leave empty for unlimited capacity.",
+      "programIds": "Associated program IDs",
+      "programIdsHint": "Comma-separated program IDs. Leave empty to keep registration public to authenticated clients."
+    },
+    "schedule": "Schedule",
+    "programAccess": "Program access",
+    "translations": "Translations",
+    "publish": "Publish",
+    "cancel": "Cancel event",
+    "registeredUsers": "Registered users",
+    "noRegistrations": "Nobody has registered yet.",
+    "waitlist": "Waitlist",
+    "noWaitlist": "Nobody on the waitlist.",
+    "reminders": "Reminders",
+    "noReminders": "No reminder scheduled.",
+    "reminderType": {
+      "TwentyFourHour": "24h before",
+      "OneHour": "1h before"
+    },
+    "sent": "Sent",
+    "notSent": "Not yet sent"
+  },
+  "chat": {
+    "title": "Community moderation",
+    "reportedMessages": "Reported Messages",
+    "noReports": "No reported messages.",
+    "messageAlreadyRemoved": "This message was already removed.",
+    "author": "Author",
+    "reportedBy": "Reported by",
+    "reason": "Reason",
+    "dismiss": "Dismiss",
+    "deleteMessage": "Delete Message",
+    "muteUser": "Mute User",
+    "mutedUsers": "Muted Users",
+    "noMutedUsers": "No muted users right now.",
+    "until": "Until",
+    "recentActions": "Recent Moderator Actions",
+    "noRecentActions": "No moderator actions yet.",
+    "actionKind": {
+      "MessageDeleted": "Message deleted",
+      "UserMuted": "User muted",
+      "ReportDismissed": "Report dismissed",
+      "ReportResolved": "Report resolved"
+    }
+  },
+  "clients": {
+    "title": "Clients",
+    "search": "Search",
+    "searchPlaceholder": "Search by email",
+    "roleFilter": "Role",
+    "allRoles": "All roles",
+    "loadError": "Couldn't load clients.",
+    "noClients": "No clients yet",
+    "noClientsDescription": "Registered accounts will appear here.",
+    "tableCaption": "Clients",
+    "columns": {
+      "email": "Email",
+      "roles": "Roles",
+      "status": "Status",
+      "joined": "Joined",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Deleted"
+    },
+    "view": "View",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {{page}} of {{totalPages}}",
+    "detail": {
+      "joined": "Joined {{date}}",
+      "emailVerified": "Email verified",
+      "emailNotVerified": "Email not verified",
+      "roles": "Roles",
+      "noRoles": "No roles assigned.",
+      "removeRole": "Remove {{role}} role",
+      "assignRole": "Assign a role",
+      "selectRole": "Select a role",
+      "assign": "Assign",
+      "purchases": "Purchases",
+      "noPurchases": "No purchases yet.",
+      "entitlements": "Program access",
+      "noEntitlements": "No program access granted yet."
+    }
+  },
+  "audit": {
+    "title": "Audit log",
+    "filters": {
+      "action": "Action",
+      "actionPlaceholder": "e.g. user.role_changed",
+      "entityType": "Entity type",
+      "entityTypePlaceholder": "e.g. User",
+      "from": "From",
+      "to": "To"
+    },
+    "loadError": "Couldn't load the audit log.",
+    "noEntries": "No audit entries match these filters.",
+    "tableCaption": "Audit log",
+    "columns": {
+      "timestamp": "Timestamp",
+      "action": "Action",
+      "actor": "Actor",
+      "entity": "Entity",
+      "metadata": "Details"
+    },
+    "systemActor": "System",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {{page}} of {{totalPages}}"
   }
 }

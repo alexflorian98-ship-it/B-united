@@ -3,7 +3,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Application\BUnited.Modules.Content.Application.csproj" />
     <ProjectReference Include="..\Domain\BUnited.Modules.Content.Domain.csproj" />
+    <ProjectReference Include="..\Contracts\BUnited.Modules.Content.Contracts.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\Infrastructure\BUnited.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Progress\Contracts\BUnited.Modules.Progress.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

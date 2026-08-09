@@ -46,9 +46,9 @@ export function AdminNewProgramPage() {
   });
 
   return (
-    <div className="p-4">
+    <div>
       <Card className="max-w-lg">
-        <h1 className="text-lg font-semibold text-text-primary">{t("admin:content.newProgram")}</h1>
+        <h1 className="text-2xl font-semibold text-text-primary">{t("admin:content.newProgram")}</h1>
         <form onSubmit={onSubmit} noValidate className="mt-4 flex flex-col gap-4">
           {formError && <Alert tone="danger" title={formError} />}
 

@@ -8,11 +8,11 @@ public sealed class Payment : IAuditableEntity
     {
     }
 
-    public static Payment Create(Guid subscriptionId, decimal amount, string currency, PaymentStatus status, string providerPaymentId, DateTime occurredAtUtc) =>
+    public static Payment Create(Guid purchaseId, decimal amount, string currency, PaymentStatus status, string providerPaymentId, DateTime occurredAtUtc) =>
         new()
         {
             Id = Guid.NewGuid(),
-            SubscriptionId = subscriptionId,
+            PurchaseId = purchaseId,
             Amount = amount,
             Currency = currency,
             Status = status,
@@ -22,7 +22,7 @@ public sealed class Payment : IAuditableEntity
 
     public Guid Id { get; private set; }
 
-    public Guid SubscriptionId { get; private set; }
+    public Guid PurchaseId { get; private set; }
 
     public decimal Amount { get; private set; }
 

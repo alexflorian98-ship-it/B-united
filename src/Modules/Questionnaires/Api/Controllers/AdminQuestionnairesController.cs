@@ -49,7 +49,7 @@ public sealed class AdminQuestionnairesController(
     [HttpPost]
     public async Task<ActionResult<Guid>> Create(CreateQuestionnaireRequest request, CancellationToken cancellationToken)
     {
-        var command = new CreateQuestionnaireCommand(request.DefaultLanguage, request.Title, request.Description, User.GetUserId());
+        var command = new CreateQuestionnaireCommand(request.ProgramId, request.DefaultLanguage, request.Title, request.Description, User.GetUserId());
         var id = await createQuestionnaireHandler.HandleAsync(command, cancellationToken);
         return CreatedAtAction(nameof(Get), new { questionnaireId = id }, id);
     }

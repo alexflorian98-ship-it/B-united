@@ -7,6 +7,9 @@ export interface AlertProps {
   title: string;
   children?: ReactNode;
   onDismiss?: () => void;
+  /** Localized accessible label for the dismiss button — required whenever `onDismiss` is
+   * provided, since this component takes no i18n dependency of its own. */
+  dismissLabel?: string;
 }
 
 const toneClasses: Record<AlertTone, string> = {
@@ -16,7 +19,7 @@ const toneClasses: Record<AlertTone, string> = {
   info: "border-info text-info",
 };
 
-export function Alert({ tone, title, children, onDismiss }: AlertProps) {
+export function Alert({ tone, title, children, onDismiss, dismissLabel }: AlertProps) {
   return (
     <div
       role="alert"
@@ -30,7 +33,7 @@ export function Alert({ tone, title, children, onDismiss }: AlertProps) {
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Dismiss"
+          aria-label={dismissLabel}
           className="rounded-md p-1 text-text-muted hover:text-text-primary"
         >
           ×

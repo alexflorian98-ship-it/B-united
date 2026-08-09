@@ -28,9 +28,9 @@ The system should be easy to maintain, easy to extend and realistic for a small 
 
 The application is owned by one expert / business owner.
 
-The owner sells recurring subscription access to structured personal development programs.
+The owner sells structured personal development programs individually through one-time purchases.
 
-Subscribers can consume educational content, complete an intake questionnaire, receive personalized written guidance, track their content progress, participate in group discussions and register for events.
+Clients may browse the program catalogue before purchasing. A completed purchase grants permanent access only to the purchased program and to the questionnaires, guidance, progress, community rooms and events explicitly associated with that program.
 
 The platform contains the following initial domains:
 
@@ -50,7 +50,7 @@ All five domains use the same generic content system.
 
 ## 2. Explicit V1 boundaries
 
-V1 is: single organization; one primary expert; subscription-based; responsive web; multilingual; content-oriented; questionnaire-driven; progress-aware; community-enabled; event-enabled.
+V1 is: single organization; one primary expert; program-purchase-based; responsive web; multilingual; content-oriented; questionnaire-driven; progress-aware; community-enabled; event-enabled.
 
 V1 is NOT: a marketplace; a multi-tenant platform; a multi-organization platform; a coach marketplace; a native mobile application; a medical platform; a financial advisory platform; a social network; a learning management system for enterprises.
 
@@ -60,16 +60,19 @@ Do not design unnecessary abstractions for these scenarios. Leave reasonable ext
 
 ## 3. Core business rules
 
-1. Users register and maintain their account independently of subscription state.
-2. An active subscription grants access to protected platform content.
-3. Losing subscription access must NOT delete: the user account; questionnaire submissions; expert guidance; progress; event history; chat history; preferences.
-4. Re-subscribing restores access.
-5. Access decisions must always be enforced server-side.
-6. Program content is the same for all subscribers.
-7. Personalization happens through written expert guidance, not dynamically generated program variants.
-8. Group discussion exists only in predefined shared rooms.
-9. The platform must support Romanian and English from launch.
-10. All technical implementation must be written exclusively in English.
+1. Users register and maintain their account independently of purchase or entitlement state.
+2. Authenticated users may browse the published program catalogue and commercial program details without purchasing.
+3. Each program is purchased separately through a one-time payment.
+4. A confirmed purchase grants permanent access only to the purchased program and its explicitly associated functionality.
+5. Purchasing one program never grants access to another program.
+6. Permanent access has no normal expiration date, but may be revoked for a refund, chargeback, fraud or an audited administrative correction.
+7. Revoking access must NOT delete: the user account; purchase and invoice history; questionnaire submissions; expert guidance; progress; event history; chat history; preferences.
+8. Access decisions must always be enforced server-side using both `UserId` and `ProgramId`.
+9. Program content is the same for all clients entitled to that program.
+10. Personalization happens through written expert guidance, not dynamically generated program variants.
+11. Group discussion exists only in predefined rooms associated with one or more programs.
+12. The platform must support Romanian and English from launch.
+13. All technical implementation must be written exclusively in English.
 
 ---
 
@@ -205,7 +208,7 @@ src/
 * domain events should be used for asynchronous business reactions where they add value;
 * no circular module dependencies.
 
-**Do not prohibit every cross-module database query.** Read-only administrative and dashboard projections may join data across module-owned tables when this materially simplifies the application (admin dashboard, subscriber overview, operational reports, billing + user overview).
+**Do not prohibit every cross-module database query.** Read-only administrative and dashboard projections may join data across module-owned tables when this materially simplifies the application (admin dashboard, customer purchase overview, operational reports, billing + user overview).
 
 These queries must: remain read-only; live in dedicated query/read-model code; never mutate another module's data; not become hidden business dependencies. Avoid building artificial event projections merely to display a dashboard.
 
@@ -213,9 +216,9 @@ These queries must: remain read-only; live in dedicated query/read-model code; n
 
 ## 13. Transactional outbox
 
-Use a transactional outbox for important cross-module events where failure or retry matters: `SubscriptionActivated`, `SubscriptionExpired`, `PaymentFailed`, `QuestionnaireSubmitted`, `GuidancePublished`, `EventPublished`, `EventRegistrationCreated`.
+Use a transactional outbox for important cross-module events where failure or retry matters: `ProgramPurchased`, `ProgramAccessRevoked`, `PaymentFailed`, `QuestionnaireSubmitted`, `GuidancePublished`, `EventPublished`, `EventRegistrationCreated`.
 
-Good use: `SubscriptionActivated` → Billing updates entitlement → Notifications queues activation email.
+Good use: a validated payment event causes Billing to create a `ProgramEntitlement` and emit `ProgramPurchased`; Notifications then queues the purchase confirmation email.
 
 Do not use domain events for every trivial synchronous method call.
 
@@ -241,30 +244,31 @@ Avoid authorization logic such as `if (user.Role == "Expert")` scattered through
 
 ---
 
-## 15. Subscription access architecture
+## 15. Program purchase and access architecture
 
-Billing owns subscription state and entitlement state — explicitly.
+Content owns programs and their educational structure. Billing owns commercial offers, immutable purchase records, payment state and program entitlement state explicitly.
 
 ```text
 Billing
-  Plan, PlanPrice, Subscription, SubscriptionPeriod,
-  PaymentCustomer, Payment, Invoice, WebhookEvent, Entitlement
+  ProgramOffer, ProgramPrice, Purchase,
+  PaymentCustomer, Payment, Invoice, WebhookEvent, ProgramEntitlement
 ```
 
-The Content module does NOT create or own entitlement records. Billing is the single source of truth for access rights. Other modules consume an abstraction such as `IAccessContext` with `HasPlatformAccessAsync(userId)` / `RequirePlatformAccessAsync(userId)`.
+`ProgramOffer.ProgramId` is an opaque reference to a Content-owned program. There is no cross-module database foreign key and Billing never edits Content entities. The Content module does NOT create or own entitlement records. Billing is the single source of truth for program access rights. Other modules consume an abstraction such as `IProgramAccessContext` with `HasProgramAccessAsync(userId, programId)` / `RequireProgramAccessAsync(userId, programId)`.
 
-For V1, keep entitlement logic simple — there is essentially one main entitlement: `PlatformAccess`. Do not build a generic feature licensing engine unless required later. The model may still contain a generic `Entitlement` shape (`Id, UserId, Type, ValidFrom, ValidUntil, Status, SourceType, SourceId`) but V1 uses `PlatformAccess`.
+For V1, keep entitlement logic specific: one `ProgramEntitlement` row represents one client's access to one program. Use a uniqueness constraint on `(UserId, ProgramId)`. Store `GrantedAtUtc`, nullable `RevokedAtUtc`, `Status` and `SourcePurchaseId`; do not add a generic feature-licensing engine. Permanent access normally has no end timestamp.
 
 ---
 
-## 16. Subscription states
+## 16. Purchase and entitlement states
 
-`Trialing`, `Active`, `PastDue`, `Canceled`, `Expired`.
+`PurchaseStatus`: `Pending`, `Succeeded`, `Failed`, `Refunded`, `Chargeback`.
 
-* **Trialing / Active** — access allowed.
-* **PastDue** — access remains available until `PaidPeriodEnd + configured grace period` (default 3 days).
-* **Canceled** — access remains until the paid period ends (no immediate removal).
-* **Expired** — no protected access; account and historical data remain intact.
+* **Pending / Failed** — no access is granted.
+* **Succeeded** — an active permanent `ProgramEntitlement` is granted idempotently for the purchased program.
+* **Refunded / Chargeback** — access may be revoked according to the explicit business operation; historical records remain intact.
+
+V1 has no trials, recurring billing periods, grace periods, cancellation-at-period-end or automatic entitlement expiration.
 
 ---
 
@@ -273,10 +277,10 @@ For V1, keep entitlement logic simple — there is essentially one main entitlem
 Stripe is the initial provider. Never trust payment status reported by the browser.
 
 ```text
-Client → Checkout Session → Stripe → Webhook → Billing module → Subscription → Entitlement
+Client selects ProgramOffer → Checkout Session → Stripe → Webhook → Billing module → Purchase → ProgramEntitlement
 ```
 
-The checkout-success redirect is informational only. Only validated provider webhooks may activate access.
+The checkout-success redirect is informational only. Only validated, idempotently processed provider webhooks may mark a purchase successful and grant program access. The amount, currency, offer and program are resolved from server-owned records; browser-reported commercial data is never trusted.
 
 Webhook requirements: signature validation; unique provider event ID; idempotent processing; retry safety; raw event storage where appropriate; handling out-of-order events; structured audit trail.
 
@@ -299,7 +303,7 @@ Initial domains: Psychology, Sport, Nutrition, Business, FinancialEducation. Do 
 
 **ContentItem**: V1 supports only `Video` and `RichText`. `Id, SectionId, Type, SortOrder, IsRequired, MediaAssetId?, CreatedAt, UpdatedAt`. Translated fields may include `Title, Body` depending on type. Do not implement a fully dynamic content-type registry in V1; design cleanly enough that future types can be added through explicit handlers/components. Avoid speculative plugin architectures.
 
-**MediaAsset**: `Id, Provider, ProviderAssetId, ProviderPlaybackId, DurationSeconds, ThumbnailUrl, ProcessingStatus, CreatedAt, UpdatedAt`. Processing status: `Uploading, Processing, Ready, Failed`. Signed playback authorization must validate active PlatformAccess before generating the playback token or URL.
+**MediaAsset**: `Id, Provider, ProviderAssetId, ProviderPlaybackId, DurationSeconds, ThumbnailUrl, ProcessingStatus, CreatedAt, UpdatedAt`. Processing status: `Uploading, Processing, Ready, Failed`. Signed playback authorization must validate an active `ProgramEntitlement` for the content item's owning program before generating the playback token or URL.
 
 ---
 
@@ -319,7 +323,7 @@ Do not persist a separate `ProgramProgress` table in V1 unless performance measu
 
 ## 25–28. Questionnaire and guidance
 
-Entities: `Questionnaire/QuestionnaireTranslation`, `Question/QuestionTranslation`, `QuestionOption/QuestionOptionTranslation`, `QuestionnaireSubmission`, `QuestionnaireAnswer`, `GuidanceResponse`, `GuidanceFollowUp`.
+Entities: `Questionnaire/QuestionnaireTranslation`, `Question/QuestionTranslation`, `QuestionOption/QuestionOptionTranslation`, `QuestionnaireSubmission`, `QuestionnaireAnswer`, `GuidanceResponse`, `GuidanceFollowUp`. Every published questionnaire belongs to a `ProgramId`; starting, resuming, submitting and reading guidance require access to that program.
 
 Question types: `Text, LongText, SingleChoice, MultiChoice, Scale`.
 
@@ -341,7 +345,7 @@ Entities: `Event/EventTranslation`, `EventRegistration`, `EventReminder`.
 
 **Event**: `Id, StartsAtUtc, EndsAtUtc, DisplayTimezone, LocationType, Location, MeetingUrl, Capacity, Status, CreatedAt, PublishedAt`. LocationType: `Online, Physical`. Status: `Draft, Published, Canceled, Completed`.
 
-Registration states: `Registered, Waitlisted, Canceled`. Rules: registration closes when the event begins; optional capacity; if full, new registration becomes Waitlisted; on cancellation, promote the oldest eligible waitlisted user; registration requires active PlatformAccess.
+An event may be public to all authenticated clients or associated with one or more programs. Registration states: `Registered, Waitlisted, Canceled`. Rules: registration closes when the event begins; optional capacity; if full, new registration becomes Waitlisted; on cancellation, promote the oldest eligible waitlisted user; registration for a program-associated event requires access to at least one associated program.
 
 Default reminders: 24h before, 1h before, via Hangfire. Jobs must be idempotent, retryable, locale-aware, timezone-aware, observable, and respect notification preferences.
 
@@ -351,7 +355,7 @@ Default reminders: 24h before, 1h before, via Hangfire. Jobs must be idempotent,
 
 V1 implements email notifications only, behind a small channel abstraction `INotificationSender`. Do NOT implement SMS or push providers.
 
-Types: `EmailVerification, PasswordReset, Welcome, SubscriptionActivated, PaymentFailed, SubscriptionEnding, QuestionnaireSubmitted, GuidancePublished, EventRegistrationConfirmed, EventReminder, ChatPinnedMessage`.
+Types: `EmailVerification, PasswordReset, Welcome, ProgramPurchased, ProgramAccessRevoked, PaymentFailed, QuestionnaireSubmitted, GuidancePublished, EventRegistrationConfirmed, EventReminder, ChatPinnedMessage`.
 
 Security and transactional notifications cannot be disabled. Marketing/community notifications may be disabled.
 
@@ -359,13 +363,13 @@ Security and transactional notifications cannot be disabled. Marketing/community
 
 ## 33–34. Chat scope
 
-Fixed rooms only: `General, Psychology, Sport, Nutrition, Business, FinancialEducation`. No dynamic room creation.
+Admin-managed program rooms only in V1. A room must reference a program, and only clients entitled to that program may read or post in it. A program may have zero or more predefined rooms; clients cannot create rooms.
 
 No: direct messages, attachments, voice messages, threads, reactions, group creation, private rooms.
 
 Features: text messages, pagination, basic unread state, pinning, delete moderation, temporary mute, reporting, soft delete. Use SignalR if it stays straightforward; polling is acceptable if SignalR becomes a launch blocker — do not delay release for real-time perfection.
 
-Every group-chat room must show a persistent localized notice that it is a shared public subscriber area, warning against posting sensitive health/financial/personal information.
+Every group-chat room must show a persistent localized notice that it is a shared area for clients who purchased that program, warning against posting sensitive health/financial/personal information.
 
 ---
 
@@ -389,7 +393,7 @@ Instead: localized safety/disclaimer information on psychology-related pages; cl
 
 ## 37. Audit
 
-Audit business-critical and security-relevant actions, e.g.: `user.login, user.failed_login, user.password_reset, user.role_changed, subscription.created, subscription.activated, subscription.canceled, subscription.expired, payment.webhook_processed, questionnaire.submitted, questionnaire.read, guidance.published, content.published, event.published, event.canceled, chat.message_moderated, chat.user_muted`.
+Audit business-critical and security-relevant actions, e.g.: `user.login, user.failed_login, user.password_reset, user.role_changed, program_offer.created, program_offer.updated, purchase.created, purchase.succeeded, purchase.refunded, program_access.granted, program_access.revoked, payment.webhook_processed, questionnaire.submitted, questionnaire.read, guidance.published, content.published, event.published, event.canceled, chat.message_moderated, chat.user_muted`.
 
 `AuditLog`: `Id, ActorUserId, Action, EntityType, EntityId, TimestampUtc, CorrelationId, IpAddress (where justified), Metadata`. Never record secret tokens or questionnaire text.
 
@@ -397,7 +401,7 @@ Audit business-critical and security-relevant actions, e.g.: `user.login, user.f
 
 ## 38. Admin and cross-module reporting
 
-Administrative screens may use dedicated cross-module read models (e.g. `SubscriberAdminView` combining `Identity.User`, `Billing.Subscription`, `Billing.Entitlement`, progress summary, last activity). Must be read-only, explicit, documented, optimized separately, and prohibited from changing module-owned state.
+Administrative screens may use dedicated cross-module read models (e.g. `CustomerPurchaseAdminView` combining `Identity.User`, `Billing.Purchase`, `Billing.ProgramEntitlement`, the Content-owned program title, progress summary and last activity). Must be read-only, explicit, documented, optimized separately, and prohibited from changing module-owned state.
 
 ---
 
@@ -423,9 +427,9 @@ Client navigation: `Home, Programs, Events, Community, My Guidance, Billing, Pro
 
 **Dashboard** should feel premium, calm and goal-oriented (not enterprise admin-like). Hierarchy: Hero/Continue card (program, section, progress, remaining content, CTA); Personalized guidance (latest response preview, or "under review" state); Progress overview (overall completion, active programs, recently completed sections — avoid excessive charts); Upcoming event; optional lightweight Community activity.
 
-**Programs screen**: title, intro, domain filter, program cards (cover, domain, title, short description, progress, sections completed, CTA: Start/Continue/Completed).
+**Programs screen**: title, intro, domain filter, program cards (cover, domain, title, short description, price, ownership/lock state, progress when owned, CTA: View/Buy/Start/Continue/Completed).
 
-**Program detail**: header (cover, domain, title, description, progress, primary action); overview; sections list (number, title, description, completion state, content count). Avoid unnecessary metadata.
+**Program detail**: public commercial header (cover, domain, title, description, active offer and price, Buy CTA when not owned); overview; curriculum preview. Full item bodies, playback data, questionnaires, progress and associated features remain protected until purchase. Owned programs show progress and Start/Continue actions instead of Buy.
 
 **Program player** — desktop: header, left curriculum sidebar, right current-content pane (video/rich text), previous/next-or-complete footer. Mobile: header, progress, current content, previous/next, curriculum drawer (not a shrunk sidebar).
 
@@ -435,11 +439,11 @@ Client navigation: `Home, Programs, Events, Community, My Guidance, Billing, Pro
 
 Navigation: `Dashboard, Programs, Questionnaires, Events, Community, Subscribers, Billing, Notifications, Audit, Settings`.
 
-**Expert dashboard** emphasizes actions requiring attention: pending questionnaires, oldest unanswered submission, upcoming events, active subscribers, recent subscription changes, reported chat messages, recent published content. KPI cards: active subscribers, pending questionnaires, upcoming events, monthly subscription revenue. Avoid vanity metrics.
+**Expert dashboard** emphasizes actions requiring attention: pending questionnaires, oldest unanswered submission, upcoming events, recent purchases/refunds, reported chat messages, recent published content. KPI cards: customers with purchases, completed purchases, pending questionnaires, upcoming events, purchase revenue. Avoid vanity metrics.
 
 **Program management**: `All / Drafts / Published / Archived`. Table columns: Title, Domain, Sections, Language coverage, Status, Updated, Actions (Edit, Preview, Publish/Unpublish, Duplicate, Archive).
 
-**Program editor** — three-area layout: left Structure (sections/content items, add/duplicate/delete/reorder), center Editor (rich text editor, video configuration, section/program metadata), right Properties (language, status, required, ordering, translation status). Support drag-and-drop where appropriate.
+**Program editor** — three-area layout: left Structure (sections/content items, add/duplicate/delete/reorder), center Editor (rich text editor, video configuration, section/program metadata), right Properties (language, status, required, ordering, translation status). Include a commercial area where authorized administrators create/edit a `ProgramOffer`, set its one-time `ProgramPrice` and currency, activate/deactivate sales and inspect validation preventing purchase without an active offer. Support drag-and-drop where appropriate.
 
 **Translation management** is contextual within the editor (Romanian: Complete / English: Missing description, etc.) — no separate translation-management app.
 
@@ -451,7 +455,7 @@ Navigation: `Dashboard, Programs, Questionnaires, Events, Community, Subscribers
 
 **Chat moderation**: Reported Messages, Muted Users, Recent Moderator Actions. Per report: message context, author, reporter, reason, timestamp. Actions: Dismiss, Delete Message, Mute User. Keep tooling simple in V1.
 
-**Billing administration**: subscriber table (Subscriber, Email, Subscription Status, Current Period, Access Until, Payment State, Created); subscription detail (plan, provider subscription id, status, current period, payments, invoices, entitlement, webhook timeline). Do not expose raw webhook payloads in ordinary support UI unless restricted to technical administrators.
+**Billing administration**: offers by program; customer purchase table (Customer, Email, Program, Purchase Status, Amount, Currency, Purchased At, Access Status); purchase detail (offer and price snapshot, provider payment id, payment, invoice, program entitlement, refund/chargeback state, webhook timeline). Offer creation and editing require `billing.manage`. Do not expose raw webhook payloads in ordinary support UI unless restricted to technical administrators.
 
 ---
 
@@ -521,13 +525,13 @@ Self-service data export as a JSON archive plus user-owned attachments where app
 
 ## 67. Performance target
 
-Design for ~2,000 active subscribers / ~200 concurrent users. Do not optimize for millions. Targets: low-hundreds-of-ms typical API requests; efficient dashboard queries; paginated chat; CDN video delivery; usage-based indexes; no premature distributed caching.
+Design for ~2,000 customers with purchases / ~200 concurrent users. Do not optimize for millions. Targets: low-hundreds-of-ms typical API requests; efficient dashboard queries; paginated chat; CDN video delivery; usage-based indexes; no premature distributed caching.
 
 ---
 
 ## 68. Testing priorities
 
-Highest-risk coverage: **Billing** (webhook idempotency, out-of-order events, cancellation, expiration, grace period, re-subscription); **Entitlements** (every subscription state); **Security** (endpoint permissions, cross-user access attempts, questionnaire privacy); **Questionnaires** (draft, submission, guidance, versioning, bounded follow-up); **Localization** (translation lookup, fallback); **Events** (capacity, waitlist, promotion, reminder scheduling, timezone handling); **Content progress** (video resume, completion threshold, rich-text manual completion).
+Highest-risk coverage: **Billing** (server-owned price selection, webhook signature validation, idempotency, concurrent duplicate delivery, out-of-order events, refund and chargeback handling); **Program entitlements** (cross-program denial, permanent access, duplicate purchase protection, revocation without data deletion); **Security** (endpoint permissions, cross-user and cross-program access attempts, questionnaire privacy); **Questionnaires** (draft, submission, guidance, versioning, bounded follow-up); **Localization** (translation lookup, fallback); **Events** (program association, capacity, waitlist, promotion, reminder scheduling, timezone handling); **Content progress** (video resume, completion threshold, rich-text manual completion).
 
 ---
 
@@ -535,10 +539,10 @@ Highest-risk coverage: **Billing** (webhook idempotency, out-of-order events, ca
 
 * **Phase 1 — Foundation**: solution structure, PostgreSQL, authentication, users, roles, permissions, localization infrastructure, design system, logging, audit, Docker, CI foundation. *Deliverable: production-shaped skeleton where users can register, verify email, log in and navigate localized UI.*
 * **Phase 2 — Content**: domains, programs, sections, Video/RichText content, translations, admin content authoring, video-provider integration, client program UI, progress tracking. *Deliverable: expert can publish programs, clients can consume them.*
-* **Phase 3 — Billing and access**: plans, Stripe, Checkout, webhook handling, subscriptions, PlatformAccess entitlement, billing portal, invoices, access gating. *Deliverable: only valid subscribers access protected functionality.*
+* **Phase 3 — Program commerce and access**: admin-managed program offers and one-time prices, Stripe Checkout, webhook handling, purchases, invoices, permanent ProgramEntitlement records and per-program access gating. *Deliverable: clients can buy programs separately and access only what they purchased.*
 * **Phase 4 — Questionnaire and guidance**: questionnaire builder, localized questions, drafts, submissions, expert review queue, guidance, versioning, one follow-up, sensitive-data protection. *Deliverable: expert-led personalization works end-to-end.*
-* **Phase 5 — Events**: event authoring, translations, registration, capacity, waitlist, email reminders. *Deliverable: subscribers discover and register for live activities.*
-* **Phase 6 — Community**: fixed chat rooms, SignalR or polling, reports, moderation, mute, pin, privacy notice. *May move after launch under delivery pressure.*
+* **Phase 5 — Events**: event authoring, translations, optional program association, registration, capacity, waitlist, email reminders. *Deliverable: eligible clients discover and register for live activities.*
+* **Phase 6 — Community**: program-associated rooms, SignalR or polling, reports, moderation, mute, pin, privacy notice. *May move after launch under delivery pressure.*
 * **Phase 7 — Launch readiness**: expert dashboard, admin views, GDPR export/delete, accessibility, performance, error monitoring, production configuration, backup strategy, deployment.
 
 ---
@@ -602,9 +606,9 @@ Implement incrementally after architecture approval — do NOT generate the full
 
 The resulting V1 must feel like a complete commercial product, not an architectural prototype.
 
-The **expert** must be able to: manage programs; publish multilingual educational content; review subscriber questionnaires; provide personalized written guidance; manage subscribers; publish events; moderate community discussions; inspect billing and subscriptions.
+The **expert/administrator** must be able to: manage programs; publish multilingual educational content; create and manage one-time program offers and prices; review client questionnaires; provide personalized written guidance; inspect customers, purchases, payments and program entitlements; publish events; moderate program communities.
 
-The **client** must be able to: register; subscribe; complete onboarding; consume structured programs; resume video content; track progress; submit questionnaires; receive expert guidance; register for events; participate in community discussions; manage billing; manage profile and language.
+The **client** must be able to: register; browse programs in the five domains; purchase programs separately; permanently access only purchased programs; resume video content; track progress; submit program questionnaires; receive expert guidance; register for eligible events; participate in purchased-program communities; inspect purchases and invoices; manage profile and language.
 
 The system must be secure, maintainable, responsive and multilingual.
 

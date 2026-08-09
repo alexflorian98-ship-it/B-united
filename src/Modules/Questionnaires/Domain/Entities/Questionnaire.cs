@@ -9,10 +9,11 @@ public sealed class Questionnaire : IAuditableEntity
     {
     }
 
-    public static Questionnaire Create(string defaultLanguage, Guid? createdBy) =>
+    public static Questionnaire Create(Guid programId, string defaultLanguage, Guid? createdBy) =>
         new()
         {
             Id = Guid.NewGuid(),
+            ProgramId = programId,
             DefaultLanguage = defaultLanguage,
             Status = QuestionnaireStatus.Draft,
             CreatedBy = createdBy,
@@ -20,6 +21,13 @@ public sealed class Questionnaire : IAuditableEntity
         };
 
     public Guid Id { get; private set; }
+
+    /// <summary>Opaque reference to the Content-owned program this questionnaire belongs to — a
+    /// plain <see cref="Guid"/> with no FK constraint, matching <c>ProgramOffer.ProgramId</c>/
+    /// <c>Purchase.ProgramId</c>'s convention (CLAUDE.md: never reference another module's Domain
+    /// or Infrastructure layer). Feeds <see cref="BUnited.BuildingBlocks.Application.Access.IProgramAccessContext"/>
+    /// per-program entitlement gating (ADR-003).</summary>
+    public Guid ProgramId { get; private set; }
 
     public string DefaultLanguage { get; private set; } = string.Empty;
 

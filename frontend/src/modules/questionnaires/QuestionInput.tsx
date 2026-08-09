@@ -50,7 +50,7 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={4}
-          className="rounded-md border border-border-default px-3 py-2 text-sm text-text-primary"
+          className="rounded-lg border border-border-default bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted"
         />
       </div>
     );
@@ -76,6 +76,7 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
                 value={option.value}
                 checked={value === option.value}
                 onChange={() => onChange(option.value)}
+                className="h-4 w-4 accent-primary"
               />
               {option.label}
             </label>
@@ -108,6 +109,7 @@ export function QuestionInput({ question, value, onChange }: QuestionInputProps)
                   : selectedValues.filter((v) => v !== option.value);
                 onChange(next.join(","));
               }}
+              className="h-4 w-4 accent-primary"
             />
             {option.label}
           </label>

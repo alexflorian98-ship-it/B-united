@@ -87,6 +87,14 @@ public sealed class User : IAuditableEntity
         _userRoles.Add(new UserRole(Id, roleId));
     }
 
+    /// <summary>Idempotent-safe: removing a role the user doesn't hold is a no-op, not an error
+    /// — mirrors <see cref="AssignRole"/>'s idempotency. Callers enforcing business rules (e.g.
+    /// "never remove the last Administrator") must check that before calling this.</summary>
+    public void RemoveRole(Guid roleId)
+    {
+        _userRoles.RemoveAll(ur => ur.RoleId == roleId);
+    }
+
     public bool IsLockedOut(DateTime utcNow) => LockoutEndUtc is not null && LockoutEndUtc > utcNow;
 
     /// <summary>
@@ -107,5 +115,27 @@ public sealed class User : IAuditableEntity
     {
         FailedLoginAttemptCount = 0;
         LockoutEndUtc = null;
+    }
+
+    /// <summary>Account-deletion anonymization (docs/DATA_RETENTION_POLICY.md — "Why the User
+    /// row is anonymized, not deleted"): the row cannot be hard-deleted because
+    /// <c>UserConsent</c> holds a <c>DeleteBehavior.Restrict</c> foreign key to it (a compliance
+    /// record that must survive account deletion). <paramref name="anonymizedPasswordHash"/> MUST
+    /// already be a hash of a random, discarded value the caller generated — this method does not
+    /// hash anything itself. Idempotent-safe to call twice (e.g. a retried request after a
+    /// transient failure), though the caller should not normally get the chance to.</summary>
+    public void AnonymizeForDeletion(DateTime utcNow, string anonymizedPasswordHash)
+    {
+        if (string.IsNullOrWhiteSpace(anonymizedPasswordHash))
+        {
+            throw new ArgumentException("An anonymized password hash is required.", nameof(anonymizedPasswordHash));
+        }
+
+        var anonymizedEmail = $"deleted-{Id:N}@deleted.bunited.local";
+        Email = anonymizedEmail;
+        NormalizedEmail = Normalize(anonymizedEmail);
+        PasswordHash = anonymizedPasswordHash;
+        IsActive = false;
+        LockoutEndUtc = utcNow.AddYears(100);
     }
 }

@@ -4,6 +4,11 @@
     <ProjectReference Include="..\Application\BUnited.Modules.Admin.Application.csproj" />
     <ProjectReference Include="..\Domain\BUnited.Modules.Admin.Domain.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\Infrastructure\BUnited.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Identity\Contracts\BUnited.Modules.Identity.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <PropertyGroup>

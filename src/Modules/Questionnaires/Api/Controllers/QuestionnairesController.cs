@@ -43,7 +43,7 @@ public sealed class QuestionnairesController(
     [HttpGet("{questionnaireId:guid}")]
     public async Task<ActionResult<ClientQuestionnaireDto>> Get(Guid questionnaireId, [FromQuery] string language, CancellationToken cancellationToken)
     {
-        var result = await getClientQuestionnaireHandler.HandleAsync(questionnaireId, language, cancellationToken);
+        var result = await getClientQuestionnaireHandler.HandleAsync(User.GetUserId(), questionnaireId, language, cancellationToken);
         return Ok(result);
     }
 

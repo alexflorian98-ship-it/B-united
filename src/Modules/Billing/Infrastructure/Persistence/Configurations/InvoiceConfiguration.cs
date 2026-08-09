@@ -16,9 +16,9 @@ public sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         builder.Property(i => i.CreatedAt).IsRequired();
         builder.Property(i => i.UpdatedAt).IsRequired();
 
-        builder.HasIndex(i => i.SubscriptionId);
+        builder.HasIndex(i => i.PurchaseId);
         builder.HasIndex(i => i.PaymentId);
-        builder.HasOne<Subscription>().WithMany().HasForeignKey(i => i.SubscriptionId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<Purchase>().WithMany().HasForeignKey(i => i.PurchaseId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne<Payment>().WithMany().HasForeignKey(i => i.PaymentId).OnDelete(DeleteBehavior.Restrict);
     }
 }

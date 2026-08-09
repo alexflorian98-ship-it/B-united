@@ -19,6 +19,6 @@ public sealed class WebhookEventConfiguration : IEntityTypeConfiguration<Webhook
         // Idempotent processing (P3.08) hinges entirely on this constraint.
         builder.HasIndex(e => e.ProviderEventId).IsUnique();
         builder.HasIndex(e => e.EventType);
-        builder.HasIndex(e => e.SubscriptionId);
+        builder.HasIndex(e => e.PurchaseId);
     }
 }

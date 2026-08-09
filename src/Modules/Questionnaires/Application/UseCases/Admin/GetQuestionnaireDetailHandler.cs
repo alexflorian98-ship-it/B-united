@@ -58,6 +58,7 @@ public sealed class GetQuestionnaireDetailHandler(DbContext dbContext)
 
         return new QuestionnaireDetailDto(
             questionnaire.Id,
+            questionnaire.ProgramId,
             questionnaire.Status.ToString(),
             questionnaire.DefaultLanguage,
             translations,

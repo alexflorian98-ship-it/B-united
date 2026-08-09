@@ -1,7 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { ClientLayout } from "./ClientLayout";
+import { useAuthStore } from "../shared/auth/authStore";
+import { WellKnownPermissions } from "../shared/permissions/wellKnownPermissions";
+
+afterEach(() => useAuthStore.setState({ status: "unauthenticated", accessToken: null, user: null }));
 
 function renderAt(path: string) {
   return render(
@@ -44,5 +48,14 @@ describe("ClientLayout", () => {
     // "My Guidance" and "Billing" are sidebar-only (not in the mobile priority set).
     expect(screen.queryAllByRole("link", { name: "My Guidance" })).toHaveLength(1);
     expect(screen.queryAllByRole("link", { name: "Billing" })).toHaveLength(1);
+  });
+
+  it("shows administration navigation only to an authorized user", () => {
+    const user = { id: "admin-1", email: "admin@example.com", permissions: [WellKnownPermissions.ContentCreate] };
+    useAuthStore.setState({ status: "authenticated", accessToken: "token", user });
+    renderAt("/");
+
+    expect(screen.getByRole("link", { name: "Administration" })).toHaveAttribute("href", "/admin");
+    expect(screen.getByRole("link", { name: "Admin" })).toHaveAttribute("href", "/admin");
   });
 });

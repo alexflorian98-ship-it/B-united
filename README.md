@@ -1,16 +1,21 @@
 # B-United — Personal Development Platform (V1)
 
-Single-organization, subscription-based personal development platform.
+Single-organization, program-purchase-based personal development platform.
 One expert, five content domains (Psychology, Sport, Nutrition, Business,
 Financial Education), structured programs, questionnaire-driven expert
 guidance, progress tracking, community chat and events.
 
 Full product/architecture specification: [`docs/PROMPT.md`](docs/PROMPT.md).
 Architecture decisions: [`docs/adr/`](docs/adr/).
+Current implementation status and per-subtask checklist: [`docs/TASKS.md`](docs/TASKS.md).
+Narrative handover for a new session: [`docs/HANDOVER.md`](docs/HANDOVER.md).
 
-> Status: repository scaffolding only. No implementation yet — see
-> `docs/PROMPT.md` sections 74–76 for the required architecture review and
-> phased delivery plan before writing production code.
+> Status: Phases 0–6 are implemented and live-verified end to end (Identity,
+> Content/Progress, simulated Billing behind `FakePaymentProvider` per
+> ADR-010, Questionnaires/Guidance, Events, Chat/Community). Phase 7
+> ("MVP presentation readiness" — accessibility, performance, demo
+> operational readiness) is in progress; see `docs/TASKS.md` for the
+> authoritative checklist.
 
 ## Repository structure
 
@@ -43,7 +48,7 @@ docs/
 | Content        | Domains, Programs, Sections, ContentItems, MediaAssets + translations |
 | Progress       | ContentProgress, SectionProgress, derived program progress            |
 | Questionnaires | Questionnaires, submissions, answers, expert guidance                 |
-| Billing        | Plans, subscriptions, payments, invoices, PlatformAccess entitlement  |
+| Billing        | Program offers/prices, purchases, payments, invoices, program entitlements |
 | Notifications  | Email notification sending abstraction                                |
 | Events         | Events, registrations, waitlist, reminders                            |
 | Chat           | Fixed community rooms, messages, moderation                           |
@@ -97,7 +102,7 @@ upward from the working directory) and fails fast if
 dotnet run --project src/Api/BUnited.Api.csproj
 ```
 
-By default this listens on `http://localhost:5000` (`launchSettings.json`) and
+By default this listens on `http://localhost:5080` (`launchSettings.json`) and
 only accepts cross-origin requests from `http://localhost:5173` in the
 `Development` environment (`appsettings.Development.json`'s
 `Cors:AllowedOrigins`) — see `src/BuildingBlocks/Security/Cors/CorsExtensions.cs`.
@@ -110,7 +115,7 @@ below won't be able to reach the Api (its requests will be rejected by CORS).
 
 ```
 cd frontend
-cp .env.example .env   # defaults to http://localhost:5000/api/v1, matching the Api host above
+cp .env.example .env   # defaults to http://localhost:5080/api/v1, matching the Api host above
 npm install
 npm run dev
 ```
@@ -118,6 +123,54 @@ npm run dev
 This starts the Vite dev server on `http://localhost:5173`. The Api host must
 already be running (see above) for registration/login/etc. to work — the SPA
 makes real HTTP calls, it has no mock backend mode.
+
+## Demo / one-command startup
+
+For a presentation or a clean disposable instance, run the whole backend
+(API + PostgreSQL) with Docker Compose — no `.env` file and no third-party
+credentials are required; every external integration is a deterministic
+local fake for V1 (`FakePaymentProvider`/ADR-010, YouTube URL registration/
+ADR-005 needs no API key, email is logged not sent):
+
+```
+docker compose up --build
+```
+
+This builds and starts `bunited-postgres` (its own disposable Docker
+volume — never your host's native PostgreSQL data) and `bunited-api` on
+`http://localhost:8080`, running EF Core migrations and the idempotent
+seeders (roles/permissions, content domains, one seeded program with an
+active offer) automatically on startup. Then, in a second terminal, start
+the SPA against it:
+
+```
+cd frontend
+npm install
+VITE_API_BASE_URL=http://localhost:8080/api/v1 npm run dev
+```
+
+and open `http://localhost:5173`.
+
+**Primary presentation journey** (client side): register a new account →
+verify the email (the `LoggingIdentityEmailSender` logs the verification
+event to the Api console; see `docs/HANDOVER.md` for the current
+known-gap around retrieving the raw link without a real mail provider) →
+browse the program catalogue → buy a program (`FakePaymentProvider`
+resolves synchronously — pick the "success" demo outcome) → consume its
+content (video + rich-text items, progress tracked automatically) →
+submit a questionnaire → receive expert guidance → post in a community
+chat room → register for an event.
+
+**Reverse admin/expert journey**: sign in as `admin@bunited.local` →
+author/publish a program and its offer → review a submitted
+questionnaire and publish guidance as the expert → moderate a chat
+message → publish/cancel an event.
+
+**Resetting between demo runs**: `docker compose down -v` removes the
+`postgres-data` volume entirely, so the next `docker compose up` starts
+from a fully clean, freshly re-seeded database. There is currently no
+finer-grained "wipe only demo data" command — see `docs/TASKS.md` P7.18
+for the tracked gap and rationale.
 
 ## Next steps
 

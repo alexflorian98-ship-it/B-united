@@ -7,51 +7,59 @@
  * See shared/design-system/README.md for usage rules.
  */
 @theme {
-  /* Color: Background/Surface -------------------------------------------------------- */
-  --color-background: #fafaf9;
-  --color-surface: #ffffff;
+  /* Color: Background/Surface — warm editorial cream, not clinical white -------------------- */
+  --color-background: #f7f2e7;
+  --color-surface: #fffdf8;
   --color-surface-raised: #ffffff;
+  --color-surface-sunken: #efe7d6;
 
-  /* Color: Border --------------------------------------------------------------------- */
-  --color-border-default: #e5e7eb;
-  --color-border-strong: #d1d5db;
+  /* Color: Border — warmed neutrals instead of cool grays ----------------------------------- */
+  --color-border-default: #e4d9c2;
+  --color-border-strong: #cdbc98;
 
-  /* Color: Text ------------------------------------------------------------------------ */
-  --color-text-primary: #111827;
-  --color-text-secondary: #4b5563;
-  --color-text-muted: #9ca3af;
+  /* Color: Text — deep warm charcoal/green-black on cream ------------------------------------ */
+  --color-text-primary: #23291f;
+  --color-text-secondary: #55604c;
+  --color-text-muted: #8a8a72;
 
-  /* Color: Brand ------------------------------------------------------------------------ */
-  --color-primary: #0f6e63;
-  --color-primary-hover: #0b5850;
+  /* Color: Brand — deep forest green ---------------------------------------------------------- */
+  --color-primary: #1f3d2e;
+  --color-primary-hover: #16301f;
+  --color-on-primary: #f7f2e7;
 
-  /* Color: Semantic status --------------------------------------------------------------- */
-  --color-success: #16794f;
-  --color-warning: #b45309;
-  --color-danger: #b91c1c;
-  --color-info: #1d4e89;
+  /* Color: Accent — gold/terracotta, for highlights, progress and secondary CTAs -------------- */
+  --color-accent: #b5824a;
+  --color-accent-hover: #9c6d3a;
+  --color-on-accent: #241a0d;
+
+  /* Color: Semantic status — kept distinct from brand/accent hues ---------------------------- */
+  --color-success: #2f7a4d;
+  --color-warning: #b3691a;
+  --color-danger: #b3261e;
+  --color-info: #2f5f8a;
 
   /* Color: Focus ring (WCAG 2.2 AA — always visible, independent of element color) ------- */
   --color-focus-ring: #2563eb;
 
-  /* Radius --------------------------------------------------------------------------------- */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
+  /* Radius — slightly more generous than a default SaaS scale, editorial rather than boxy --- */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
   --radius-full: 9999px;
 
-  /* Shadow (subtle — no heavy drop shadows, per the "calm, not gamified" tone brief) ------- */
-  --shadow-sm: 0 1px 2px 0 rgb(17 24 39 / 0.05);
-  --shadow-md: 0 2px 8px 0 rgb(17 24 39 / 0.08);
-  --shadow-lg: 0 8px 24px -4px rgb(17 24 39 / 0.12);
+  /* Shadow (subtle, warm-tinted — no heavy drop shadows, per the "calm, not gamified" brief) - */
+  --shadow-sm: 0 1px 2px 0 rgb(35 30 15 / 0.06);
+  --shadow-md: 0 4px 16px -2px rgb(35 30 15 / 0.1);
+  --shadow-lg: 0 12px 32px -8px rgb(35 30 15 / 0.16);
 
   /* Breakpoints (§58: Mobile / Tablet / Laptop-Desktop) — named aliases alongside Tailwind's
      default sm/md/lg/xl scale, for components that want to express intent explicitly. */
   --breakpoint-tablet: 48rem;   /* 768px */
   --breakpoint-desktop: 64rem;  /* 1024px */
 
-  /* Typography ------------------------------------------------------------------------------ */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Typography — Playfair Display for editorial headings, Inter for interface text ----------- */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, "Times New Roman", serif;
 }
 
 /*
@@ -71,6 +79,17 @@
 body {
   background-color: var(--color-background);
   color: var(--color-text-primary);
+  font-family: var(--font-sans);
+}
+
+/* Editorial heading rhythm: Playfair Display for every semantic heading, so pages don't need to
+   repeat `font-serif` by hand on each h1/h2/h3. Component-level classes can still override. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* Consistent, always-visible keyboard focus indicator on every interactive element —

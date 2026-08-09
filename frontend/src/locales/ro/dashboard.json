@@ -2,5 +2,44 @@
   "greeting": "Bine ai venit, {{email}}",
   "accountVerified": "Confirmat",
   "phase1Notice": "Contul tău este activ. Programele, evenimentele și funcțiile de comunitate urmează.",
-  "adminPhase1Notice": "Instrumentele de administrare vor apărea aici pe măsură ce sunt lansate — niciuna nu este disponibilă încă în această etapă."
+  "adminPhase1Notice": "Instrumentele de administrare vor apărea aici pe măsură ce sunt lansate — niciuna nu este disponibilă încă în această etapă.",
+  "upcomingEvent": "Eveniment viitor",
+  "adminOverview": {
+    "title": "Prezentare generală",
+    "loadError": "Nu s-a putut încărca panoul de control.",
+    "kpis": {
+      "customersWithPurchases": "Clienți cu achiziții",
+      "completedPurchases": "Achiziții finalizate",
+      "pendingQuestionnaires": "Chestionare în așteptare",
+      "upcomingEvents": "Evenimente viitoare",
+      "revenue": "Venituri"
+    },
+    "questionnaires": {
+      "title": "Chestionare în așteptare",
+      "empty": "Nu există trimiteri în așteptarea revizuirii.",
+      "oldest": "Cea mai veche așteaptă din {{date}}",
+      "viewQueue": "Deschide coada"
+    },
+    "events": {
+      "title": "Evenimente viitoare",
+      "empty": "Nu există evenimente publicate viitoare.",
+      "capacity": "Capacitate: {{capacity}}",
+      "viewAll": "Vezi evenimentele"
+    },
+    "purchases": {
+      "title": "Achiziții și rambursări recente",
+      "empty": "Nicio activitate recentă de achiziție.",
+      "viewAll": "Vezi achizițiile"
+    },
+    "reports": {
+      "title": "Mesaje raportate",
+      "empty": "Nu există raportări deschise.",
+      "viewAll": "Deschide moderarea"
+    },
+    "content": {
+      "title": "Conținut publicat recent",
+      "empty": "Niciun program publicat recent.",
+      "viewAll": "Vezi programele"
+    }
+  }
 }

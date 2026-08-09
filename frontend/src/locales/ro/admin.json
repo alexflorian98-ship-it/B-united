@@ -10,6 +10,7 @@
     },
     "noPrograms": "Niciun program încă",
     "noProgramsDescription": "Creează primul tău program pentru a începe.",
+    "tableCaption": "Programe",
     "columns": {
       "title": "Titlu",
       "sections": "Secțiuni",
@@ -53,7 +54,28 @@
     "publish": "Publică",
     "unpublish": "Anulează publicarea",
     "archive": "Arhivează",
-    "videoReferenceNotEditable": "Videoclipul în sine nu poate fi schimbat după creare încă — șterge acest element și adaugă unul nou pentru a folosi alt videoclip."
+    "videoReferenceNotEditable": "Videoclipul în sine nu poate fi schimbat după creare încă — șterge acest element și adaugă unul nou pentru a folosi alt videoclip.",
+    "quiz": {
+      "label": "Quiz",
+      "questions": "Întrebări quiz",
+      "question": "Întrebare",
+      "options": "Opțiuni",
+      "addQuestion": "Adaugă întrebare",
+      "addOption": "Adaugă opțiune",
+      "deleteQuestion": "Șterge întrebarea",
+      "deleteOption": "Șterge",
+      "markAsCorrect": "Acesta este răspunsul corect",
+      "correctAnswer": "Răspuns corect",
+      "correctAlreadySetHint": "Această întrebare are deja un răspuns corect. Pentru a-l schimba, șterge mai întâi opțiunea corectă curentă, apoi adaugă noua opțiune ca fiind corectă.",
+      "noQuestionsThisSession": "Nicio întrebare adăugată în această sesiune încă. Folosește formularul de mai jos pentru a adăuga prima.",
+      "noOptionsYet": "Nicio opțiune încă.",
+      "fields": {
+        "questionText": "Textul întrebării",
+        "optionLabel": "Eticheta opțiunii"
+      },
+      "sessionOnlyWarningTitle": "Întrebările și opțiunile afișate aici provin doar din această sesiune de editare",
+      "sessionOnlyWarningBody": "Tot ce adaugi este salvat imediat pe server, dar această pagină nu are momentan cum să reîncarce întrebările și opțiunile existente ale unui quiz — deci dacă părăsești acest element și revii, sau reîncarci pagina, această listă revine la gol, deși întrebările adăugate anterior rămân salvate și vor fi afișate clienților. Evită reîncărcarea paginii cât timp autorizezi un quiz; adaugă toate întrebările și opțiunile într-o singură sesiune."
+    }
   },
   "questionnaires": {
     "title": "Chestionare",
@@ -67,6 +89,7 @@
     },
     "noQuestionnaires": "Niciun chestionar încă",
     "noQuestionnairesDescription": "Creează primul tău chestionar pentru a începe.",
+    "tableCaption": "Chestionare",
     "columns": {
       "title": "Titlu",
       "questions": "Întrebări",
@@ -116,6 +139,7 @@
       "title": "Coadă de răspunsuri",
       "empty": "Niciun răspuns în așteptarea evaluării.",
       "review": "Evaluează",
+      "tableCaption": "Coadă de răspunsuri",
       "columns": {
         "client": "Client",
         "submittedAt": "Trimis la",
@@ -141,11 +165,18 @@
     }
   },
   "billing": {
-    "title": "Abonați",
-    "noSubscribers": "Niciun abonat încă.",
+    "title": "Comerț programe",
+    "purchases": "Achiziții",
+    "offers": "Oferte de programe",
+    "noPurchases": "Nicio achiziție încă.",
+    "activate": "Activează",
+    "deactivate": "Dezactivează",
     "view": "Vezi",
+    "purchasesTableCaption": "Achiziții",
     "columns": {
       "email": "Email",
+      "program": "Program",
+      "amount": "Sumă",
       "status": "Stare",
       "currentPeriodEnd": "Perioada curentă",
       "accessUntil": "Acces până la",
@@ -161,8 +192,170 @@
       "expired": "Expirat"
     },
     "payments": "Plăți",
+    "invoices": "Facturi",
     "webhookTimeline": "Cronologie webhook",
     "processed": "Procesat",
-    "notProcessed": "Neprocesat încă"
+    "notProcessed": "Neprocesat încă",
+    "noOffers": "Nicio ofertă de program încă.",
+    "createOffer": {
+      "title": "Creează ofertă de program",
+      "program": "Program",
+      "selectProgram": "Selectează un program",
+      "amount": "Sumă",
+      "currency": "Monedă",
+      "activateImmediately": "Activează imediat",
+      "submit": "Creează oferta",
+      "success": "Oferta a fost creată."
+    },
+    "updatePrice": {
+      "title": "Actualizează prețul",
+      "amount": "Sumă nouă",
+      "currency": "Monedă",
+      "submit": "Salvează prețul",
+      "success": "Prețul a fost actualizat."
+    }
+  },
+  "events": {
+    "title": "Evenimente",
+    "newEvent": "Eveniment nou",
+    "noEvents": "Niciun eveniment încă",
+    "noEventsDescription": "Creează primul tău eveniment pentru a începe.",
+    "view": "Vezi",
+    "tableCaption": "Evenimente",
+    "columns": {
+      "title": "Titlu",
+      "date": "Dată",
+      "type": "Tip",
+      "registrations": "Înscrieri",
+      "status": "Stare",
+      "actions": "Acțiuni"
+    },
+    "status": {
+      "Draft": "Ciornă",
+      "Published": "Publicat",
+      "Canceled": "Anulat",
+      "Completed": "Încheiat"
+    },
+    "fields": {
+      "defaultLanguage": "Limba implicită",
+      "title": "Titlu",
+      "description": "Descriere",
+      "startsAt": "Începe la",
+      "endsAt": "Se termină la",
+      "displayTimezone": "Fus orar afișat",
+      "locationType": "Tip locație",
+      "location": "Locație",
+      "meetingUrl": "Link întâlnire",
+      "capacity": "Capacitate",
+      "capacityHint": "Lasă gol pentru capacitate nelimitată.",
+      "programIds": "ID-uri programe asociate",
+      "programIdsHint": "ID-uri de program separate prin virgulă. Lasă gol pentru înscriere publică utilizatorilor autentificați."
+    },
+    "schedule": "Program",
+    "programAccess": "Acces la program",
+    "translations": "Traduceri",
+    "publish": "Publică",
+    "cancel": "Anulează evenimentul",
+    "registeredUsers": "Utilizatori înscriși",
+    "noRegistrations": "Nimeni nu s-a înscris încă.",
+    "waitlist": "Listă de așteptare",
+    "noWaitlist": "Nimeni pe lista de așteptare.",
+    "reminders": "Mementouri",
+    "noReminders": "Niciun memento programat.",
+    "reminderType": {
+      "TwentyFourHour": "cu 24h înainte",
+      "OneHour": "cu 1h înainte"
+    },
+    "sent": "Trimis",
+    "notSent": "Netrimis încă"
+  },
+  "chat": {
+    "title": "Moderare comunitate",
+    "reportedMessages": "Mesaje raportate",
+    "noReports": "Niciun mesaj raportat.",
+    "messageAlreadyRemoved": "Mesajul a fost deja șters.",
+    "author": "Autor",
+    "reportedBy": "Raportat de",
+    "reason": "Motiv",
+    "dismiss": "Respinge",
+    "deleteMessage": "Șterge mesajul",
+    "muteUser": "Reduce la tăcere",
+    "mutedUsers": "Utilizatori reduși la tăcere",
+    "noMutedUsers": "Niciun utilizator redus la tăcere momentan.",
+    "until": "Până la",
+    "recentActions": "Acțiuni recente de moderare",
+    "noRecentActions": "Nicio acțiune de moderare încă.",
+    "actionKind": {
+      "MessageDeleted": "Mesaj șters",
+      "UserMuted": "Utilizator redus la tăcere",
+      "ReportDismissed": "Raportare respinsă",
+      "ReportResolved": "Raportare rezolvată"
+    }
+  },
+  "clients": {
+    "title": "Clienți",
+    "search": "Caută",
+    "searchPlaceholder": "Caută după email",
+    "roleFilter": "Rol",
+    "allRoles": "Toate rolurile",
+    "loadError": "Clienții nu au putut fi încărcați.",
+    "noClients": "Niciun client încă",
+    "noClientsDescription": "Conturile înregistrate vor apărea aici.",
+    "tableCaption": "Clienți",
+    "columns": {
+      "email": "Email",
+      "roles": "Roluri",
+      "status": "Stare",
+      "joined": "Înregistrat",
+      "actions": "Acțiuni"
+    },
+    "status": {
+      "active": "Activ",
+      "inactive": "Șters"
+    },
+    "view": "Vezi",
+    "previous": "Anterior",
+    "next": "Următor",
+    "pageOf": "Pagina {{page}} din {{totalPages}}",
+    "detail": {
+      "joined": "Înregistrat pe {{date}}",
+      "emailVerified": "Email verificat",
+      "emailNotVerified": "Email neverificat",
+      "roles": "Roluri",
+      "noRoles": "Niciun rol atribuit.",
+      "removeRole": "Elimină rolul {{role}}",
+      "assignRole": "Atribuie un rol",
+      "selectRole": "Selectează un rol",
+      "assign": "Atribuie",
+      "purchases": "Achiziții",
+      "noPurchases": "Nicio achiziție încă.",
+      "entitlements": "Acces la programe",
+      "noEntitlements": "Niciun acces la programe acordat încă."
+    }
+  },
+  "audit": {
+    "title": "Jurnal de audit",
+    "filters": {
+      "action": "Acțiune",
+      "actionPlaceholder": "ex. user.role_changed",
+      "entityType": "Tip entitate",
+      "entityTypePlaceholder": "ex. User",
+      "from": "De la",
+      "to": "Până la"
+    },
+    "loadError": "Jurnalul de audit nu a putut fi încărcat.",
+    "noEntries": "Nicio înregistrare de audit nu corespunde acestor filtre.",
+    "tableCaption": "Jurnal de audit",
+    "columns": {
+      "timestamp": "Data și ora",
+      "action": "Acțiune",
+      "actor": "Actor",
+      "entity": "Entitate",
+      "metadata": "Detalii"
+    },
+    "systemActor": "Sistem",
+    "previous": "Anterior",
+    "next": "Următor",
+    "pageOf": "Pagina {{page}} din {{totalPages}}"
   }
 }

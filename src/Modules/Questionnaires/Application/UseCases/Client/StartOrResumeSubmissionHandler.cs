@@ -1,3 +1,4 @@
+using BUnited.BuildingBlocks.Application.Access;
 using BUnited.BuildingBlocks.Application.Errors;
 using BUnited.Modules.Identity.Contracts;
 using BUnited.Modules.Questionnaires.Domain;
@@ -8,8 +9,10 @@ namespace BUnited.Modules.Questionnaires.Application.UseCases.Client;
 
 /// <summary>docs/PROMPT.md §35/P4.14: consent must be captured before questionnaire start.
 /// Idempotent: a second call for the same user+questionnaire returns the existing Draft
-/// submission instead of creating a duplicate.</summary>
-public sealed class StartOrResumeSubmissionHandler(DbContext dbContext, IConsentContext consentContext)
+/// submission instead of creating a duplicate. Gated on owning the questionnaire's program
+/// (ADR-003) in addition to consent — this is the actual paywall gate for the questionnaire
+/// flow: starting a submission is the first protected action after browsing the open catalogue.</summary>
+public sealed class StartOrResumeSubmissionHandler(DbContext dbContext, IConsentContext consentContext, IProgramAccessContext programAccessContext)
 {
     public async Task<Guid> HandleAsync(Guid userId, Guid questionnaireId, CancellationToken cancellationToken)
     {
@@ -23,12 +26,11 @@ public sealed class StartOrResumeSubmissionHandler(DbContext dbContext, IConsent
                 "Consent to questionnaire data processing is required before starting a questionnaire.");
         }
 
-        var questionnaireExists = await dbContext.Set<Questionnaire>()
-            .AnyAsync(q => q.Id == questionnaireId && q.Status == QuestionnaireStatus.Published, cancellationToken);
-        if (!questionnaireExists)
-        {
-            throw new NotFoundAppException("The specified questionnaire does not exist or is not published.");
-        }
+        var questionnaire = await dbContext.Set<Questionnaire>()
+            .SingleOrDefaultAsync(q => q.Id == questionnaireId && q.Status == QuestionnaireStatus.Published, cancellationToken)
+            ?? throw new NotFoundAppException("The specified questionnaire does not exist or is not published.");
+
+        await programAccessContext.RequireProgramAccessAsync(userId, questionnaire.ProgramId, cancellationToken);
 
         var existingDraft = await dbContext.Set<QuestionnaireSubmission>()
             .SingleOrDefaultAsync(

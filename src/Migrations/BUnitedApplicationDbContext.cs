@@ -4,8 +4,12 @@ using BUnited.Modules.Audit.Domain.Entities;
 using BUnited.Modules.Audit.Infrastructure.Persistence.Configurations;
 using BUnited.Modules.Billing.Domain.Entities;
 using BUnited.Modules.Billing.Infrastructure.Persistence.Configurations;
+using BUnited.Modules.Chat.Domain.Entities;
+using BUnited.Modules.Chat.Infrastructure.Persistence.Configurations;
 using BUnited.Modules.Content.Domain.Entities;
 using BUnited.Modules.Content.Infrastructure.Persistence.Configurations;
+using BUnited.Modules.Events.Domain.Entities;
+using BUnited.Modules.Events.Infrastructure.Persistence.Configurations;
 using BUnited.Modules.Identity.Domain.Entities;
 using BUnited.Modules.Identity.Infrastructure.Persistence.Configurations;
 using BUnited.Modules.Progress.Domain.Entities;
@@ -33,7 +37,9 @@ public sealed class BUnitedApplicationDbContext : BUnitedDbContext
         typeof(ProgramConfiguration).Assembly,
         typeof(ContentProgressConfiguration).Assembly,
         typeof(QuestionnaireConfiguration).Assembly,
-        typeof(PlanConfiguration).Assembly,
+        typeof(ProgramOfferConfiguration).Assembly,
+        typeof(EventConfiguration).Assembly,
+        typeof(MessageConfiguration).Assembly,
     ];
 
     public BUnitedApplicationDbContext(DbContextOptions<BUnitedApplicationDbContext> options)
@@ -82,6 +88,16 @@ public sealed class BUnitedApplicationDbContext : BUnitedDbContext
 
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
 
+    public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
+
+    public DbSet<QuizQuestionTranslation> QuizQuestionTranslations => Set<QuizQuestionTranslation>();
+
+    public DbSet<QuizOption> QuizOptions => Set<QuizOption>();
+
+    public DbSet<QuizOptionTranslation> QuizOptionTranslations => Set<QuizOptionTranslation>();
+
+    public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
+
     // Progress
     public DbSet<ContentProgress> ContentProgressEntries => Set<ContentProgress>();
 
@@ -109,13 +125,13 @@ public sealed class BUnitedApplicationDbContext : BUnitedDbContext
     public DbSet<GuidanceFollowUp> GuidanceFollowUps => Set<GuidanceFollowUp>();
 
     // Billing
-    public DbSet<Plan> Plans => Set<Plan>();
+    public DbSet<ProgramOffer> ProgramOffers => Set<ProgramOffer>();
 
-    public DbSet<PlanPrice> PlanPrices => Set<PlanPrice>();
+    public DbSet<ProgramPrice> ProgramPrices => Set<ProgramPrice>();
 
-    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<Purchase> Purchases => Set<Purchase>();
 
-    public DbSet<SubscriptionPeriod> SubscriptionPeriods => Set<SubscriptionPeriod>();
+    public DbSet<ProgramEntitlement> ProgramEntitlements => Set<ProgramEntitlement>();
 
     public DbSet<PaymentCustomer> PaymentCustomers => Set<PaymentCustomer>();
 
@@ -125,5 +141,25 @@ public sealed class BUnitedApplicationDbContext : BUnitedDbContext
 
     public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
 
-    public DbSet<Entitlement> Entitlements => Set<Entitlement>();
+    // Events
+    public DbSet<Event> Events => Set<Event>();
+
+    public DbSet<EventTranslation> EventTranslations => Set<EventTranslation>();
+
+    public DbSet<EventRegistration> EventRegistrations => Set<EventRegistration>();
+
+    public DbSet<EventReminder> EventReminders => Set<EventReminder>();
+
+    public DbSet<EventProgram> EventPrograms => Set<EventProgram>();
+
+    // Chat
+    public DbSet<ChatRoom> ChatRooms => Set<ChatRoom>();
+
+    public DbSet<Message> Messages => Set<Message>();
+
+    public DbSet<Report> Reports => Set<Report>();
+
+    public DbSet<Mute> Mutes => Set<Mute>();
+
+    public DbSet<ChatReadState> ChatReadStates => Set<ChatReadState>();
 }

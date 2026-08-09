@@ -10,6 +10,18 @@
   },
   "noPrograms": "No programs yet",
   "noProgramsDescription": "There's nothing published in this domain yet.",
+  "owned": "Owned",
+  "price": "{{amount}} {{currency}}",
+  "unavailable": "Not currently for sale",
+  "paywall": {
+    "title": "Purchase required",
+    "description": "Buy this program to unlock its lessons, progress, guidance, community and restricted events.",
+    "buy": "Buy for {{amount}} {{currency}}",
+    "processing": "Processing purchase…",
+    "failed": "The purchase could not be completed.",
+    "unavailable": "This program is not currently available to purchase.",
+    "viewOffer": "View purchase option"
+  },
   "cta": {
     "start": "Start",
     "continue": "Continue",
@@ -26,7 +38,22 @@
   "noContent": "This program has no content yet.",
   "curriculum": "Curriculum",
   "openCurriculum": "Open curriculum",
+  "exitProgram": "Exit program",
   "next": "Next",
+  "finishProgram": "Finish program",
+  "videoPlaybackError": "YouTube could not play this video here. Retry or open it directly on YouTube.",
+  "watchOnYouTube": "Watch on YouTube",
+  "markVideoCompletedFallback": "Mark lesson as completed",
   "markCompleted": "Mark as completed",
-  "completed": "Completed"
+  "completed": "Completed",
+  "quiz": {
+    "noQuestions": "This quiz has no questions yet.",
+    "submit": "Submit",
+    "submitting": "Submitting…",
+    "retake": "Try again",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "score": "{{correct}} out of {{total}} correct",
+    "selectAllHint": "Select an answer for every question to submit."
+  }
 }

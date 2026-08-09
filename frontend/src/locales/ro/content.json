@@ -10,6 +10,18 @@
   },
   "noPrograms": "Niciun program încă",
   "noProgramsDescription": "Nu există nimic publicat în acest domeniu încă.",
+  "owned": "Deținut",
+  "price": "{{amount}} {{currency}}",
+  "unavailable": "Momentan indisponibil pentru cumpărare",
+  "paywall": {
+    "title": "Este necesară achiziția",
+    "description": "Cumpără acest program pentru a debloca lecțiile, progresul, ghidajul, comunitatea și evenimentele restricționate.",
+    "buy": "Cumpără cu {{amount}} {{currency}}",
+    "processing": "Achiziția se procesează…",
+    "failed": "Achiziția nu a putut fi finalizată.",
+    "unavailable": "Acest program nu este disponibil momentan pentru cumpărare.",
+    "viewOffer": "Vezi opțiunea de cumpărare"
+  },
   "cta": {
     "start": "Începe",
     "continue": "Continuă",
@@ -26,7 +38,22 @@
   "noContent": "Acest program nu are încă niciun conținut.",
   "curriculum": "Curriculă",
   "openCurriculum": "Deschide curricula",
+  "exitProgram": "Ieși din program",
   "next": "Următorul",
+  "finishProgram": "Finalizează programul",
+  "videoPlaybackError": "YouTube nu poate reda momentan acest videoclip aici. Reîncearcă sau deschide-l direct pe YouTube.",
+  "watchOnYouTube": "Deschide pe YouTube",
+  "markVideoCompletedFallback": "Marchează lecția ca finalizată",
   "markCompleted": "Marchează ca finalizat",
-  "completed": "Finalizat"
+  "completed": "Finalizat",
+  "quiz": {
+    "noQuestions": "Acest chestionar nu are încă întrebări.",
+    "submit": "Trimite",
+    "submitting": "Se trimite…",
+    "retake": "Încearcă din nou",
+    "correct": "Corect",
+    "incorrect": "Incorect",
+    "score": "{{correct}} din {{total}} corecte",
+    "selectAllHint": "Selectează un răspuns pentru fiecare întrebare pentru a trimite."
+  }
 }

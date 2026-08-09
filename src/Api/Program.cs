@@ -9,11 +9,17 @@ using BUnited.BuildingBlocks.Security.Abuse;
 using BUnited.BuildingBlocks.Security.Cors;
 using BUnited.Migrations;
 using BUnited.Migrations.Seed;
+using BUnited.Modules.Admin.Infrastructure;
 using BUnited.Modules.Audit.Infrastructure;
 using BUnited.Modules.Billing.Api.Controllers;
 using BUnited.Modules.Billing.Infrastructure;
+using BUnited.Modules.Chat.Api.Controllers;
+using BUnited.Modules.Chat.Infrastructure;
 using BUnited.Modules.Content.Api.Controllers;
 using BUnited.Modules.Content.Infrastructure;
+using BUnited.Modules.Events.Api.Controllers;
+using BUnited.Modules.Events.Application.Jobs;
+using BUnited.Modules.Events.Infrastructure;
 using BUnited.Modules.Identity.Api.Controllers;
 using BUnited.Modules.Identity.Infrastructure;
 using BUnited.Modules.Notifications.Infrastructure;
@@ -21,6 +27,7 @@ using BUnited.Modules.Progress.Api.Controllers;
 using BUnited.Modules.Progress.Infrastructure;
 using BUnited.Modules.Questionnaires.Api.Controllers;
 using BUnited.Modules.Questionnaires.Infrastructure;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -47,7 +54,9 @@ builder.Services.AddControllers(options => options.Filters.Add<FluentValidationA
     .AddApplicationPart(typeof(AdminContentController).Assembly)
     .AddApplicationPart(typeof(ProgressController).Assembly)
     .AddApplicationPart(typeof(QuestionnairesController).Assembly)
-    .AddApplicationPart(typeof(BillingController).Assembly);
+    .AddApplicationPart(typeof(BillingController).Assembly)
+    .AddApplicationPart(typeof(EventsController).Assembly)
+    .AddApplicationPart(typeof(ChatController).Assembly);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi(options =>
 {
@@ -72,9 +81,12 @@ builder.Services.AddContentModule();
 builder.Services.AddProgressModule();
 builder.Services.AddQuestionnairesModule();
 builder.Services.AddNotificationsModule();
+builder.Services.AddEventsModule(builder.Configuration);
+builder.Services.AddChatModule();
+builder.Services.AddAdminModule();
 
-// P3.15: real IAccessContext, replacing the P2.09 StubAccessContext (removed — Billing now owns
-// this decision). See BillingModuleExtensions for the registration.
+// P3.15/ADR-003: real IProgramAccessContext (per-program ownership, not a global subscription
+// check) — Billing owns this decision. See BillingModuleExtensions for the registration.
 builder.Services.AddBillingModule(builder.Configuration);
 
 // P3.32: refuse to start in Production with any demo-only adapter (FakePaymentProvider,
@@ -89,8 +101,18 @@ using (var startupScope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
     await IdentitySeeder.SeedAsync(db);
     await ContentSeeder.SeedAsync(db);
-    await BillingSeeder.SeedAsync(db);
+    await ProgramOfferSeeder.SeedAsync(db);
 }
+
+// P5.08: idempotent 24h/1h event reminder sweep, every 5 minutes. Registered here (post-build,
+// after migrations) rather than inside AddEventsModule, mirroring the seeders above — Hangfire's
+// PostgreSQL storage auto-creates its own "hangfire" schema on first connection. Uses the
+// DI-scoped IRecurringJobManager, not the static RecurringJob API — the DI-based AddHangfire()
+// overload used here does not populate the legacy static JobStorage.Current.
+app.Services.GetRequiredService<IRecurringJobManager>().AddOrUpdate<SendDueEventRemindersHandler>(
+    "send-due-event-reminders",
+    handler => handler.HandleAsync(CancellationToken.None),
+    "*/5 * * * *");
 
 // Configure the HTTP request pipeline.
 // Swagger UI is intentionally scoped to Development only (see docs/DEVELOPMENT_INSTRUCTIONS.md §4:

@@ -8,6 +8,7 @@
     <ProjectReference Include="..\..\Identity\Contracts\BUnited.Modules.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\Audit\Contracts\BUnited.Modules.Audit.Contracts.csproj" />
     <ProjectReference Include="..\..\Notifications\Contracts\BUnited.Modules.Notifications.Contracts.csproj" />
+    <ProjectReference Include="..\..\Content\Contracts\BUnited.Modules.Content.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

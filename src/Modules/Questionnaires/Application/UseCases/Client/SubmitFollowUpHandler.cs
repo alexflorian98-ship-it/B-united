@@ -1,10 +1,11 @@
+using BUnited.BuildingBlocks.Application.Access;
 using BUnited.BuildingBlocks.Application.Errors;
 using BUnited.Modules.Questionnaires.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace BUnited.Modules.Questionnaires.Application.UseCases.Client;
 
-public sealed class SubmitFollowUpHandler(DbContext dbContext)
+public sealed class SubmitFollowUpHandler(DbContext dbContext, IProgramAccessContext programAccessContext)
 {
     public async Task HandleAsync(SubmitFollowUpCommand command, CancellationToken cancellationToken)
     {
@@ -19,6 +20,9 @@ public sealed class SubmitFollowUpHandler(DbContext dbContext)
         {
             throw new NotFoundAppException("The specified guidance response does not exist.");
         }
+
+        var programId = await QuestionnaireProgramResolver.GetOwningProgramIdAsync(dbContext, submission.QuestionnaireId, cancellationToken);
+        await programAccessContext.RequireProgramAccessAsync(command.UserId, programId, cancellationToken);
 
         if (guidance.PublishedAt is null)
         {

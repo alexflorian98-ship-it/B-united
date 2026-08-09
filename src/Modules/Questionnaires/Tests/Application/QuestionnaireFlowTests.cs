@@ -1,3 +1,4 @@
+using BUnited.BuildingBlocks.Application.Access;
 using BUnited.BuildingBlocks.Application.Errors;
 using BUnited.Modules.Questionnaires.Application.UseCases.Admin;
 using BUnited.Modules.Questionnaires.Application.UseCases.Client;
@@ -15,21 +16,26 @@ public sealed class QuestionnaireFlowTests
         FakeConsentContext Consent,
         FakeUserLookup UserLookup,
         FakeAuditLogger AuditLogger,
-        FakeNotificationSender NotificationSender);
+        FakeNotificationSender NotificationSender,
+        FakeProgramLookup ProgramLookup,
+        FakeProgramAccessContext ProgramAccess);
 
     private static Fixture CreateFixture(out IDisposable connection)
     {
         var (conn, context) = TestDbContextFactory.Create();
         connection = conn;
-        return new Fixture(context, new FakeConsentContext(), new FakeUserLookup(), new FakeAuditLogger(), new FakeNotificationSender());
+        return new Fixture(context, new FakeConsentContext(), new FakeUserLookup(), new FakeAuditLogger(), new FakeNotificationSender(), new FakeProgramLookup(), new FakeProgramAccessContext());
     }
 
-    private static async Task<(Guid QuestionnaireId, Guid TextQuestionId, Guid ChoiceQuestionId)> AuthorAndPublishQuestionnaireAsync(Fixture fx)
+    private static async Task<(Guid QuestionnaireId, Guid TextQuestionId, Guid ChoiceQuestionId, Guid ProgramId)> AuthorAndPublishQuestionnaireAsync(Fixture fx)
     {
         var expertId = Guid.NewGuid();
-        var createHandler = new CreateQuestionnaireHandler(fx.DbContext);
+        var programId = Guid.NewGuid();
+        fx.ProgramLookup.AddProgram(programId);
+
+        var createHandler = new CreateQuestionnaireHandler(fx.DbContext, fx.ProgramLookup);
         var questionnaireId = await createHandler.HandleAsync(
-            new CreateQuestionnaireCommand("ro", "Chestionar inițial", "Descriere", expertId), CancellationToken.None);
+            new CreateQuestionnaireCommand(programId, "ro", "Chestionar inițial", "Descriere", expertId), CancellationToken.None);
 
         var addQuestionHandler = new AddQuestionHandler(fx.DbContext);
         var textQuestionId = await addQuestionHandler.HandleAsync(
@@ -44,7 +50,7 @@ public sealed class QuestionnaireFlowTests
         var statusHandler = new QuestionnaireStatusHandler(fx.DbContext);
         await statusHandler.PublishAsync(questionnaireId, expertId, CancellationToken.None);
 
-        return (questionnaireId, textQuestionId, choiceQuestionId);
+        return (questionnaireId, textQuestionId, choiceQuestionId, programId);
     }
 
     [Fact]
@@ -53,26 +59,29 @@ public sealed class QuestionnaireFlowTests
         var fx = CreateFixture(out var connection);
         using var _ = connection;
 
-        var (questionnaireId, textQuestionId, choiceQuestionId) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var (questionnaireId, textQuestionId, choiceQuestionId, programId) = await AuthorAndPublishQuestionnaireAsync(fx);
         var clientId = Guid.NewGuid();
         var expertId = Guid.NewGuid();
+        fx.ProgramAccess.GrantAccess(clientId, programId);
 
         // Client starts, answers, submits.
         await new RecordQuestionnaireConsentHandler(fx.Consent).HandleAsync(clientId, CancellationToken.None);
-        var submissionId = await new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent).HandleAsync(clientId, questionnaireId, CancellationToken.None);
+        var submissionId = await new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent, fx.ProgramAccess).HandleAsync(clientId, questionnaireId, CancellationToken.None);
 
-        var clientView = await new GetClientQuestionnaireHandler(fx.DbContext).HandleAsync(questionnaireId, "ro", CancellationToken.None);
+        var clientView = await new GetClientQuestionnaireHandler(fx.DbContext, fx.ProgramAccess).HandleAsync(clientId, questionnaireId, "ro", CancellationToken.None);
         Assert.Equal(2, clientView.Questions.Count);
         Assert.Equal(2, clientView.Questions.Single(q => q.Id == choiceQuestionId).Options.Count);
 
-        await new SaveDraftAnswersHandler(fx.DbContext, Clock).HandleAsync(
+        await new SaveDraftAnswersHandler(fx.DbContext, Clock, fx.ProgramAccess).HandleAsync(
             new SaveDraftAnswersCommand(clientId, submissionId, [new AnswerInput(textQuestionId, "Vreau ghidare."), new AnswerInput(choiceQuestionId, "good")]),
             CancellationToken.None);
 
-        await new SubmitQuestionnaireHandler(fx.DbContext, Clock, fx.AuditLogger).HandleAsync(clientId, submissionId, CancellationToken.None);
+        await new SubmitQuestionnaireHandler(fx.DbContext, Clock, fx.AuditLogger, fx.ProgramAccess).HandleAsync(clientId, submissionId, CancellationToken.None);
         Assert.Contains(fx.AuditLogger.Entries, e => e.Action == "questionnaire.submitted");
 
-        // Expert reviews the queue and opens the submission.
+        // Expert reviews the queue and opens the submission — RBAC only, no program entitlement
+        // required (expert review stays independent of commercial access, matching the same
+        // "administrators have no implicit access" philosophy cutting both ways).
         var queue = await new GetQueueHandler(fx.DbContext, fx.UserLookup, Clock).HandleAsync(CancellationToken.None);
         Assert.Single(queue);
         Assert.Equal(submissionId, queue[0].SubmissionId);
@@ -93,25 +102,25 @@ public sealed class QuestionnaireFlowTests
         Assert.Contains(fx.NotificationSender.Sent, s => s.Type == Notifications.Contracts.NotificationType.GuidancePublished);
 
         // Client reads the published guidance and asks one follow-up.
-        var guidance = await new GetGuidanceHandler(fx.DbContext).HandleAsync(clientId, submissionId, CancellationToken.None);
+        var guidance = await new GetGuidanceHandler(fx.DbContext, fx.ProgramAccess).HandleAsync(clientId, submissionId, CancellationToken.None);
         Assert.NotNull(guidance);
         Assert.Equal(1, guidance!.Version);
 
-        await new SubmitFollowUpHandler(fx.DbContext).HandleAsync(
+        await new SubmitFollowUpHandler(fx.DbContext, fx.ProgramAccess).HandleAsync(
             new SubmitFollowUpCommand(clientId, guidance.Id, "Poți detalia puțin?"), CancellationToken.None);
 
         // A second follow-up on the same guidance is rejected.
         var ex = await Assert.ThrowsAsync<BusinessRuleAppException>(() =>
-            new SubmitFollowUpHandler(fx.DbContext).HandleAsync(
+            new SubmitFollowUpHandler(fx.DbContext, fx.ProgramAccess).HandleAsync(
                 new SubmitFollowUpCommand(clientId, guidance.Id, "O a doua întrebare"), CancellationToken.None));
         Assert.Equal("GUIDANCE_FOLLOWUP_ALREADY_EXISTS", ex.Code);
 
         // Expert answers the follow-up.
-        var refreshedGuidance = await new GetGuidanceHandler(fx.DbContext).HandleAsync(clientId, submissionId, CancellationToken.None);
+        var refreshedGuidance = await new GetGuidanceHandler(fx.DbContext, fx.ProgramAccess).HandleAsync(clientId, submissionId, CancellationToken.None);
         await new AnswerFollowUpHandler(fx.DbContext, Clock).HandleAsync(
             new AnswerFollowUpCommand(refreshedGuidance!.FollowUp!.Id, "Sigur, iată mai multe detalii."), CancellationToken.None);
 
-        var finalGuidance = await new GetGuidanceHandler(fx.DbContext).HandleAsync(clientId, submissionId, CancellationToken.None);
+        var finalGuidance = await new GetGuidanceHandler(fx.DbContext, fx.ProgramAccess).HandleAsync(clientId, submissionId, CancellationToken.None);
         Assert.Equal("Sigur, iată mai multe detalii.", finalGuidance!.FollowUp!.Answer);
     }
 
@@ -121,14 +130,15 @@ public sealed class QuestionnaireFlowTests
         var fx = CreateFixture(out var connection);
         using var _ = connection;
 
-        var (questionnaireId, _, _) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var (questionnaireId, _, _, programId) = await AuthorAndPublishQuestionnaireAsync(fx);
         var clientId = Guid.NewGuid();
+        fx.ProgramAccess.GrantAccess(clientId, programId);
 
         await new RecordQuestionnaireConsentHandler(fx.Consent).HandleAsync(clientId, CancellationToken.None);
-        var submissionId = await new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent).HandleAsync(clientId, questionnaireId, CancellationToken.None);
+        var submissionId = await new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent, fx.ProgramAccess).HandleAsync(clientId, questionnaireId, CancellationToken.None);
 
         var ex = await Assert.ThrowsAsync<BusinessRuleAppException>(() =>
-            new SubmitQuestionnaireHandler(fx.DbContext, Clock, fx.AuditLogger).HandleAsync(clientId, submissionId, CancellationToken.None));
+            new SubmitQuestionnaireHandler(fx.DbContext, Clock, fx.AuditLogger, fx.ProgramAccess).HandleAsync(clientId, submissionId, CancellationToken.None));
         Assert.Equal("QUESTIONNAIRE_REQUIRED_ANSWERS_MISSING", ex.Code);
     }
 
@@ -138,10 +148,12 @@ public sealed class QuestionnaireFlowTests
         var fx = CreateFixture(out var connection);
         using var _ = connection;
 
-        var (questionnaireId, _, _) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var (questionnaireId, _, _, programId) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var clientId = Guid.NewGuid();
+        fx.ProgramAccess.GrantAccess(clientId, programId);
 
         var ex = await Assert.ThrowsAsync<BusinessRuleAppException>(() =>
-            new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent).HandleAsync(Guid.NewGuid(), questionnaireId, CancellationToken.None));
+            new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent, fx.ProgramAccess).HandleAsync(clientId, questionnaireId, CancellationToken.None));
         Assert.Equal("QUESTIONNAIRE_CONSENT_REQUIRED", ex.Code);
     }
 
@@ -151,15 +163,16 @@ public sealed class QuestionnaireFlowTests
         var fx = CreateFixture(out var connection);
         using var _ = connection;
 
-        var (questionnaireId, _, _) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var (questionnaireId, _, _, programId) = await AuthorAndPublishQuestionnaireAsync(fx);
         var ownerId = Guid.NewGuid();
         var otherUserId = Guid.NewGuid();
+        fx.ProgramAccess.GrantAccess(ownerId, programId);
 
         await new RecordQuestionnaireConsentHandler(fx.Consent).HandleAsync(ownerId, CancellationToken.None);
-        var submissionId = await new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent).HandleAsync(ownerId, questionnaireId, CancellationToken.None);
+        var submissionId = await new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent, fx.ProgramAccess).HandleAsync(ownerId, questionnaireId, CancellationToken.None);
 
         await Assert.ThrowsAsync<NotFoundAppException>(() =>
-            new GetMySubmissionHandler(fx.DbContext).HandleAsync(otherUserId, submissionId, CancellationToken.None));
+            new GetMySubmissionHandler(fx.DbContext, fx.ProgramAccess).HandleAsync(otherUserId, submissionId, CancellationToken.None));
     }
 
     [Fact]
@@ -168,11 +181,12 @@ public sealed class QuestionnaireFlowTests
         var fx = CreateFixture(out var connection);
         using var _ = connection;
 
-        var (questionnaireId, _, _) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var (questionnaireId, _, _, programId) = await AuthorAndPublishQuestionnaireAsync(fx);
         var clientId = Guid.NewGuid();
+        fx.ProgramAccess.GrantAccess(clientId, programId);
         await new RecordQuestionnaireConsentHandler(fx.Consent).HandleAsync(clientId, CancellationToken.None);
 
-        var handler = new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent);
+        var handler = new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent, fx.ProgramAccess);
         var first = await handler.HandleAsync(clientId, questionnaireId, CancellationToken.None);
         var second = await handler.HandleAsync(clientId, questionnaireId, CancellationToken.None);
 
@@ -185,11 +199,130 @@ public sealed class QuestionnaireFlowTests
         var fx = CreateFixture(out var connection);
         using var _ = connection;
 
-        var (questionnaireId, textQuestionId, _) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var (questionnaireId, textQuestionId, _, _) = await AuthorAndPublishQuestionnaireAsync(fx);
 
         var ex = await Assert.ThrowsAsync<BusinessRuleAppException>(() =>
             new ReorderQuestionsHandler(fx.DbContext).HandleAsync(
                 new ReorderQuestionsCommand(questionnaireId, [textQuestionId]), Guid.NewGuid(), CancellationToken.None));
         Assert.Equal("QUESTION_REORDER_SET_MISMATCH", ex.Code);
+    }
+
+    // --- ADR-003 per-program entitlement: cross-program negative tests (P3.42/P3.45) ---
+
+    [Fact]
+    public async Task Starting_a_questionnaire_without_owning_its_program_is_denied()
+    {
+        var fx = CreateFixture(out var connection);
+        using var _ = connection;
+
+        var (questionnaireId, _, _, _) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var clientId = Guid.NewGuid();
+        // Deliberately no fx.ProgramAccess.GrantAccess call — client never bought the program.
+        await new RecordQuestionnaireConsentHandler(fx.Consent).HandleAsync(clientId, CancellationToken.None);
+
+        var ex = await Assert.ThrowsAsync<BusinessRuleAppException>(() =>
+            new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent, fx.ProgramAccess).HandleAsync(clientId, questionnaireId, CancellationToken.None));
+        Assert.Equal(ProgramAccessErrorCodes.ProgramAccessRequired, ex.Code);
+    }
+
+    [Fact]
+    public async Task Fetching_full_questionnaire_content_without_owning_its_program_is_denied()
+    {
+        var fx = CreateFixture(out var connection);
+        using var _ = connection;
+
+        var (questionnaireId, _, _, _) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var clientId = Guid.NewGuid();
+
+        var ex = await Assert.ThrowsAsync<BusinessRuleAppException>(() =>
+            new GetClientQuestionnaireHandler(fx.DbContext, fx.ProgramAccess).HandleAsync(clientId, questionnaireId, "ro", CancellationToken.None));
+        Assert.Equal(ProgramAccessErrorCodes.ProgramAccessRequired, ex.Code);
+    }
+
+    [Fact]
+    public async Task Owning_a_different_program_does_not_grant_access_to_another_programs_questionnaire()
+    {
+        var fx = CreateFixture(out var connection);
+        using var _ = connection;
+
+        var (questionnaireId, _, _, programId) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var otherProgramId = Guid.NewGuid();
+        var clientId = Guid.NewGuid();
+        fx.ProgramAccess.GrantAccess(clientId, otherProgramId);
+        Assert.NotEqual(programId, otherProgramId);
+
+        var ex = await Assert.ThrowsAsync<BusinessRuleAppException>(() =>
+            new GetClientQuestionnaireHandler(fx.DbContext, fx.ProgramAccess).HandleAsync(clientId, questionnaireId, "ro", CancellationToken.None));
+        Assert.Equal(ProgramAccessErrorCodes.ProgramAccessRequired, ex.Code);
+    }
+
+    [Fact]
+    public async Task Saving_draft_answers_after_access_is_revoked_is_denied()
+    {
+        var fx = CreateFixture(out var connection);
+        using var _ = connection;
+
+        var (questionnaireId, textQuestionId, _, programId) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var clientId = Guid.NewGuid();
+        fx.ProgramAccess.GrantAccess(clientId, programId);
+        await new RecordQuestionnaireConsentHandler(fx.Consent).HandleAsync(clientId, CancellationToken.None);
+        var submissionId = await new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent, fx.ProgramAccess).HandleAsync(clientId, questionnaireId, CancellationToken.None);
+
+        // Simulate a refund revoking the entitlement mid-flow: a fresh access context with no
+        // grant recorded for this user/program stands in for "entitlement revoked."
+        var revokedAccess = new FakeProgramAccessContext();
+        var ex = await Assert.ThrowsAsync<BusinessRuleAppException>(() =>
+            new SaveDraftAnswersHandler(fx.DbContext, Clock, revokedAccess).HandleAsync(
+                new SaveDraftAnswersCommand(clientId, submissionId, [new AnswerInput(textQuestionId, "value")]), CancellationToken.None));
+        Assert.Equal(ProgramAccessErrorCodes.ProgramAccessRequired, ex.Code);
+    }
+
+    [Fact]
+    public async Task Submissions_for_a_no_longer_owned_program_are_filtered_out_of_the_list_not_thrown()
+    {
+        var fx = CreateFixture(out var connection);
+        using var _ = connection;
+
+        var (questionnaireId, _, _, programId) = await AuthorAndPublishQuestionnaireAsync(fx);
+        var clientId = Guid.NewGuid();
+        fx.ProgramAccess.GrantAccess(clientId, programId);
+        await new RecordQuestionnaireConsentHandler(fx.Consent).HandleAsync(clientId, CancellationToken.None);
+        await new StartOrResumeSubmissionHandler(fx.DbContext, fx.Consent, fx.ProgramAccess).HandleAsync(clientId, questionnaireId, CancellationToken.None);
+
+        // Access is later revoked (e.g. refund) — the list must not throw, it must simply omit
+        // the now-unowned program's submissions (mirrors Progress's GetContentProgressHandler).
+        var revokedAccess = new FakeProgramAccessContext();
+        var result = await new ListMySubmissionsHandler(fx.DbContext, revokedAccess).HandleAsync(clientId, CancellationToken.None);
+        Assert.Empty(result);
+
+        var result2 = await new ListMySubmissionsHandler(fx.DbContext, fx.ProgramAccess).HandleAsync(clientId, CancellationToken.None);
+        Assert.Single(result2);
+    }
+
+    [Fact]
+    public async Task Creating_a_questionnaire_for_an_unpublished_program_is_rejected()
+    {
+        var fx = CreateFixture(out var connection);
+        using var _ = connection;
+
+        var draftProgramId = Guid.NewGuid();
+        fx.ProgramLookup.AddProgram(draftProgramId, Content.Contracts.ProgramLookupStatus.Draft);
+
+        var ex = await Assert.ThrowsAsync<BusinessRuleAppException>(() =>
+            new CreateQuestionnaireHandler(fx.DbContext, fx.ProgramLookup).HandleAsync(
+                new CreateQuestionnaireCommand(draftProgramId, "ro", "Titlu", "Descriere", Guid.NewGuid()), CancellationToken.None));
+        Assert.Equal("QUESTIONNAIRE_PROGRAM_NOT_PUBLISHED", ex.Code);
+    }
+
+    [Fact]
+    public async Task Creating_a_questionnaire_for_a_nonexistent_program_is_rejected()
+    {
+        var fx = CreateFixture(out var connection);
+        using var _ = connection;
+
+        var ex = await Assert.ThrowsAsync<NotFoundAppException>(() =>
+            new CreateQuestionnaireHandler(fx.DbContext, fx.ProgramLookup).HandleAsync(
+                new CreateQuestionnaireCommand(Guid.NewGuid(), "ro", "Titlu", "Descriere", Guid.NewGuid()), CancellationToken.None));
+        Assert.NotNull(ex);
     }
 }

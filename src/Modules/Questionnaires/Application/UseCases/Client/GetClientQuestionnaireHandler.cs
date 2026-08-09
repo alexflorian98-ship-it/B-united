@@ -1,3 +1,4 @@
+using BUnited.BuildingBlocks.Application.Access;
 using BUnited.BuildingBlocks.Application.Errors;
 using BUnited.BuildingBlocks.Localization;
 using BUnited.Modules.Questionnaires.Application.Dtos;
@@ -7,13 +8,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BUnited.Modules.Questionnaires.Application.UseCases.Client;
 
-public sealed class GetClientQuestionnaireHandler(DbContext dbContext)
+/// <summary>Full question content is the paywalled resource here (the equivalent of Content's
+/// program-detail body being stripped for non-owned programs) — gated on
+/// <see cref="IProgramAccessContext"/> in addition to the questionnaire being published. The
+/// browsable <see cref="ListPublishedQuestionnairesHandler"/> catalogue stays open by design
+/// (see its own remarks) so a client can discover what a program's questionnaire covers before
+/// buying, matching Content's catalogue-vs-detail split.</summary>
+public sealed class GetClientQuestionnaireHandler(DbContext dbContext, IProgramAccessContext programAccessContext)
 {
-    public async Task<ClientQuestionnaireDto> HandleAsync(Guid questionnaireId, string requestedLanguage, CancellationToken cancellationToken)
+    public async Task<ClientQuestionnaireDto> HandleAsync(Guid userId, Guid questionnaireId, string requestedLanguage, CancellationToken cancellationToken)
     {
         var questionnaire = await dbContext.Set<Questionnaire>()
             .SingleOrDefaultAsync(q => q.Id == questionnaireId && q.Status == QuestionnaireStatus.Published, cancellationToken)
             ?? throw new NotFoundAppException("The specified questionnaire does not exist or is not published.");
+
+        await programAccessContext.RequireProgramAccessAsync(userId, questionnaire.ProgramId, cancellationToken);
 
         var translations = await dbContext.Set<QuestionnaireTranslation>()
             .Where(t => t.QuestionnaireId == questionnaireId)

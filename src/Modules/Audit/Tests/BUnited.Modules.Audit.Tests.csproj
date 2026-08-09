@@ -24,6 +24,7 @@
     <ProjectReference Include="..\Application\BUnited.Modules.Audit.Application.csproj" />
     <ProjectReference Include="..\Infrastructure\BUnited.Modules.Audit.Infrastructure.csproj" />
     <ProjectReference Include="..\Api\BUnited.Modules.Audit.Api.csproj" />
+    <ProjectReference Include="..\..\Identity\Contracts\BUnited.Modules.Identity.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

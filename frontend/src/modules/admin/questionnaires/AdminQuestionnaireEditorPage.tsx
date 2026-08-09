@@ -101,7 +101,7 @@ export function AdminQuestionnaireEditorPage() {
           type="button"
           onClick={() => setSelection({ type: "questionnaire" })}
           className={`mb-2 w-full rounded-md px-2 py-2 text-left text-sm font-semibold ${
-            selection.type === "questionnaire" ? "bg-background text-primary" : "text-text-primary"
+            selection.type === "questionnaire" ? "bg-primary/10 text-primary" : "text-text-primary"
           }`}
         >
           {t("admin:questionnaires.settings")}
@@ -113,7 +113,7 @@ export function AdminQuestionnaireEditorPage() {
               type="button"
               onClick={() => setSelection({ type: "question", questionId: question.id })}
               className={`flex-1 truncate rounded-md px-2 py-2 text-left text-sm ${
-                selection.type === "question" && selection.questionId === question.id ? "bg-background text-primary" : "text-text-primary"
+                selection.type === "question" && selection.questionId === question.id ? "bg-primary/10 text-primary" : "text-text-primary"
               }`}
             >
               {questionText(question, language, t)}

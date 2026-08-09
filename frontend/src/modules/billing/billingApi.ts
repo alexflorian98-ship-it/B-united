@@ -1,76 +1,41 @@
 import { apiRequest } from "../../shared/api/apiClient";
 
-// CheckoutOutcome binds via the JSON request body, where the backend's raw C# enum requires a
-// numeric value (no global string-enum converter is configured) — unlike DemoAction below,
-// which binds via a route segment and accepts the string name directly.
 export const CheckoutOutcome = { Success: 0, Decline: 1, ProviderError: 2, Timeout: 3 } as const;
 export type CheckoutOutcomeValue = (typeof CheckoutOutcome)[keyof typeof CheckoutOutcome];
+export type DemoActionName = "Succeed" | "Fail" | "Refund" | "ChargeBack";
+export type PurchaseStatusName = "Pending" | "Succeeded" | "Failed" | "Refunded" | "Chargeback";
 
-export type DemoActionName = "Renew" | "FailPayment" | "Cancel" | "Expire";
-
-export interface PlanPrice {
+export interface Purchase {
   id: string;
+  programId: string;
+  /** The program's title at the moment of purchase (docs/IMPLEMENTATION_PLAN.md Slice A5) —
+   * immutable afterwards, so historical billing history stays readable even if the program is
+   * later renamed, unpublished, or archived. `null` only for purchases made before this field
+   * existed and never backfilled, or if no title was resolvable at checkout time. */
+  programTitleSnapshot: string | null;
   amount: number;
   currency: string;
-  interval: "Monthly" | "Yearly";
+  status: PurchaseStatusName;
+  createdAt: string;
+  completedAtUtc: string | null;
 }
 
-export interface Plan {
-  id: string;
-  name: string;
-  description: string;
-  prices: PlanPrice[];
+export interface ProgramEntitlement {
+  programId: string;
+  status: "Active" | "Revoked";
+  grantedAtUtc: string;
+  revokedAtUtc: string | null;
 }
 
-export interface SubscriptionPeriod {
-  periodStart: string;
-  periodEnd: string;
-  paidPeriodEnd: string;
-}
-
-export interface Payment {
-  id: string;
-  amount: number;
-  currency: string;
-  status: "Pending" | "Succeeded" | "Failed";
-  occurredAtUtc: string;
-}
-
-export interface Invoice {
-  id: string;
-  amount: number;
-  currency: string;
-  status: "Open" | "Paid" | "Void";
-  issuedAtUtc: string;
-}
-
-export type SubscriptionStatusName = "Trialing" | "Active" | "PastDue" | "Canceled" | "Expired";
-
-export interface MyBillingStatus {
-  subscriptionId: string | null;
-  planName: string | null;
-  status: SubscriptionStatusName | null;
-  currentPeriod: SubscriptionPeriod | null;
-  hasActiveAccess: boolean;
-  accessUntilUtc: string | null;
-  payments: Payment[];
-  invoices: Invoice[];
-}
-
-export interface CheckoutResult {
-  subscriptionId: string;
-  activated: boolean;
-  declineReason: string | null;
-}
+export interface CheckoutResult { purchaseId: string; programId: string; status: PurchaseStatusName }
+export interface MyInvoice { id: string; purchaseId: string; programId: string; programTitleSnapshot: string | null; amount: number; currency: string; status: string; issuedAtUtc: string }
 
 export const billingApi = {
-  listPlans: () => apiRequest<Plan[]>("/billing/plans"),
-
-  getStatus: () => apiRequest<MyBillingStatus>("/billing/status"),
-
-  checkout: (planPriceId: string, outcome: CheckoutOutcomeValue = CheckoutOutcome.Success) =>
-    apiRequest<CheckoutResult>("/billing/checkout", { method: "POST", body: { planPriceId, outcome } }),
-
-  triggerDemoAction: (action: DemoActionName) =>
-    apiRequest<void>(`/billing/demo/${action}`, { method: "POST" }),
+  listMyPurchases: () => apiRequest<Purchase[]>("/billing/my-purchases"),
+  listMyEntitlements: () => apiRequest<ProgramEntitlement[]>("/billing/my-entitlements"),
+  listMyInvoices: () => apiRequest<MyInvoice[]>("/billing/my-invoices"),
+  checkout: (programId: string, outcome: CheckoutOutcomeValue = CheckoutOutcome.Success) =>
+    apiRequest<CheckoutResult>(`/billing/programs/${programId}/checkout`, { method: "POST", body: { outcome } }),
+  triggerDemoAction: (programId: string, action: DemoActionName) =>
+    apiRequest<void>(`/billing/programs/${programId}/demo/${action}`, { method: "POST" }),
 };

@@ -2,5 +2,44 @@
   "greeting": "Welcome, {{email}}",
   "accountVerified": "Verified",
   "phase1Notice": "Your account is active. Programs, events and community features are on the way.",
-  "adminPhase1Notice": "Admin tools will appear here as they ship — nothing is available yet in this delivery phase."
+  "adminPhase1Notice": "Admin tools will appear here as they ship — nothing is available yet in this delivery phase.",
+  "upcomingEvent": "Upcoming event",
+  "adminOverview": {
+    "title": "Overview",
+    "loadError": "Could not load the dashboard.",
+    "kpis": {
+      "customersWithPurchases": "Customers with purchases",
+      "completedPurchases": "Completed purchases",
+      "pendingQuestionnaires": "Pending questionnaires",
+      "upcomingEvents": "Upcoming events",
+      "revenue": "Revenue"
+    },
+    "questionnaires": {
+      "title": "Pending questionnaires",
+      "empty": "No submissions waiting for review.",
+      "oldest": "Oldest waiting since {{date}}",
+      "viewQueue": "Open queue"
+    },
+    "events": {
+      "title": "Upcoming events",
+      "empty": "No upcoming published events.",
+      "capacity": "Capacity: {{capacity}}",
+      "viewAll": "View events"
+    },
+    "purchases": {
+      "title": "Recent purchases & refunds",
+      "empty": "No recent purchase activity.",
+      "viewAll": "View purchases"
+    },
+    "reports": {
+      "title": "Reported messages",
+      "empty": "No open reports.",
+      "viewAll": "Open moderation"
+    },
+    "content": {
+      "title": "Recently published content",
+      "empty": "No recently published programs.",
+      "viewAll": "View programs"
+    }
+  }
 }

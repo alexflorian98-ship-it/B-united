@@ -10,6 +10,7 @@ public sealed class QuestionnaireConfiguration : IEntityTypeConfiguration<Questi
     {
         builder.HasKey(q => q.Id);
 
+        builder.Property(q => q.ProgramId).IsRequired();
         builder.Property(q => q.DefaultLanguage).IsRequired().HasMaxLength(10);
         builder.Property(q => q.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
 

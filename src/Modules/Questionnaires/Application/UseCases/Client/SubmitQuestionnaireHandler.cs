@@ -1,3 +1,4 @@
+using BUnited.BuildingBlocks.Application.Access;
 using BUnited.BuildingBlocks.Application.Errors;
 using BUnited.Modules.Audit.Contracts;
 using BUnited.Modules.Questionnaires.Domain;
@@ -6,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BUnited.Modules.Questionnaires.Application.UseCases.Client;
 
-public sealed class SubmitQuestionnaireHandler(DbContext dbContext, TimeProvider timeProvider, IAuditLogger auditLogger)
+public sealed class SubmitQuestionnaireHandler(DbContext dbContext, TimeProvider timeProvider, IAuditLogger auditLogger, IProgramAccessContext programAccessContext)
 {
     public async Task HandleAsync(Guid userId, Guid submissionId, CancellationToken cancellationToken)
     {
@@ -18,6 +19,9 @@ public sealed class SubmitQuestionnaireHandler(DbContext dbContext, TimeProvider
         {
             throw new NotFoundAppException("The specified submission does not exist.");
         }
+
+        var programId = await QuestionnaireProgramResolver.GetOwningProgramIdAsync(dbContext, submission.QuestionnaireId, cancellationToken);
+        await programAccessContext.RequireProgramAccessAsync(userId, programId, cancellationToken);
 
         if (submission.Status != QuestionnaireSubmissionStatus.Draft)
         {

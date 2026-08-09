@@ -12,7 +12,7 @@ describe("Alert", () => {
   it("dismiss button is keyboard-activatable", async () => {
     const user = userEvent.setup();
     const onDismiss = vi.fn();
-    render(<Alert tone="info" title="Heads up" onDismiss={onDismiss} />);
+    render(<Alert tone="info" title="Heads up" onDismiss={onDismiss} dismissLabel="Dismiss" />);
 
     await user.tab();
     expect(screen.getByRole("button", { name: "Dismiss" })).toHaveFocus();

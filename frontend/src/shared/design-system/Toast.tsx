@@ -6,6 +6,9 @@ export interface ToastProps {
   tone?: ToastTone;
   children: ReactNode;
   onDismiss: () => void;
+  /** Localized accessible label for the dismiss button — this component takes no i18n
+   * dependency of its own, so the caller must supply already-translated text. */
+  dismissLabel: string;
 }
 
 const toneClasses: Record<ToastTone, string> = {
@@ -15,7 +18,7 @@ const toneClasses: Record<ToastTone, string> = {
   info: "border-info",
 };
 
-export function Toast({ tone = "info", children, onDismiss }: ToastProps) {
+export function Toast({ tone = "info", children, onDismiss, dismissLabel }: ToastProps) {
   return (
     <div
       role="status"
@@ -26,7 +29,7 @@ export function Toast({ tone = "info", children, onDismiss }: ToastProps) {
       <button
         type="button"
         onClick={onDismiss}
-        aria-label="Dismiss"
+        aria-label={dismissLabel}
         className="rounded-md p-1 text-text-muted hover:text-text-primary"
       >
         ×

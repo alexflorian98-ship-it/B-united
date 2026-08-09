@@ -1,1 +1,27 @@
-{}
+{
+  "title": "Evenimente",
+  "tabs": {
+    "upcoming": "Viitoare",
+    "past": "Trecute"
+  },
+  "noEvents": "Niciun eveniment încă",
+  "noEventsDescription": "Nu există evenimente în această categorie momentan.",
+  "locationType": {
+    "Online": "Online",
+    "Physical": "Fizic"
+  },
+  "registered": "înscriși",
+  "waitlisted": "pe lista de așteptare",
+  "registrationStatus": {
+    "Registered": "Înscris",
+    "Waitlisted": "Pe lista de așteptare",
+    "Canceled": "Anulat"
+  },
+  "register": "Înscrie-te",
+  "cancelRegistration": "Anulează înscrierea",
+  "joinLink": "Link de participare",
+  "registerFeedback": {
+    "Registered": "Te-ai înscris cu succes la eveniment.",
+    "Waitlisted": "Evenimentul este complet — ai fost adăugat pe lista de așteptare."
+  }
+}

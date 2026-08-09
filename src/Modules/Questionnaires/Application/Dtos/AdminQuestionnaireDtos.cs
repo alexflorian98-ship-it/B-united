@@ -22,6 +22,7 @@ public sealed record QuestionDetailDto(
 
 public sealed record QuestionnaireDetailDto(
     Guid Id,
+    Guid ProgramId,
     string Status,
     string DefaultLanguage,
     IReadOnlyList<QuestionnaireTranslationDto> Translations,
@@ -29,6 +30,7 @@ public sealed record QuestionnaireDetailDto(
 
 public sealed record QuestionnaireSummaryDto(
     Guid Id,
+    Guid ProgramId,
     string Status,
     string DefaultLanguage,
     string Title,

@@ -37,4 +37,14 @@ internal sealed class TestDbContext(DbContextOptions<TestDbContext> options)
     public DbSet<ContentItemTranslation> ContentItemTranslations => Set<ContentItemTranslation>();
 
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
+
+    public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
+
+    public DbSet<QuizQuestionTranslation> QuizQuestionTranslations => Set<QuizQuestionTranslation>();
+
+    public DbSet<QuizOption> QuizOptions => Set<QuizOption>();
+
+    public DbSet<QuizOptionTranslation> QuizOptionTranslations => Set<QuizOptionTranslation>();
+
+    public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
 }

@@ -1,4 +1,6 @@
+using BUnited.BuildingBlocks.Application.DataRights;
 using BUnited.Modules.Progress.Application.UseCases;
+using BUnited.Modules.Progress.Application.UseCases.DataRights;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,6 +16,8 @@ public static class ProgressModuleExtensions
         services.AddScoped<MarkContentCompletedHandler>();
         services.AddScoped<GetContentProgressHandler>();
         services.AddScoped<GetSectionProgressHandler>();
+        services.AddScoped<IUserDataExporter, ProgressUserDataExporter>();
+        services.AddScoped<IUserDataEraser, ProgressUserDataEraser>();
 
         services.AddValidatorsFromAssemblyContaining<RecordVideoProgressValidator>();
 

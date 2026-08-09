@@ -1,4 +1,6 @@
+using BUnited.BuildingBlocks.Application.Access;
 using BUnited.BuildingBlocks.Application.Errors;
+using BUnited.Modules.Audit.Contracts;
 using BUnited.Modules.Content.Application.UseCases.Admin.ContentItems;
 using BUnited.Modules.Content.Application.UseCases.Admin.Programs;
 using BUnited.Modules.Content.Application.UseCases.Admin.Sections;
@@ -42,20 +44,23 @@ public sealed class ContentFlowTests
             new CreateProgramCommand(domainId, "managing-anxiety", "ro", "Gestionarea anxietatii", "Scurt", "Descriere completa", ActorId),
             CancellationToken.None);
 
-        var listHandler = new ListPublishedProgramsHandler(context);
-        var beforePublish = await listHandler.HandleAsync(new ListPublishedProgramsQuery(null, "ro"), CancellationToken.None);
+        var listHandler = new ListPublishedProgramsHandler(context, new FakeProgramOfferLookup(), new FakeProgramAccessContext());
+        var beforePublish = await listHandler.HandleAsync(new ListPublishedProgramsQuery(null, "ro", null), CancellationToken.None);
         Assert.Empty(beforePublish);
 
-        var statusHandler = new ProgramStatusHandler(context);
+        var auditLogger = new FakeAuditLogger();
+        var statusHandler = new ProgramStatusHandler(context, auditLogger);
         await statusHandler.PublishAsync(programId, ActorId, CancellationToken.None);
 
-        var afterPublishRo = await listHandler.HandleAsync(new ListPublishedProgramsQuery(null, "ro"), CancellationToken.None);
+        Assert.Contains(auditLogger.Entries, e => e.Action == "content.published" && e.EntityId == programId.ToString());
+
+        var afterPublishRo = await listHandler.HandleAsync(new ListPublishedProgramsQuery(null, "ro", null), CancellationToken.None);
         var program = Assert.Single(afterPublishRo);
         Assert.Equal("Gestionarea anxietatii", program.Title);
 
         // No English translation was ever added — requesting "en" must fall back to the
         // program's default language ("ro") rather than erroring or omitting the program.
-        var afterPublishEn = await listHandler.HandleAsync(new ListPublishedProgramsQuery(null, "en"), CancellationToken.None);
+        var afterPublishEn = await listHandler.HandleAsync(new ListPublishedProgramsQuery(null, "en", null), CancellationToken.None);
         Assert.Equal("Gestionarea anxietatii", Assert.Single(afterPublishEn).Title);
     }
 
@@ -86,17 +91,113 @@ public sealed class ContentFlowTests
             new AddContentItemCommand(sectionId, ContentItemType.RichText, true, "ro", "Notite", "<p>Continut</p>", null),
             CancellationToken.None);
 
-        await new ProgramStatusHandler(context).PublishAsync(programId, ActorId, CancellationToken.None);
+        await new ProgramStatusHandler(context, new FakeAuditLogger()).PublishAsync(programId, ActorId, CancellationToken.None);
 
-        var detail = await new GetPublishedProgramDetailHandler(context).HandleAsync("managing-anxiety", "en", CancellationToken.None);
+        var userId = Guid.NewGuid();
+        var accessContext = new FakeProgramAccessContext();
+        accessContext.GrantAccess(userId, programId);
+        var detailHandler = new GetPublishedProgramDetailHandler(context, new FakeProgramOfferLookup(), accessContext);
+
+        var detail = await detailHandler.HandleAsync("managing-anxiety", "en", userId, CancellationToken.None);
 
         Assert.Equal("Title EN", detail.Title);
+        Assert.Equal("Owned", detail.OwnershipState);
         var section = Assert.Single(detail.Sections);
         // Section/item have no "en" translation — must fall back to the program's default ("ro").
         Assert.Equal("Introducere", section.Title);
         Assert.Equal(2, section.Items.Count);
         Assert.Contains(section.Items, i => i.Type == "Video" && i.MediaAssetId is not null);
         Assert.Contains(section.Items, i => i.Type == "RichText" && i.Body == "<p>Continut</p>");
+    }
+
+    [Fact]
+    public async Task Non_owning_and_anonymous_callers_never_see_body_or_media_content()
+    {
+        var (context, connection, domainId) = await SeedAsync();
+        using var _ = connection;
+        using var __ = context;
+
+        var programId = await new CreateProgramHandler(context).HandleAsync(
+            new CreateProgramCommand(domainId, "managing-anxiety", "ro", "Titlu RO", "Scurt RO", "Descriere RO", ActorId),
+            CancellationToken.None);
+
+        var sectionId = await new AddSectionHandler(context).HandleAsync(
+            new AddSectionCommand(programId, "ro", "Introducere", "Descriere sectiune"), CancellationToken.None);
+
+        var addItemHandler = new AddContentItemHandler(context, new YouTubeVideoProvider());
+        await addItemHandler.HandleAsync(
+            new AddContentItemCommand(sectionId, ContentItemType.Video, true, "ro", "Video intro", null, "https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+            CancellationToken.None);
+        await addItemHandler.HandleAsync(
+            new AddContentItemCommand(sectionId, ContentItemType.RichText, true, "ro", "Notite", "<p>Continut</p>", null),
+            CancellationToken.None);
+
+        await new ProgramStatusHandler(context, new FakeAuditLogger()).PublishAsync(programId, ActorId, CancellationToken.None);
+
+        var offerLookup = new FakeProgramOfferLookup();
+        offerLookup.SetActiveOffer(programId, 199.00m, "RON");
+        var nonOwningAccessContext = new FakeProgramAccessContext();
+        var detailHandler = new GetPublishedProgramDetailHandler(context, offerLookup, nonOwningAccessContext);
+
+        // A signed-in caller who does not own the program.
+        var nonOwnerId = Guid.NewGuid();
+        var nonOwnerDetail = await detailHandler.HandleAsync("managing-anxiety", "ro", nonOwnerId, CancellationToken.None);
+        Assert.Equal("NotOwned", nonOwnerDetail.OwnershipState);
+        Assert.All(nonOwnerDetail.Sections.SelectMany(s => s.Items), i => Assert.Null(i.Body));
+        Assert.All(nonOwnerDetail.Sections.SelectMany(s => s.Items), i => Assert.Null(i.MediaAssetId));
+        Assert.NotNull(nonOwnerDetail.ActiveOffer);
+        Assert.Equal(199.00m, nonOwnerDetail.ActiveOffer!.Amount);
+
+        // A caller with no resolvable identity at all.
+        var anonymousDetail = await detailHandler.HandleAsync("managing-anxiety", "ro", null, CancellationToken.None);
+        Assert.Null(anonymousDetail.OwnershipState);
+        Assert.All(anonymousDetail.Sections.SelectMany(s => s.Items), i => Assert.Null(i.Body));
+        Assert.All(anonymousDetail.Sections.SelectMany(s => s.Items), i => Assert.Null(i.MediaAssetId));
+
+        // Structure (titles, IsRequired, item type, section titles) is still fully visible to
+        // everyone — only body/media content is paywalled.
+        Assert.Equal(2, nonOwnerDetail.Sections.Single().Items.Count);
+        Assert.Contains(nonOwnerDetail.Sections.Single().Items, i => i.Type == "Video" && i.Title == "Video intro");
+        Assert.Contains(nonOwnerDetail.Sections.Single().Items, i => i.Type == "RichText" && i.IsRequired);
+    }
+
+    [Fact]
+    public async Task Video_playback_requires_access_to_the_owning_program_not_just_any_program()
+    {
+        var (context, connection, domainId) = await SeedAsync();
+        using var _ = connection;
+        using var __ = context;
+
+        var ownedProgramId = await new CreateProgramHandler(context).HandleAsync(
+            new CreateProgramCommand(domainId, "owned-program", "ro", "Deținut", "S", "D", ActorId), CancellationToken.None);
+        var otherProgramId = await new CreateProgramHandler(context).HandleAsync(
+            new CreateProgramCommand(domainId, "other-program", "ro", "Alt program", "S", "D", ActorId), CancellationToken.None);
+
+        var sectionId = await new AddSectionHandler(context).HandleAsync(
+            new AddSectionCommand(ownedProgramId, "ro", "Introducere", "D"), CancellationToken.None);
+        var contentItemId = await new AddContentItemHandler(context, new YouTubeVideoProvider()).HandleAsync(
+            new AddContentItemCommand(sectionId, ContentItemType.Video, true, "ro", "Video", null, "https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+            CancellationToken.None);
+
+        var userId = Guid.NewGuid();
+        var accessContext = new FakeProgramAccessContext();
+        var playbackHandler = new GetVideoPlaybackHandler(context, accessContext, new YouTubeVideoProvider());
+
+        // Owns a different program entirely — must still be denied for this content item.
+        accessContext.GrantAccess(userId, otherProgramId);
+        var deniedForOwnerOfOtherProgram = await Assert.ThrowsAsync<BusinessRuleAppException>(
+            () => playbackHandler.HandleAsync(contentItemId, userId, CancellationToken.None));
+        Assert.Equal(ProgramAccessErrorCodes.ProgramAccessRequired, deniedForOwnerOfOtherProgram.Code);
+
+        // Owns no program at all.
+        var strangerId = Guid.NewGuid();
+        await Assert.ThrowsAsync<BusinessRuleAppException>(
+            () => playbackHandler.HandleAsync(contentItemId, strangerId, CancellationToken.None));
+
+        // Owns the actual owning program — succeeds.
+        accessContext.GrantAccess(userId, ownedProgramId);
+        var result = await playbackHandler.HandleAsync(contentItemId, userId, CancellationToken.None);
+        Assert.Contains("youtube.com/embed/", result.PlaybackUrl);
     }
 
     [Fact]
@@ -135,7 +236,7 @@ public sealed class ContentFlowTests
         var programId = await new CreateProgramHandler(context).HandleAsync(
             new CreateProgramCommand(domainId, "prog", "ro", "T", "S", "D", ActorId), CancellationToken.None);
 
-        var statusHandler = new ProgramStatusHandler(context);
+        var statusHandler = new ProgramStatusHandler(context, new FakeAuditLogger());
         await statusHandler.ArchiveAsync(programId, ActorId, CancellationToken.None);
 
         var exception = await Assert.ThrowsAsync<BusinessRuleAppException>(

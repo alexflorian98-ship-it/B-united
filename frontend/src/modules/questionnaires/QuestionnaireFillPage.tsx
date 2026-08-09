@@ -115,21 +115,19 @@ export function QuestionnaireFillPage() {
 
   if (needsConsent) {
     return (
-      <div className="flex flex-col gap-4 p-4">
-        <Card>
-          <h1 className="text-lg font-semibold text-text-primary">{t("questionnaire:consent.title")}</h1>
-          <p className="mt-2 text-sm text-text-secondary">{t("questionnaire:consent.body")}</p>
-          <Button className="mt-4" onClick={() => consentMutation.mutate()} disabled={consentMutation.isPending}>
-            {t("questionnaire:consent.agree")}
-          </Button>
-        </Card>
-      </div>
+      <Card className="mx-auto max-w-xl">
+        <h1 className="text-2xl font-semibold text-text-primary">{t("questionnaire:consent.title")}</h1>
+        <p className="mt-2 text-sm text-text-secondary">{t("questionnaire:consent.body")}</p>
+        <Button className="mt-4" onClick={() => consentMutation.mutate()} disabled={consentMutation.isPending}>
+          {t("questionnaire:consent.agree")}
+        </Button>
+      </Card>
     );
   }
 
   if (startMutation.isPending || questionnaireQuery.isLoading || submissionQuery.isLoading) {
     return (
-      <div className="flex flex-col gap-3 p-4">
+      <div className="flex flex-col gap-3">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-24 w-full" />
       </div>
@@ -137,19 +135,17 @@ export function QuestionnaireFillPage() {
   }
 
   if (!questionnaireQuery.data) {
-    return (
-      <div className="p-4">
-        <Alert tone="danger" title={t("common:errors.notFound")} />
-      </div>
-    );
+    return <Alert tone="danger" title={t("common:errors.notFound")} />;
   }
 
   const questionnaire = questionnaireQuery.data;
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold text-text-primary">{questionnaire.title}</h1>
-      <p className="text-sm text-text-secondary">{questionnaire.description}</p>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-text-primary tablet:text-3xl">{questionnaire.title}</h1>
+        <p className="mt-1 text-sm text-text-secondary">{questionnaire.description}</p>
+      </div>
       <CrisisDisclaimer />
 
       {error && <Alert tone="danger" title={error} />}

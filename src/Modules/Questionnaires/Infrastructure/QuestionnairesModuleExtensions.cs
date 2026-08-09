@@ -1,5 +1,7 @@
+using BUnited.BuildingBlocks.Application.DataRights;
 using BUnited.Modules.Questionnaires.Application.UseCases.Admin;
 using BUnited.Modules.Questionnaires.Application.UseCases.Client;
+using BUnited.Modules.Questionnaires.Application.UseCases.DataRights;
 using BUnited.Modules.Questionnaires.Application.UseCases.Expert;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +38,8 @@ public static class QuestionnairesModuleExtensions
         services.AddScoped<GetGuidanceHandler>();
         services.AddScoped<SubmitFollowUpHandler>();
         services.AddScoped<ExportMyQuestionnaireDataHandler>();
+        services.AddScoped<IUserDataExporter, QuestionnairesUserDataExporter>();
+        services.AddScoped<IUserDataEraser, QuestionnairesUserDataEraser>();
 
         // Expert
         services.AddScoped<GetQueueHandler>();

@@ -1,3 +1,4 @@
+using BUnited.Modules.Audit.Application.UseCases;
 using BUnited.Modules.Audit.Contracts;
 using BUnited.Modules.Audit.Infrastructure.Logging;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,7 @@ public static class AuditModuleExtensions
     {
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<IAuditLogger, AuditLogger>();
+        services.AddScoped<ListAuditLogsHandler>();
 
         return services;
     }

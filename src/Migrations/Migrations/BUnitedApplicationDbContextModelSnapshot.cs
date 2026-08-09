@@ -85,68 +85,6 @@ namespace BUnited.Migrations.Migrations
                     b.ToTable("audit_logs");
                 });
 
-            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.Entitlement", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("SourceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("source_id");
-
-                    b.Property<string>("SourceType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("source_type");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("status");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("type");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<DateTime>("ValidFromUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("valid_from_utc");
-
-                    b.Property<DateTime?>("ValidUntilUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("valid_until_utc");
-
-                    b.HasKey("Id")
-                        .HasName("pk_entitlements");
-
-                    b.HasIndex("SourceId")
-                        .HasDatabaseName("ix_entitlements_source_id");
-
-                    b.HasIndex("UserId", "Type")
-                        .IsUnique()
-                        .HasDatabaseName("ix_entitlements_user_id_type");
-
-                    b.ToTable("entitlements");
-                });
-
             modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.Invoice", b =>
                 {
                     b.Property<Guid>("Id")
@@ -176,15 +114,15 @@ namespace BUnited.Migrations.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("payment_id");
 
+                    b.Property<Guid>("PurchaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
-
-                    b.Property<Guid>("SubscriptionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("subscription_id");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -196,8 +134,8 @@ namespace BUnited.Migrations.Migrations
                     b.HasIndex("PaymentId")
                         .HasDatabaseName("ix_invoices_payment_id");
 
-                    b.HasIndex("SubscriptionId")
-                        .HasDatabaseName("ix_invoices_subscription_id");
+                    b.HasIndex("PurchaseId")
+                        .HasDatabaseName("ix_invoices_purchase_id");
 
                     b.ToTable("invoices");
                 });
@@ -233,15 +171,15 @@ namespace BUnited.Migrations.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("provider_payment_id");
 
+                    b.Property<Guid>("PurchaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
-
-                    b.Property<Guid>("SubscriptionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("subscription_id");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -254,8 +192,8 @@ namespace BUnited.Migrations.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_payments_provider_payment_id");
 
-                    b.HasIndex("SubscriptionId")
-                        .HasDatabaseName("ix_payments_subscription_id");
+                    b.HasIndex("PurchaseId")
+                        .HasDatabaseName("ix_payments_purchase_id");
 
                     b.ToTable("payments");
                 });
@@ -299,7 +237,7 @@ namespace BUnited.Migrations.Migrations
                     b.ToTable("payment_customers");
                 });
 
-            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.Plan", b =>
+            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.ProgramEntitlement", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -310,93 +248,21 @@ namespace BUnited.Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
-
-                    b.Property<DateTime>("UpdatedAt")
+                    b.Property<DateTime>("GrantedAtUtc")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("granted_at_utc");
 
-                    b.HasKey("Id")
-                        .HasName("pk_plans");
-
-                    b.ToTable("plans");
-                });
-
-            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.PlanPrice", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<Guid>("ProgramId")
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("program_id");
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(12,2)")
-                        .HasColumnName("amount");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("currency");
-
-                    b.Property<string>("Interval")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("interval");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<Guid>("PlanId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("plan_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_plan_prices");
-
-                    b.HasIndex("PlanId")
-                        .HasDatabaseName("ix_plan_prices_plan_id");
-
-                    b.ToTable("plan_prices");
-                });
-
-            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.Subscription", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime?>("CanceledAt")
+                    b.Property<DateTime?>("RevokedAtUtc")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("canceled_at");
+                        .HasColumnName("revoked_at_utc");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("PlanId")
+                    b.Property<Guid>("SourcePurchaseId")
                         .HasColumnType("uuid")
-                        .HasColumnName("plan_id");
-
-                    b.Property<Guid>("PlanPriceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("plan_price_id");
+                        .HasColumnName("source_purchase_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -413,24 +279,19 @@ namespace BUnited.Migrations.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
-                        .HasName("pk_subscriptions");
+                        .HasName("pk_program_entitlements");
 
-                    b.HasIndex("PlanId")
-                        .HasDatabaseName("ix_subscriptions_plan_id");
+                    b.HasIndex("SourcePurchaseId")
+                        .HasDatabaseName("ix_program_entitlements_source_purchase_id");
 
-                    b.HasIndex("PlanPriceId")
-                        .HasDatabaseName("ix_subscriptions_plan_price_id");
+                    b.HasIndex("UserId", "ProgramId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_program_entitlements_user_id_program_id");
 
-                    b.HasIndex("Status")
-                        .HasDatabaseName("ix_subscriptions_status");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_subscriptions_user_id");
-
-                    b.ToTable("subscriptions");
+                    b.ToTable("program_entitlements");
                 });
 
-            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.SubscriptionPeriod", b =>
+            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.ProgramOffer", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -441,33 +302,148 @@ namespace BUnited.Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTime>("PaidPeriodEnd")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("paid_period_end");
-
-                    b.Property<DateTime>("PeriodEnd")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("period_end");
-
-                    b.Property<DateTime>("PeriodStart")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("period_start");
-
-                    b.Property<Guid>("SubscriptionId")
+                    b.Property<Guid>("ProgramId")
                         .HasColumnType("uuid")
-                        .HasColumnName("subscription_id");
+                        .HasColumnName("program_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id")
-                        .HasName("pk_subscription_periods");
+                        .HasName("pk_program_offers");
 
-                    b.HasIndex("SubscriptionId")
-                        .HasDatabaseName("ix_subscription_periods_subscription_id");
+                    b.HasIndex("ProgramId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_program_offers_program_id_active")
+                        .HasFilter("\"status\" = 'Active'");
 
-                    b.ToTable("subscription_periods");
+                    b.ToTable("program_offers");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.ProgramPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid>("ProgramOfferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("program_offer_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_program_prices");
+
+                    b.HasIndex("ProgramOfferId")
+                        .HasDatabaseName("ix_program_prices_program_offer_id");
+
+                    b.ToTable("program_prices", t =>
+                        {
+                            t.HasCheckConstraint("ck_program_prices_amount_positive", "\"amount\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.Purchase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at_utc");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid>("ProgramId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("program_id");
+
+                    b.Property<Guid>("ProgramOfferId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("program_offer_id");
+
+                    b.Property<Guid>("ProgramPriceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("program_price_id");
+
+                    b.Property<string>("ProgramTitleSnapshot")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("program_title_snapshot");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_purchases");
+
+                    b.HasIndex("ProgramId")
+                        .HasDatabaseName("ix_purchases_program_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_purchases_status");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_purchases_user_id");
+
+                    b.HasIndex("UserId", "ProgramId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_purchases_user_id_program_id_pending")
+                        .HasFilter("\"status\" = 'Pending'");
+
+                    b.ToTable("purchases");
                 });
 
             modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.WebhookEvent", b =>
@@ -506,9 +482,9 @@ namespace BUnited.Migrations.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("provider_timestamp_utc");
 
-                    b.Property<Guid?>("SubscriptionId")
+                    b.Property<Guid?>("PurchaseId")
                         .HasColumnType("uuid")
-                        .HasColumnName("subscription_id");
+                        .HasColumnName("purchase_id");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -524,10 +500,245 @@ namespace BUnited.Migrations.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_webhook_events_provider_event_id");
 
-                    b.HasIndex("SubscriptionId")
-                        .HasDatabaseName("ix_webhook_events_subscription_id");
+                    b.HasIndex("PurchaseId")
+                        .HasDatabaseName("ix_webhook_events_purchase_id");
 
                     b.ToTable("webhook_events");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Chat.Domain.Entities.ChatReadState", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("room_id");
+
+                    b.Property<DateTime>("LastReadAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_read_at_utc");
+
+                    b.HasKey("UserId", "RoomId")
+                        .HasName("pk_chat_read_states");
+
+                    b.HasIndex("RoomId")
+                        .HasDatabaseName("ix_chat_read_states_room_id");
+
+                    b.ToTable("chat_read_states");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Chat.Domain.Entities.ChatRoom", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid?>("ProgramId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("program_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id")
+                        .HasName("pk_chat_rooms");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("ix_chat_rooms_is_active");
+
+                    b.HasIndex("Key")
+                        .IsUnique()
+                        .HasDatabaseName("ix_chat_rooms_key");
+
+                    b.HasIndex("ProgramId")
+                        .HasDatabaseName("ix_chat_rooms_program_id");
+
+                    b.ToTable("chat_rooms");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Chat.Domain.Entities.Message", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at_utc");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_pinned");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("room_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_messages");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_messages_user_id");
+
+                    b.HasIndex("RoomId", "CreatedAt")
+                        .HasDatabaseName("ix_messages_room_id_created_at");
+
+                    b.ToTable("messages");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Chat.Domain.Entities.Mute", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at_utc");
+
+                    b.Property<Guid>("ModeratorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("moderator_id");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_mutes");
+
+                    b.HasIndex("UserId", "ExpiresAtUtc")
+                        .HasDatabaseName("ix_mutes_user_id_expires_at_utc");
+
+                    b.ToTable("mutes");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Chat.Domain.Entities.Report", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("message_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid>("ReporterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reporter_id");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at_utc");
+
+                    b.Property<Guid?>("ResolvedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_reports");
+
+                    b.HasIndex("MessageId")
+                        .HasDatabaseName("ix_reports_message_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_reports_status");
+
+                    b.ToTable("reports");
                 });
 
             modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.ContentDomain", b =>
@@ -816,6 +1027,168 @@ namespace BUnited.Migrations.Migrations
                     b.ToTable("program_translations");
                 });
 
+            modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.QuizAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ContentItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("content_item_id");
+
+                    b.Property<int>("CorrectCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("correct_count");
+
+                    b.Property<DateTime>("SubmittedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at_utc");
+
+                    b.Property<int>("TotalQuestions")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_questions");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_quiz_attempts");
+
+                    b.HasIndex("UserId", "ContentItemId")
+                        .HasDatabaseName("ix_quiz_attempts_user_id_content_item_id");
+
+                    b.ToTable("quiz_attempts");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.QuizOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_correct");
+
+                    b.Property<Guid>("QuizQuestionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quiz_question_id");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id")
+                        .HasName("pk_quiz_options");
+
+                    b.HasIndex("QuizQuestionId")
+                        .HasDatabaseName("ix_quiz_options_quiz_question_id");
+
+                    b.ToTable("quiz_options");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.QuizOptionTranslation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("label");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("language");
+
+                    b.Property<Guid>("QuizOptionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quiz_option_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_quiz_option_translations");
+
+                    b.HasIndex("QuizOptionId", "Language")
+                        .IsUnique()
+                        .HasDatabaseName("ix_quiz_option_translations_quiz_option_id_language");
+
+                    b.ToTable("quiz_option_translations");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.QuizQuestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ContentItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("content_item_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_quiz_questions");
+
+                    b.HasIndex("ContentItemId")
+                        .HasDatabaseName("ix_quiz_questions_content_item_id");
+
+                    b.ToTable("quiz_questions");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.QuizQuestionTranslation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("language");
+
+                    b.Property<Guid>("QuizQuestionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quiz_question_id");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("text");
+
+                    b.HasKey("Id")
+                        .HasName("pk_quiz_question_translations");
+
+                    b.HasIndex("QuizQuestionId", "Language")
+                        .IsUnique()
+                        .HasDatabaseName("ix_quiz_question_translations_quiz_question_id_language");
+
+                    b.ToTable("quiz_question_translations");
+                });
+
             modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.Section", b =>
                 {
                     b.Property<Guid>("Id")
@@ -890,6 +1263,262 @@ namespace BUnited.Migrations.Migrations
                         .HasDatabaseName("ix_section_translations_section_id_language");
 
                     b.ToTable("section_translations");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Events.Domain.Entities.Event", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int?>("Capacity")
+                        .HasColumnType("integer")
+                        .HasColumnName("capacity");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DefaultLanguage")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("default_language");
+
+                    b.Property<string>("DisplayTimezone")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("display_timezone");
+
+                    b.Property<DateTime>("EndsAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ends_at_utc");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("location");
+
+                    b.Property<string>("LocationType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("location_type");
+
+                    b.Property<string>("MeetingUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("meeting_url");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at");
+
+                    b.Property<DateTime>("StartsAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_events");
+
+                    b.HasIndex("StartsAtUtc")
+                        .HasDatabaseName("ix_events_starts_at_utc");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_events_status");
+
+                    b.ToTable("events");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Events.Domain.Entities.EventProgram", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("ProgramId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("program_id");
+
+                    b.HasKey("EventId", "ProgramId")
+                        .HasName("pk_event_programs");
+
+                    b.HasIndex("ProgramId")
+                        .HasDatabaseName("ix_event_programs_program_id");
+
+                    b.ToTable("event_programs");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Events.Domain.Entities.EventRegistration", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("CanceledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("canceled_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_event_registrations");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_event_registrations_user_id");
+
+                    b.HasIndex("EventId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_event_registrations_event_id_user_id");
+
+                    b.HasIndex("EventId", "Status", "CreatedAt")
+                        .HasDatabaseName("ix_event_registrations_event_id_status_created_at");
+
+                    b.ToTable("event_registrations");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Events.Domain.Entities.EventReminder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<Guid>("EventRegistrationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_registration_id");
+
+                    b.Property<DateTime>("ScheduledForUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_for_utc");
+
+                    b.Property<DateTime?>("SentAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("sent_at_utc");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("type");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_event_reminders");
+
+                    b.HasIndex("EventId")
+                        .HasDatabaseName("ix_event_reminders_event_id");
+
+                    b.HasIndex("EventRegistrationId", "Type")
+                        .IsUnique()
+                        .HasDatabaseName("ix_event_reminders_event_registration_id_type");
+
+                    b.HasIndex("ScheduledForUtc", "SentAtUtc")
+                        .HasDatabaseName("ix_event_reminders_scheduled_for_utc_sent_at_utc");
+
+                    b.ToTable("event_reminders");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Events.Domain.Entities.EventTranslation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("event_id");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("language");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id")
+                        .HasName("pk_event_translations");
+
+                    b.HasIndex("EventId", "Language")
+                        .IsUnique()
+                        .HasDatabaseName("ix_event_translations_event_id_language");
+
+                    b.ToTable("event_translations");
                 });
 
             modelBuilder.Entity("BUnited.Modules.Identity.Domain.Entities.EmailVerificationToken", b =>
@@ -1602,6 +2231,10 @@ namespace BUnited.Migrations.Migrations
                         .HasColumnType("character varying(10)")
                         .HasColumnName("default_language");
 
+                    b.Property<Guid>("ProgramId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("program_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1773,59 +2406,62 @@ namespace BUnited.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_invoices__payments_payment_id");
 
-                    b.HasOne("BUnited.Modules.Billing.Domain.Entities.Subscription", null)
+                    b.HasOne("BUnited.Modules.Billing.Domain.Entities.Purchase", null)
                         .WithMany()
-                        .HasForeignKey("SubscriptionId")
+                        .HasForeignKey("PurchaseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_invoices__subscriptions_subscription_id");
+                        .HasConstraintName("fk_invoices__purchases_purchase_id");
                 });
 
             modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.Payment", b =>
                 {
-                    b.HasOne("BUnited.Modules.Billing.Domain.Entities.Subscription", null)
+                    b.HasOne("BUnited.Modules.Billing.Domain.Entities.Purchase", null)
                         .WithMany()
-                        .HasForeignKey("SubscriptionId")
+                        .HasForeignKey("PurchaseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_payments__subscriptions_subscription_id");
+                        .HasConstraintName("fk_payments__purchases_purchase_id");
                 });
 
-            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.PlanPrice", b =>
+            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.ProgramPrice", b =>
                 {
-                    b.HasOne("BUnited.Modules.Billing.Domain.Entities.Plan", null)
+                    b.HasOne("BUnited.Modules.Billing.Domain.Entities.ProgramOffer", null)
                         .WithMany()
-                        .HasForeignKey("PlanId")
+                        .HasForeignKey("ProgramOfferId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_plan_prices_plans_plan_id");
+                        .HasConstraintName("fk_program_prices_program_offers_program_offer_id");
                 });
 
-            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.Subscription", b =>
+            modelBuilder.Entity("BUnited.Modules.Chat.Domain.Entities.ChatReadState", b =>
                 {
-                    b.HasOne("BUnited.Modules.Billing.Domain.Entities.Plan", null)
+                    b.HasOne("BUnited.Modules.Chat.Domain.Entities.ChatRoom", null)
                         .WithMany()
-                        .HasForeignKey("PlanId")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_chat_read_states__chat_rooms_room_id");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Chat.Domain.Entities.Message", b =>
+                {
+                    b.HasOne("BUnited.Modules.Chat.Domain.Entities.ChatRoom", null)
+                        .WithMany()
+                        .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_subscriptions_plans_plan_id");
-
-                    b.HasOne("BUnited.Modules.Billing.Domain.Entities.PlanPrice", null)
-                        .WithMany()
-                        .HasForeignKey("PlanPriceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_subscriptions_plan_prices_plan_price_id");
+                        .HasConstraintName("fk_messages_chat_rooms_room_id");
                 });
 
-            modelBuilder.Entity("BUnited.Modules.Billing.Domain.Entities.SubscriptionPeriod", b =>
+            modelBuilder.Entity("BUnited.Modules.Chat.Domain.Entities.Report", b =>
                 {
-                    b.HasOne("BUnited.Modules.Billing.Domain.Entities.Subscription", null)
+                    b.HasOne("BUnited.Modules.Chat.Domain.Entities.Message", null)
                         .WithMany()
-                        .HasForeignKey("SubscriptionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_subscription_periods_subscriptions_subscription_id");
+                        .HasConstraintName("fk_reports_messages_message_id");
                 });
 
             modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.ContentItem", b =>
@@ -1874,6 +2510,46 @@ namespace BUnited.Migrations.Migrations
                         .HasConstraintName("fk_program_translations_programs_program_id");
                 });
 
+            modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.QuizOption", b =>
+                {
+                    b.HasOne("BUnited.Modules.Content.Domain.Entities.QuizQuestion", null)
+                        .WithMany()
+                        .HasForeignKey("QuizQuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_quiz_options__quiz_questions_quiz_question_id");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.QuizOptionTranslation", b =>
+                {
+                    b.HasOne("BUnited.Modules.Content.Domain.Entities.QuizOption", null)
+                        .WithMany()
+                        .HasForeignKey("QuizOptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_quiz_option_translations_quiz_options_quiz_option_id");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.QuizQuestion", b =>
+                {
+                    b.HasOne("BUnited.Modules.Content.Domain.Entities.ContentItem", null)
+                        .WithMany()
+                        .HasForeignKey("ContentItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_quiz_questions_content_items_content_item_id");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.QuizQuestionTranslation", b =>
+                {
+                    b.HasOne("BUnited.Modules.Content.Domain.Entities.QuizQuestion", null)
+                        .WithMany()
+                        .HasForeignKey("QuizQuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_quiz_question_translations_quiz_questions_quiz_question_id");
+                });
+
             modelBuilder.Entity("BUnited.Modules.Content.Domain.Entities.Section", b =>
                 {
                     b.HasOne("BUnited.Modules.Content.Domain.Entities.Program", null)
@@ -1892,6 +2568,53 @@ namespace BUnited.Migrations.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_section_translations_sections_section_id");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Events.Domain.Entities.EventProgram", b =>
+                {
+                    b.HasOne("BUnited.Modules.Events.Domain.Entities.Event", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_programs_events_event_id");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Events.Domain.Entities.EventRegistration", b =>
+                {
+                    b.HasOne("BUnited.Modules.Events.Domain.Entities.Event", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_registrations_events_event_id");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Events.Domain.Entities.EventReminder", b =>
+                {
+                    b.HasOne("BUnited.Modules.Events.Domain.Entities.Event", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_reminders_events_event_id");
+
+                    b.HasOne("BUnited.Modules.Events.Domain.Entities.EventRegistration", null)
+                        .WithMany()
+                        .HasForeignKey("EventRegistrationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_reminders_event_registrations_event_registration_id");
+                });
+
+            modelBuilder.Entity("BUnited.Modules.Events.Domain.Entities.EventTranslation", b =>
+                {
+                    b.HasOne("BUnited.Modules.Events.Domain.Entities.Event", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_event_translations_events_event_id");
                 });
 
             modelBuilder.Entity("BUnited.Modules.Identity.Domain.Entities.EmailVerificationToken", b =>

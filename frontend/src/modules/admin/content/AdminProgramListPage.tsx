@@ -32,15 +32,15 @@ export function AdminProgramListPage() {
   });
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-text-primary">{t("admin:content.programs")}</h1>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3 tablet:flex-row tablet:items-center tablet:justify-between">
+        <h1 className="text-2xl font-semibold text-text-primary tablet:text-3xl">{t("admin:content.programs")}</h1>
         <Link to="/admin/programs/new" className={primaryButtonLinkClassName}>
           {t("admin:content.newProgram")}
         </Link>
       </div>
 
-      <div className="flex gap-2" role="tablist">
+      <div className="flex flex-wrap gap-2" role="tablist">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -48,8 +48,10 @@ export function AdminProgramListPage() {
             role="tab"
             aria-selected={status === tab.value}
             onClick={() => setStatus(tab.value)}
-            className={`min-h-11 rounded-full border px-4 text-sm font-medium ${
-              status === tab.value ? "border-primary bg-primary text-white" : "border-border-default text-text-secondary"
+            className={`min-h-11 rounded-full border px-4 text-sm font-medium transition-colors duration-150 ${
+              status === tab.value
+                ? "border-primary bg-primary text-on-primary"
+                : "border-border-strong bg-surface text-text-secondary hover:border-primary hover:text-primary"
             }`}
           >
             {t(`admin:content.tabs.${tab.key}`)}
@@ -64,16 +66,17 @@ export function AdminProgramListPage() {
       )}
 
       {programsQuery.isSuccess && programsQuery.data.items.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-border-default">
+        <div className="overflow-x-auto rounded-lg border border-border-default bg-surface shadow-sm">
           <table className="w-full text-left text-sm">
-            <thead className="bg-background text-xs uppercase text-text-muted">
+            <caption className="sr-only">{t("admin:content.tableCaption")}</caption>
+            <thead className="bg-background text-xs uppercase tracking-wide text-text-muted">
               <tr>
-                <th className="px-3 py-2">{t("admin:content.columns.title")}</th>
-                <th className="px-3 py-2">{t("admin:content.columns.sections")}</th>
-                <th className="px-3 py-2">{t("admin:content.columns.languages")}</th>
-                <th className="px-3 py-2">{t("admin:content.columns.status")}</th>
-                <th className="px-3 py-2">{t("admin:content.columns.updated")}</th>
-                <th className="px-3 py-2">{t("admin:content.columns.actions")}</th>
+                <th scope="col" className="px-3 py-2">{t("admin:content.columns.title")}</th>
+                <th scope="col" className="px-3 py-2">{t("admin:content.columns.sections")}</th>
+                <th scope="col" className="px-3 py-2">{t("admin:content.columns.languages")}</th>
+                <th scope="col" className="px-3 py-2">{t("admin:content.columns.status")}</th>
+                <th scope="col" className="px-3 py-2">{t("admin:content.columns.updated")}</th>
+                <th scope="col" className="px-3 py-2">{t("admin:content.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>

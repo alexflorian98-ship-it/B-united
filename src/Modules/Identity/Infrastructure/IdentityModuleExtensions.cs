@@ -1,5 +1,8 @@
+using BUnited.BuildingBlocks.Application.DataRights;
 using BUnited.Modules.Identity.Application.Abstractions;
 using BUnited.Modules.Identity.Application.Configuration;
+using BUnited.Modules.Identity.Application.UseCases.Admin.Users;
+using BUnited.Modules.Identity.Application.UseCases.DataRights;
 using BUnited.Modules.Identity.Application.UseCases.Login;
 using BUnited.Modules.Identity.Application.UseCases.PasswordReset;
 using BUnited.Modules.Identity.Application.UseCases.Profile;
@@ -31,6 +34,7 @@ public static class IdentityModuleExtensions
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IIdentityEmailSender, LoggingIdentityEmailSender>();
         services.AddScoped<IUserLookup, IdentityUserLookup>();
+        services.AddScoped<INotificationPreferenceLookup, IdentityNotificationPreferenceLookup>();
         services.AddScoped<IConsentContext, IdentityConsentContext>();
 
         services.AddScoped<RegisterUserHandler>();
@@ -44,6 +48,14 @@ public static class IdentityModuleExtensions
         services.AddScoped<ConfirmPasswordResetHandler>();
         services.AddScoped<GetProfileHandler>();
         services.AddScoped<UpdateProfileHandler>();
+        services.AddScoped<IUserDataExporter, IdentityUserDataExporter>();
+        services.AddScoped<ExportMyDataHandler>();
+        services.AddScoped<DeleteMyAccountHandler>();
+        services.AddScoped<ListClientsHandler>();
+        services.AddScoped<GetClientDetailHandler>();
+        services.AddScoped<ListRolesHandler>();
+        services.AddScoped<AssignClientRoleHandler>();
+        services.AddScoped<RemoveClientRoleHandler>();
 
         services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
 

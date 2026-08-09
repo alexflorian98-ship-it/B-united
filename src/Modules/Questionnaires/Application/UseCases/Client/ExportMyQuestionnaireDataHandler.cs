@@ -4,6 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BUnited.Modules.Questionnaires.Application.UseCases.Client;
 
+/// <summary>Deliberately not gated by <c>IProgramAccessContext</c> (ADR-003): this is the
+/// caller's full personal-data export (docs/DEVELOPMENT_INSTRUCTIONS.md §6 "data export...
+/// MUST enforce identity, authorization, retention"), scoped entirely by <c>userId</c> ownership
+/// — a GDPR-style access-your-own-data right that must return the complete historical record
+/// regardless of whether the program's entitlement was later revoked (e.g. a refund). This is
+/// the one deliberate exception to "gate every questionnaire read on current program access."</summary>
 public sealed class ExportMyQuestionnaireDataHandler(DbContext dbContext, TimeProvider timeProvider)
 {
     public async Task<QuestionnaireDataExportDto> HandleAsync(Guid userId, CancellationToken cancellationToken)

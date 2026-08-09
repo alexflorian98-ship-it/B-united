@@ -4,28 +4,29 @@ using BUnited.Modules.Content.Application.Abstractions;
 using BUnited.Modules.Content.Domain;
 using BUnited.Modules.Content.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Program = BUnited.Modules.Content.Domain.Entities.Program;
 
 namespace BUnited.Modules.Content.Application.UseCases.Client;
 
 public sealed record VideoPlaybackResult(string PlaybackUrl, string? ThumbnailUrl);
 
-/// <summary>Gates video playback on active <c>PlatformAccess</c> before ever returning a
-/// playback URL (docs/PROMPT.md §18–22) — via the temporary <see cref="IAccessContext"/> stub
-/// until Billing lands in Phase 3 (P2.09.c/P3.15). See ADR-005 for the real caveat: the
-/// URL itself isn't short-lived/signed in V1 (YouTube), so this check is the only actual access
-/// control point.</summary>
-public sealed class GetVideoPlaybackHandler(DbContext dbContext, IAccessContext accessContext, IVideoProvider videoProvider)
+/// <summary>Gates video playback on owning the specific program the video belongs to (ADR-003:
+/// per-program purchases, not a global subscription) — resolves
+/// <c>ContentItem -> Section -> Program</c> server-side, then defers to
+/// <see cref="IProgramAccessContext"/>, never trusting a client-supplied program id. See ADR-005
+/// for the real caveat: the URL itself isn't short-lived/signed in V1 (YouTube), so this check is
+/// the only actual access control point.</summary>
+public sealed class GetVideoPlaybackHandler(DbContext dbContext, IProgramAccessContext programAccessContext, IVideoProvider videoProvider)
 {
     public async Task<VideoPlaybackResult> HandleAsync(Guid contentItemId, Guid userId, CancellationToken cancellationToken)
     {
-        var hasAccess = await accessContext.HasActivePlatformAccessAsync(userId, cancellationToken);
-        if (!hasAccess)
-        {
-            throw new BusinessRuleAppException("PLATFORM_ACCESS_REQUIRED", "errors.platformAccessRequired", "An active subscription is required to play this video.");
-        }
-
         var item = await dbContext.Set<ContentItem>().SingleOrDefaultAsync(c => c.Id == contentItemId, cancellationToken)
             ?? throw new NotFoundAppException("The specified content item does not exist.");
+
+        var section = await dbContext.Set<Section>().SingleAsync(s => s.Id == item.SectionId, cancellationToken);
+        var program = await dbContext.Set<Program>().SingleAsync(p => p.Id == section.ProgramId, cancellationToken);
+
+        await programAccessContext.RequireProgramAccessAsync(userId, program.Id, cancellationToken);
 
         if (item.Type != ContentItemType.Video || item.MediaAssetId is null)
         {

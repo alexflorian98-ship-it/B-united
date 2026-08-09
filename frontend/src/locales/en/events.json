@@ -1,1 +1,27 @@
-{}
+{
+  "title": "Events",
+  "tabs": {
+    "upcoming": "Upcoming",
+    "past": "Past"
+  },
+  "noEvents": "No events yet",
+  "noEventsDescription": "There are no events in this category right now.",
+  "locationType": {
+    "Online": "Online",
+    "Physical": "Physical"
+  },
+  "registered": "registered",
+  "waitlisted": "waitlisted",
+  "registrationStatus": {
+    "Registered": "Registered",
+    "Waitlisted": "Waitlisted",
+    "Canceled": "Canceled"
+  },
+  "register": "Register",
+  "cancelRegistration": "Cancel registration",
+  "joinLink": "Join link",
+  "registerFeedback": {
+    "Registered": "You're registered for this event.",
+    "Waitlisted": "This event is full — you've been added to the waitlist."
+  }
+}

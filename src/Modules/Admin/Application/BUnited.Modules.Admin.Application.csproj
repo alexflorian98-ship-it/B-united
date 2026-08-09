@@ -1,9 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- ADR-007: Admin owns explicit, read-only, cross-module dashboard/reporting projections
+       that are the one documented exception to "never reference another module's Domain layer"
+       (CLAUDE.md). These references are read-only query sources ONLY — Admin must never call
+       into another module's Domain behavior or mutate its state. -->
   <ItemGroup>
     <ProjectReference Include="..\Domain\BUnited.Modules.Admin.Domain.csproj" />
     <ProjectReference Include="..\Contracts\BUnited.Modules.Admin.Contracts.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\Application\BUnited.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\Identity\Contracts\BUnited.Modules.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\Content\Contracts\BUnited.Modules.Content.Contracts.csproj" />
+    <ProjectReference Include="..\..\Content\Domain\BUnited.Modules.Content.Domain.csproj" />
+    <ProjectReference Include="..\..\Billing\Domain\BUnited.Modules.Billing.Domain.csproj" />
+    <ProjectReference Include="..\..\Questionnaires\Domain\BUnited.Modules.Questionnaires.Domain.csproj" />
+    <ProjectReference Include="..\..\Events\Domain\BUnited.Modules.Events.Domain.csproj" />
+    <ProjectReference Include="..\..\Chat\Domain\BUnited.Modules.Chat.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.11" />
   </ItemGroup>
 
   <PropertyGroup>

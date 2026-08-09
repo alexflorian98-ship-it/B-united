@@ -26,11 +26,22 @@ import { ExpertSubmissionPage } from "../modules/expert/ExpertSubmissionPage";
 import { BillingPage } from "../modules/billing/BillingPage";
 import { AdminBillingListPage } from "../modules/admin/billing/AdminBillingListPage";
 import { AdminBillingSubscriptionDetailPage } from "../modules/admin/billing/AdminBillingSubscriptionDetailPage";
+import { EventsListPage } from "../modules/events/EventsListPage";
+import { EventDetailPage } from "../modules/events/EventDetailPage";
+import { AdminEventsListPage } from "../modules/admin/events/AdminEventsListPage";
+import { AdminNewEventPage } from "../modules/admin/events/AdminNewEventPage";
+import { AdminEventEditorPage } from "../modules/admin/events/AdminEventEditorPage";
+import { ChatPage } from "../modules/chat/ChatPage";
+import { AdminChatModerationPage } from "../modules/admin/chat/AdminChatModerationPage";
+import { AdminClientListPage } from "../modules/admin/users/AdminClientListPage";
+import { AdminClientDetailPage } from "../modules/admin/users/AdminClientDetailPage";
+import { AdminAuditPage } from "../modules/admin/audit/AdminAuditPage";
+import { RequireAnyPermission } from "../shared/auth/RequireAnyPermission";
 import { RequireAuth } from "../shared/auth/RequireAuth";
 import { RequireGuest } from "../shared/auth/RequireGuest";
 import { RequirePermission } from "../shared/auth/RequirePermission";
 import { WellKnownPermissions } from "../shared/permissions/wellKnownPermissions";
-import { ComingSoonPage } from "./screens/ComingSoonPage";
+import { ADMIN_NAV_PERMISSIONS, ADMIN_SHELL_PERMISSIONS } from "../layouts/navigation";
 import { ForbiddenPage } from "./screens/ForbiddenPage";
 import { NotFoundPage } from "./screens/NotFoundPage";
 import { UnauthorizedPage } from "./screens/UnauthorizedPage";
@@ -52,11 +63,14 @@ function AdminLayoutRoute() {
 }
 
 /**
- * The full route tree from §40/§45's navigation, not just the Phase 1 slice: every nav
- * destination resolves to something (either the real Phase 1 screen or `ComingSoonPage`), so
- * `ClientLayout`/`AdminLayout` — already built against the complete nav — never link anywhere
- * broken. Admin routes are gated on `content.create` (only Expert/Administrator hold it), the
- * closest current proxy for "not a plain Client" until real role-based admin access lands.
+ * The full route tree from §40/§45's navigation: every remaining nav destination resolves to a
+ * real screen (the last two placeholders — Notifications, Settings — were removed rather than
+ * left as dead ends, see docs/IMPLEMENTATION_PLAN.md Slice A4: neither has a real persisted
+ * backing feature yet, and the plan is explicit that a placeholder should be removed, not kept,
+ * when that's true). The `/admin` shell opens for any user holding at least one administrative permission
+ * (`ADMIN_SHELL_PERMISSIONS`); each destination inside it is further gated on its own specific
+ * permission(s) (`ADMIN_NAV_PERMISSIONS`/individual `RequirePermission`s below), so a
+ * specialized account (e.g. billing-only) reaches exactly the sections it holds a permission for.
  */
 export function AppRouter() {
   return (
@@ -78,12 +92,16 @@ export function AppRouter() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/programs" element={<ProgramsPage />} />
           <Route path="/programs/:slug" element={<ProgramDetailPage />} />
-          <Route path="/events" element={<ComingSoonPage titleKey="nav.events" />} />
-          <Route path="/community" element={<ComingSoonPage titleKey="nav.community" />} />
+          <Route path="/events" element={<EventsListPage />} />
+          <Route path="/events/:eventId" element={<EventDetailPage />} />
           <Route path="/guidance" element={<GuidanceHomePage />} />
           <Route path="/guidance/:questionnaireId/fill" element={<QuestionnaireFillPage />} />
           <Route path="/guidance/submissions/:submissionId" element={<SubmissionStatusPage />} />
           <Route path="/billing" element={<BillingPage />} />
+          {/* Nested inside the persistent client nav (unlike the player below) so users can
+              always reach every other destination without relying on the browser back button —
+              its own internal room-sidebar (P6.12) sits inside this shell, not instead of it. */}
+          <Route path="/community" element={<ChatPage />} />
         </Route>
 
         {/* The player is deliberately outside ClientLayout — its own immersive 3-pane/drawer
@@ -91,27 +109,46 @@ export function AppRouter() {
         <Route path="/programs/:slug/learn/:contentItemId" element={<ProgramPlayerPage />} />
       </Route>
 
-      <Route element={<RequirePermission permission={WellKnownPermissions.ContentCreate} />}>
+      <Route element={<RequireAnyPermission permissions={ADMIN_SHELL_PERMISSIONS} />}>
         <Route element={<AdminLayoutRoute />}>
           <Route path="/admin" element={<AdminHomePage />} />
-          <Route path="/admin/programs" element={<AdminProgramListPage />} />
-          <Route path="/admin/programs/new" element={<AdminNewProgramPage />} />
-          <Route path="/admin/programs/:programId" element={<AdminProgramEditorPage />} />
-          <Route path="/admin/questionnaires" element={<AdminQuestionnaireListPage />} />
-          <Route path="/admin/questionnaires/new" element={<AdminNewQuestionnairePage />} />
-          <Route path="/admin/questionnaires/queue" element={<ExpertQueuePage />} />
-          <Route path="/admin/questionnaires/queue/:submissionId" element={<ExpertSubmissionPage />} />
-          <Route path="/admin/questionnaires/:questionnaireId" element={<AdminQuestionnaireEditorPage />} />
-          <Route path="/admin/events" element={<ComingSoonPage titleKey="nav.events" />} />
-          <Route path="/admin/community" element={<ComingSoonPage titleKey="nav.community" />} />
-          <Route path="/admin/subscribers" element={<ComingSoonPage titleKey="nav.subscribers" />} />
-          <Route path="/admin/notifications" element={<ComingSoonPage titleKey="nav.notifications" />} />
-          <Route path="/admin/audit" element={<ComingSoonPage titleKey="nav.audit" />} />
-          <Route path="/admin/settings" element={<ComingSoonPage titleKey="nav.settings" />} />
+
+          <Route element={<RequireAnyPermission permissions={ADMIN_NAV_PERMISSIONS.programs} />}>
+            <Route path="/admin/programs" element={<AdminProgramListPage />} />
+            <Route path="/admin/programs/new" element={<AdminNewProgramPage />} />
+            <Route path="/admin/programs/:programId" element={<AdminProgramEditorPage />} />
+          </Route>
+
+          <Route element={<RequireAnyPermission permissions={ADMIN_NAV_PERMISSIONS.questionnaires} />}>
+            <Route path="/admin/questionnaires" element={<AdminQuestionnaireListPage />} />
+            <Route path="/admin/questionnaires/new" element={<AdminNewQuestionnairePage />} />
+            <Route path="/admin/questionnaires/queue" element={<ExpertQueuePage />} />
+            <Route path="/admin/questionnaires/queue/:submissionId" element={<ExpertSubmissionPage />} />
+            <Route path="/admin/questionnaires/:questionnaireId" element={<AdminQuestionnaireEditorPage />} />
+          </Route>
+
+          <Route element={<RequireAnyPermission permissions={ADMIN_NAV_PERMISSIONS.clients} />}>
+            <Route path="/admin/clients" element={<AdminClientListPage />} />
+            <Route path="/admin/clients/:userId" element={<AdminClientDetailPage />} />
+          </Route>
+
+          <Route element={<RequireAnyPermission permissions={ADMIN_NAV_PERMISSIONS.audit} />}>
+            <Route path="/admin/audit" element={<AdminAuditPage />} />
+          </Route>
 
           <Route element={<RequirePermission permission={WellKnownPermissions.BillingManage} />}>
             <Route path="/admin/billing" element={<AdminBillingListPage />} />
-            <Route path="/admin/billing/:subscriptionId" element={<AdminBillingSubscriptionDetailPage />} />
+            <Route path="/admin/billing/purchases/:purchaseId" element={<AdminBillingSubscriptionDetailPage />} />
+          </Route>
+
+          <Route element={<RequirePermission permission={WellKnownPermissions.EventsManage} />}>
+            <Route path="/admin/events" element={<AdminEventsListPage />} />
+            <Route path="/admin/events/new" element={<AdminNewEventPage />} />
+            <Route path="/admin/events/:eventId" element={<AdminEventEditorPage />} />
+          </Route>
+
+          <Route element={<RequirePermission permission={WellKnownPermissions.ChatModerate} />}>
+            <Route path="/admin/community" element={<AdminChatModerationPage />} />
           </Route>
         </Route>
       </Route>

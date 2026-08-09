@@ -23,7 +23,6 @@ export function LanguageSwitcher() {
       <select
         value={i18n.resolvedLanguage}
         onChange={handleChange}
-        aria-label="Language"
         className="rounded-md border border-border-default bg-surface px-2 py-1 text-text-primary"
       >
         {SUPPORTED_LANGUAGES.map((language) => (

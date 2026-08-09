@@ -21,6 +21,9 @@
   "nav": {
     "mainNavigation": "Main navigation",
     "adminNavigation": "Admin navigation",
+    "openAdmin": "Administration",
+    "adminShort": "Admin",
+    "backToApp": "Back to application",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "home": "Home",
@@ -32,16 +35,59 @@
     "profile": "Profile",
     "dashboard": "Dashboard",
     "questionnaires": "Questionnaires",
-    "subscribers": "Subscribers",
-    "notifications": "Notifications",
-    "audit": "Audit",
-    "settings": "Settings"
+    "clients": "Clients",
+    "audit": "Audit"
   },
   "errors": {
     "validationFailed": "Some fields need your attention.",
     "internalServerError": "Something went wrong on our side. Please try again.",
     "notFound": "We couldn't find what you were looking for.",
-    "rateLimitExceeded": "Too many attempts. Please wait a moment and try again."
+    "rateLimitExceeded": "Too many attempts. Please wait a moment and try again.",
+    "billing": {
+      "programNotPublished": "This program isn't published yet.",
+      "programOfferAlreadyActive": "This program already has an active offer.",
+      "programIdRequired": "Select a program.",
+      "amountMustBePositive": "Amount must be greater than zero.",
+      "currencyRequired": "Currency is required.",
+      "currencyInvalid": "Use a 3-letter currency code (e.g. RON).",
+      "programOfferHasNoPrice": "This offer has no price yet — set one before activating it.",
+      "programOfferConcurrencyConflict": "This offer was changed by someone else. Please refresh and try again.",
+      "programAlreadyOwned": "You already own this program.",
+      "invalidCheckoutOutcome": "Invalid checkout outcome.",
+      "invalidStatusTransition": "This action isn't allowed for the purchase's current status."
+    },
+    "contentItem": {
+      "languageRequired": "Language is required.",
+      "titleRequired": "Title is required.",
+      "videoReferenceInvalid": "This doesn't look like a valid video reference.",
+      "videoReferenceRequired": "A video reference is required for a video item.",
+      "bodyRequired": "Body text is required for a rich text item.",
+      "videoReferenceNotAllowed": "A video reference isn't allowed for this item type.",
+      "bodyNotAllowed": "Body text isn't allowed for this item type.",
+      "reorderSetMismatch": "The reorder request doesn't match the current set of items. Reload and try again.",
+      "notAVideo": "This content item is not a video.",
+      "notAQuiz": "This content item is not a quiz."
+    },
+    "quiz": {
+      "noQuestions": "This quiz has no questions to submit.",
+      "answerSetMismatch": "Your answers don't match this quiz's current questions. Reload and try again.",
+      "questionHasNoCorrectOption": "One of this quiz's questions has no correct answer set yet.",
+      "answerOptionInvalid": "One of the submitted answers doesn't belong to its question."
+    },
+    "quizQuestion": {
+      "languageRequired": "Language is required.",
+      "textRequired": "Question text is required.",
+      "reorderSetMismatch": "The reorder request doesn't match the quiz's current questions. Reload and try again."
+    },
+    "quizOption": {
+      "languageRequired": "Language is required.",
+      "labelRequired": "Option label is required.",
+      "reorderSetMismatch": "The reorder request doesn't match the question's current options. Reload and try again.",
+      "correctAnswerAlreadySet": "This question already has a correct answer — delete it before marking a different option as correct."
+    },
+    "identity": {
+      "lastAdministratorProtected": "The last remaining Administrator's role cannot be removed."
+    }
   },
   "notFound": {
     "title": "Page not found",
@@ -57,8 +103,5 @@
     "title": "Sign-in required",
     "description": "You need to be logged in to view this page.",
     "goToLogin": "Log in"
-  },
-  "comingSoon": {
-    "description": "This feature isn't available yet — it's on the way in a future update."
   }
 }

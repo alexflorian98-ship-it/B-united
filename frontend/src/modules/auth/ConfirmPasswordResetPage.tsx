@@ -7,9 +7,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import { authApi } from "../../shared/auth/authApi";
 import { Alert } from "../../shared/design-system/Alert";
 import { Button } from "../../shared/design-system/Button";
-import { Card } from "../../shared/design-system/Card";
 import { PasswordInput } from "../../shared/design-system/PasswordInput";
 import { applyApiErrorToForm } from "../../shared/forms/applyApiErrorToForm";
+import { AuthLayout } from "./AuthLayout";
 import { confirmPasswordResetSchema, type ConfirmPasswordResetFormValues } from "./schemas";
 
 export function ConfirmPasswordResetPage() {
@@ -39,53 +39,49 @@ export function ConfirmPasswordResetPage() {
 
   if (!token || (mutation.isError && !mutation.isPending)) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <Card className="w-full max-w-sm">
-          <h1 className="text-lg font-semibold text-text-primary">{t("auth:passwordReset.confirmTitle")}</h1>
-          <div className="mt-3">
-            <Alert tone="danger" title={t("auth:errors.passwordResetTokenInvalid")} />
-          </div>
-          <Link to="/password-reset/request" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
-            {t("auth:passwordReset.requestTitle")}
-          </Link>
-        </Card>
-      </div>
+      <AuthLayout>
+        <h1 className="text-2xl font-semibold text-text-primary">{t("auth:passwordReset.confirmTitle")}</h1>
+        <div className="mt-3">
+          <Alert tone="danger" title={t("auth:errors.passwordResetTokenInvalid")} />
+        </div>
+        <Link to="/password-reset/request" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
+          {t("auth:passwordReset.requestTitle")}
+        </Link>
+      </AuthLayout>
     );
   }
 
   if (mutation.isSuccess) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <Card className="w-full max-w-sm text-center">
-          <h1 className="text-lg font-semibold text-text-primary">{t("auth:passwordReset.confirmTitle")}</h1>
+      <AuthLayout>
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-text-primary">{t("auth:passwordReset.confirmTitle")}</h1>
           <p className="mt-2 text-sm text-success">{t("auth:passwordReset.confirmSuccess")}</p>
           <Link to="/login" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
             {t("auth:login.title")}
           </Link>
-        </Card>
-      </div>
+        </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
-      <Card className="w-full max-w-sm">
-        <h1 className="text-lg font-semibold text-text-primary">{t("auth:passwordReset.confirmTitle")}</h1>
-        <form onSubmit={onSubmit} noValidate className="mt-4 flex flex-col gap-4">
-          {formError && <Alert tone="danger" title={formError} />}
-          <PasswordInput
-            label={t("auth:fields.newPassword")}
-            autoComplete="new-password"
-            toggleVisibilityLabel={t("auth:fields.togglePasswordVisibility")}
-            hint={t("auth:fields.passwordRequirements")}
-            error={errors.newPassword ? t(errors.newPassword.message ?? "") : undefined}
-            {...register("newPassword")}
-          />
-          <Button type="submit" variant="primary" disabled={isSubmitting || mutation.isPending}>
-            {mutation.isPending ? t("common:status.saving") : t("auth:passwordReset.confirmSubmit")}
-          </Button>
-        </form>
-      </Card>
-    </div>
+    <AuthLayout>
+      <h1 className="text-2xl font-semibold text-text-primary">{t("auth:passwordReset.confirmTitle")}</h1>
+      <form onSubmit={onSubmit} noValidate className="mt-6 flex flex-col gap-4">
+        {formError && <Alert tone="danger" title={formError} />}
+        <PasswordInput
+          label={t("auth:fields.newPassword")}
+          autoComplete="new-password"
+          toggleVisibilityLabel={t("auth:fields.togglePasswordVisibility")}
+          hint={t("auth:fields.passwordRequirements")}
+          error={errors.newPassword ? t(errors.newPassword.message ?? "") : undefined}
+          {...register("newPassword")}
+        />
+        <Button type="submit" variant="primary" className="mt-2 w-full" disabled={isSubmitting || mutation.isPending}>
+          {mutation.isPending ? t("common:status.saving") : t("auth:passwordReset.confirmSubmit")}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

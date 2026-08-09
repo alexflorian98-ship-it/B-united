@@ -10,11 +10,11 @@ public sealed class Invoice : IAuditableEntity
     {
     }
 
-    public static Invoice Create(Guid subscriptionId, Guid? paymentId, decimal amount, string currency, InvoiceStatus status, DateTime issuedAtUtc) =>
+    public static Invoice Create(Guid purchaseId, Guid? paymentId, decimal amount, string currency, InvoiceStatus status, DateTime issuedAtUtc) =>
         new()
         {
             Id = Guid.NewGuid(),
-            SubscriptionId = subscriptionId,
+            PurchaseId = purchaseId,
             PaymentId = paymentId,
             Amount = amount,
             Currency = currency,
@@ -24,7 +24,7 @@ public sealed class Invoice : IAuditableEntity
 
     public Guid Id { get; private set; }
 
-    public Guid SubscriptionId { get; private set; }
+    public Guid PurchaseId { get; private set; }
 
     public Guid? PaymentId { get; private set; }
 

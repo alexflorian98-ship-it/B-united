@@ -24,22 +24,23 @@ export function ExpertQueuePage() {
   });
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold text-text-primary">{t("admin:questionnaires.queue.title")}</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold text-text-primary tablet:text-3xl">{t("admin:questionnaires.queue.title")}</h1>
 
       {queueQuery.isLoading && <Skeleton className="h-64 w-full" />}
 
       {queueQuery.isSuccess && queueQuery.data.length === 0 && <EmptyState title={t("admin:questionnaires.queue.empty")} />}
 
       {queueQuery.isSuccess && queueQuery.data.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-border-default">
+        <div className="overflow-x-auto rounded-lg border border-border-default bg-surface shadow-sm">
           <table className="w-full text-left text-sm">
-            <thead className="bg-background text-xs uppercase text-text-muted">
+            <caption className="sr-only">{t("admin:questionnaires.queue.tableCaption")}</caption>
+            <thead className="bg-background text-xs uppercase tracking-wide text-text-muted">
               <tr>
-                <th className="px-3 py-2">{t("admin:questionnaires.queue.columns.client")}</th>
-                <th className="px-3 py-2">{t("admin:questionnaires.queue.columns.submittedAt")}</th>
-                <th className="px-3 py-2">{t("admin:questionnaires.queue.columns.waiting")}</th>
-                <th className="px-3 py-2">{t("admin:questionnaires.queue.columns.action")}</th>
+                <th scope="col" className="px-3 py-2">{t("admin:questionnaires.queue.columns.client")}</th>
+                <th scope="col" className="px-3 py-2">{t("admin:questionnaires.queue.columns.submittedAt")}</th>
+                <th scope="col" className="px-3 py-2">{t("admin:questionnaires.queue.columns.waiting")}</th>
+                <th scope="col" className="px-3 py-2">{t("admin:questionnaires.queue.columns.action")}</th>
               </tr>
             </thead>
             <tbody>

@@ -1,3 +1,4 @@
+using BUnited.BuildingBlocks.Application.Access;
 using BUnited.BuildingBlocks.Application.Errors;
 using BUnited.Modules.Questionnaires.Domain;
 using BUnited.Modules.Questionnaires.Domain.Entities;
@@ -5,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BUnited.Modules.Questionnaires.Application.UseCases.Client;
 
-public sealed class SaveDraftAnswersHandler(DbContext dbContext, TimeProvider timeProvider)
+public sealed class SaveDraftAnswersHandler(DbContext dbContext, TimeProvider timeProvider, IProgramAccessContext programAccessContext)
 {
     public async Task HandleAsync(SaveDraftAnswersCommand command, CancellationToken cancellationToken)
     {
@@ -19,6 +20,9 @@ public sealed class SaveDraftAnswersHandler(DbContext dbContext, TimeProvider ti
             // of another user's submission to an unauthorized caller (§35 restrictive authorization).
             throw new NotFoundAppException("The specified submission does not exist.");
         }
+
+        var programId = await QuestionnaireProgramResolver.GetOwningProgramIdAsync(dbContext, submission.QuestionnaireId, cancellationToken);
+        await programAccessContext.RequireProgramAccessAsync(command.UserId, programId, cancellationToken);
 
         if (submission.Status != QuestionnaireSubmissionStatus.Draft)
         {

@@ -5,7 +5,11 @@ import { Toast } from "./Toast";
 
 describe("Toast", () => {
   it("renders as a polite live region", () => {
-    render(<Toast onDismiss={() => {}}>Saved successfully</Toast>);
+    render(
+      <Toast onDismiss={() => {}} dismissLabel="Dismiss">
+        Saved successfully
+      </Toast>,
+    );
     const toast = screen.getByRole("status");
     expect(toast).toHaveAttribute("aria-live", "polite");
     expect(toast).toHaveTextContent("Saved successfully");
@@ -14,7 +18,11 @@ describe("Toast", () => {
   it("dismiss button is reachable and activatable via keyboard", async () => {
     const user = userEvent.setup();
     const onDismiss = vi.fn();
-    render(<Toast onDismiss={onDismiss}>Saved successfully</Toast>);
+    render(
+      <Toast onDismiss={onDismiss} dismissLabel="Dismiss">
+        Saved successfully
+      </Toast>,
+    );
 
     await user.tab();
     expect(screen.getByRole("button", { name: "Dismiss" })).toHaveFocus();

@@ -23,8 +23,8 @@ export function ProgramsPage() {
   const domains = useMemo(() => domainsQuery.data ?? [], [domainsQuery.data]);
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold text-text-primary">{t("common:nav.programs")}</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold text-text-primary tablet:text-3xl">{t("common:nav.programs")}</h1>
 
       <div className="flex flex-wrap gap-2" role="tablist" aria-label={t("content:domainFilter")}>
         <button
@@ -32,8 +32,10 @@ export function ProgramsPage() {
           role="tab"
           aria-selected={domainId === null}
           onClick={() => setDomainId(null)}
-          className={`min-h-11 rounded-full border px-4 text-sm font-medium ${
-            domainId === null ? "border-primary bg-primary text-white" : "border-border-default text-text-secondary"
+          className={`min-h-11 rounded-full border px-4 text-sm font-medium transition-colors duration-150 ${
+            domainId === null
+              ? "border-primary bg-primary text-on-primary"
+              : "border-border-strong bg-surface text-text-secondary hover:border-primary hover:text-primary"
           }`}
         >
           {t("content:allDomains")}
@@ -45,8 +47,10 @@ export function ProgramsPage() {
             role="tab"
             aria-selected={domainId === domain.id}
             onClick={() => setDomainId(domain.id)}
-            className={`min-h-11 rounded-full border px-4 text-sm font-medium ${
-              domainId === domain.id ? "border-primary bg-primary text-white" : "border-border-default text-text-secondary"
+            className={`min-h-11 rounded-full border px-4 text-sm font-medium transition-colors duration-150 ${
+              domainId === domain.id
+                ? "border-primary bg-primary text-on-primary"
+                : "border-border-strong bg-surface text-text-secondary hover:border-primary hover:text-primary"
             }`}
           >
             {t(`content:domains.${domain.slug}`)}
@@ -70,10 +74,19 @@ export function ProgramsPage() {
         <div className="grid grid-cols-1 gap-4 tablet:grid-cols-2 desktop:grid-cols-3">
           {programsQuery.data.map((program) => (
             <Link key={program.id} to={`/programs/${program.slug}`}>
-              <Card className="flex h-full flex-col gap-2 transition-shadow hover:shadow-md">
-                <Badge tone="info">{t(`content:domains.${domains.find((d) => d.id === program.domainId)?.slug ?? ""}`)}</Badge>
-                <h2 className="text-base font-semibold text-text-primary">{program.title}</h2>
+              <Card className="flex h-full flex-col gap-2 transition-shadow duration-150 hover:shadow-md">
+                <Badge tone="info" className="w-fit">
+                  {t(`content:domains.${domains.find((d) => d.id === program.domainId)?.slug ?? ""}`)}
+                </Badge>
+                <h2 className="font-serif text-lg font-medium text-text-primary">{program.title}</h2>
                 <p className="text-sm text-text-secondary">{program.shortDescription}</p>
+                <p className="mt-auto pt-2 text-sm font-semibold text-primary">
+                  {program.ownershipState === "Owned"
+                    ? t("content:owned")
+                    : program.activeOffer
+                      ? t("content:price", { amount: program.activeOffer.amount.toFixed(2), currency: program.activeOffer.currency })
+                      : t("content:unavailable")}
+                </p>
               </Card>
             </Link>
           ))}

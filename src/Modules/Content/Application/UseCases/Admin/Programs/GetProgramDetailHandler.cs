@@ -1,5 +1,6 @@
 using BUnited.BuildingBlocks.Application.Errors;
 using BUnited.Modules.Content.Application.Dtos;
+using BUnited.Modules.Content.Domain;
 using BUnited.Modules.Content.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Program = BUnited.Modules.Content.Domain.Entities.Program;
@@ -38,6 +39,48 @@ public sealed class GetProgramDetailHandler(DbContext dbContext)
             .Where(t => itemIds.Contains(t.ContentItemId))
             .ToListAsync(cancellationToken);
 
+        // Quiz data (admin-only — includes IsCorrect, unlike the client-facing read) for whichever
+        // items are actually quizzes; empty queries are cheap no-ops for programs with none.
+        var quizItemIds = items.Where(i => i.Type == ContentItemType.Quiz).Select(i => i.Id).ToList();
+        var quizQuestions = await dbContext.Set<QuizQuestion>()
+            .Where(q => quizItemIds.Contains(q.ContentItemId))
+            .OrderBy(q => q.SortOrder)
+            .ToListAsync(cancellationToken);
+        var quizQuestionIds = quizQuestions.Select(q => q.Id).ToList();
+
+        var quizQuestionTranslations = await dbContext.Set<QuizQuestionTranslation>()
+            .Where(t => quizQuestionIds.Contains(t.QuizQuestionId))
+            .ToListAsync(cancellationToken);
+
+        var quizOptions = await dbContext.Set<QuizOption>()
+            .Where(o => quizQuestionIds.Contains(o.QuizQuestionId))
+            .OrderBy(o => o.SortOrder)
+            .ToListAsync(cancellationToken);
+        var quizOptionIds = quizOptions.Select(o => o.Id).ToList();
+
+        var quizOptionTranslations = await dbContext.Set<QuizOptionTranslation>()
+            .Where(t => quizOptionIds.Contains(t.QuizOptionId))
+            .ToListAsync(cancellationToken);
+
+        List<AdminQuizQuestionDetailDto>? BuildQuizQuestions(Guid contentItemId) =>
+            quizQuestions.Where(q => q.ContentItemId == contentItemId)
+                .Select(question => new AdminQuizQuestionDetailDto(
+                    question.Id,
+                    question.SortOrder,
+                    quizQuestionTranslations.Where(t => t.QuizQuestionId == question.Id)
+                        .Select(t => new AdminQuizQuestionTranslationDto(t.Language, t.Text))
+                        .ToList(),
+                    quizOptions.Where(o => o.QuizQuestionId == question.Id)
+                        .Select(option => new AdminQuizOptionDetailDto(
+                            option.Id,
+                            option.SortOrder,
+                            option.IsCorrect,
+                            quizOptionTranslations.Where(t => t.QuizOptionId == option.Id)
+                                .Select(t => new AdminQuizOptionTranslationDto(t.Language, t.Label))
+                                .ToList()))
+                        .ToList()))
+                .ToList();
+
         var sectionDtos = sections.Select(section => new SectionDetailDto(
             section.Id,
             section.SortOrder,
@@ -54,7 +97,8 @@ public sealed class GetProgramDetailHandler(DbContext dbContext)
                     item.MediaAssetId,
                     itemTranslations.Where(t => t.ContentItemId == item.Id)
                         .Select(t => new ContentItemTranslationDto(t.Language, t.Title, t.Body))
-                        .ToList()))
+                        .ToList(),
+                    item.Type == ContentItemType.Quiz ? BuildQuizQuestions(item.Id) : null))
                 .ToList()))
             .ToList();
 

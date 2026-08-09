@@ -3,7 +3,7 @@ import { apiRequest } from "../../../shared/api/apiClient";
 export const ProgramStatus = { Draft: 0, Published: 1, Archived: 2 } as const;
 export type ProgramStatusValue = (typeof ProgramStatus)[keyof typeof ProgramStatus];
 
-export const ContentItemType = { Video: 0, RichText: 1 } as const;
+export const ContentItemType = { Video: 0, RichText: 1, Quiz: 2 } as const;
 export type ContentItemTypeValue = (typeof ContentItemType)[keyof typeof ContentItemType];
 
 export interface ProgramSummary {
@@ -122,4 +122,43 @@ export const adminContentApi = {
     apiRequest<void>(`/admin/content/content-items/${contentItemId}/translations`, { method: "PUT", body: input }),
 
   deleteContentItem: (contentItemId: string) => apiRequest<void>(`/admin/content/content-items/${contentItemId}`, { method: "DELETE" }),
+
+  // Quiz authoring. Quiz items are created empty via `addContentItem` (type: Quiz); questions and
+  // options are added afterward via these calls, mirroring how content-item translations are
+  // already a separate upsert step. Note: there is currently no admin read endpoint that returns
+  // a quiz's existing questions/options (see `ProgramDetailDto`/`GetProgramDetailHandler` — a
+  // real backend gap reported alongside this change), so the admin UI can only track what it adds
+  // within the current editing session.
+  addQuizQuestion: (contentItemId: string, input: { language: string; text: string }) =>
+    apiRequest<string>(`/admin/content/content-items/${contentItemId}/quiz/questions`, { method: "POST", body: input }),
+
+  upsertQuizQuestionTranslation: (quizQuestionId: string, input: { language: string; text: string }) =>
+    apiRequest<void>(`/admin/content/quiz-questions/${quizQuestionId}/translations`, { method: "PUT", body: input }),
+
+  deleteQuizQuestion: (quizQuestionId: string) => apiRequest<void>(`/admin/content/quiz-questions/${quizQuestionId}`, { method: "DELETE" }),
+
+  reorderQuizQuestions: (contentItemId: string, orderedQuizQuestionIds: string[]) =>
+    apiRequest<void>(`/admin/content/content-items/${contentItemId}/quiz/questions/reorder`, {
+      method: "POST",
+      body: { orderedQuizQuestionIds },
+    }),
+
+  // At most one option per question may have `isCorrect: true` — the backend rejects a second one
+  // with `QUIZ_OPTION_ALREADY_HAS_CORRECT_ANSWER`. There is no "toggle correct" endpoint, so
+  // changing which option is correct requires deleting the current correct option and adding a
+  // new one as correct (see `AdminProgramEditorPage.tsx`'s quiz builder UI for how this is
+  // surfaced to the admin).
+  addQuizOption: (quizQuestionId: string, input: { language: string; label: string; isCorrect: boolean }) =>
+    apiRequest<string>(`/admin/content/quiz-questions/${quizQuestionId}/options`, { method: "POST", body: input }),
+
+  upsertQuizOptionTranslation: (quizOptionId: string, input: { language: string; label: string }) =>
+    apiRequest<void>(`/admin/content/quiz-options/${quizOptionId}/translations`, { method: "PUT", body: input }),
+
+  deleteQuizOption: (quizOptionId: string) => apiRequest<void>(`/admin/content/quiz-options/${quizOptionId}`, { method: "DELETE" }),
+
+  reorderQuizOptions: (quizQuestionId: string, orderedQuizOptionIds: string[]) =>
+    apiRequest<void>(`/admin/content/quiz-questions/${quizQuestionId}/options/reorder`, {
+      method: "POST",
+      body: { orderedQuizOptionIds },
+    }),
 };

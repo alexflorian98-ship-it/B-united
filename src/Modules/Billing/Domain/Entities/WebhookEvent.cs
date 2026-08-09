@@ -12,13 +12,13 @@ public sealed class WebhookEvent : IAuditableEntity
     {
     }
 
-    public static WebhookEvent Create(string providerEventId, string eventType, Guid? subscriptionId, string payloadJson, DateTime providerTimestampUtc) =>
+    public static WebhookEvent Create(string providerEventId, string eventType, Guid? purchaseId, string payloadJson, DateTime providerTimestampUtc) =>
         new()
         {
             Id = Guid.NewGuid(),
             ProviderEventId = providerEventId,
             EventType = eventType,
-            SubscriptionId = subscriptionId,
+            PurchaseId = purchaseId,
             PayloadJson = payloadJson,
             ProviderTimestampUtc = providerTimestampUtc,
         };
@@ -29,10 +29,11 @@ public sealed class WebhookEvent : IAuditableEntity
 
     public string EventType { get; private set; } = string.Empty;
 
-    /// <summary>Correlates events to a subscription for the out-of-order guard (P3.09) — which
+    /// <summary>Correlates events to a purchase for the out-of-order guard (P3.09) — which
     /// compares a new event's <see cref="ProviderTimestampUtc"/> against the latest processed
-    /// event for the *same* subscription, not globally.</summary>
-    public Guid? SubscriptionId { get; private set; }
+    /// event for the *same* purchase, not globally. Nullable so an event referencing an unknown
+    /// purchase is still persisted rather than silently dropped.</summary>
+    public Guid? PurchaseId { get; private set; }
 
     /// <summary>Raw provider payload. Never card data (§65) — the fake provider never generates
     /// any. Visibility is restricted to technical administrators (P3.22), not the ordinary

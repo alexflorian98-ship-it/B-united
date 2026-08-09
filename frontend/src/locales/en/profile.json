@@ -5,5 +5,24 @@
   "language": "Language",
   "emailNotifications": "Email notifications",
   "saved": "Your profile has been saved.",
-  "logout": "Log out"
+  "logout": "Log out",
+  "dataRights": {
+    "title": "Your data",
+    "exportTitle": "Export my data",
+    "exportDescription": "Download a JSON archive of everything associated with your account: profile, progress, questionnaire history, purchases, event registrations, and your chat messages.",
+    "exportButton": "Export my data",
+    "exportPending": "Preparing your export…",
+    "exportError": "We couldn't prepare your export. Please try again.",
+    "deleteTitle": "Delete my account",
+    "deleteDescription": "Permanently delete your account. This cannot be undone.",
+    "deleteButton": "Delete my account",
+    "deleteModal": {
+      "title": "Delete your account",
+      "warning": "This action is permanent and cannot be undone. Your profile, progress, and questionnaire history will be deleted. Purchase and billing records are kept as required by law. Your chat messages will remain visible to others, but no longer linked to your name.",
+      "passwordLabel": "Confirm your password",
+      "confirm": "Permanently delete my account",
+      "cancel": "Cancel",
+      "errorInvalidPassword": "The current password is incorrect."
+    }
+  }
 }

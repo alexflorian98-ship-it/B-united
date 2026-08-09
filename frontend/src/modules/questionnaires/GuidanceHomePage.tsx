@@ -7,6 +7,7 @@ import { Card } from "../../shared/design-system/Card";
 import { EmptyState } from "../../shared/design-system/EmptyState";
 import { Skeleton } from "../../shared/design-system/Skeleton";
 import { StatusBadge } from "../../shared/design-system/StatusBadge";
+import { primaryButtonLinkClassName } from "../../shared/design-system/linkAsButton";
 import { CrisisDisclaimer } from "../../shared/crisis/CrisisDisclaimer";
 import { questionnaireApi, type MySubmission } from "./questionnaireApi";
 
@@ -33,7 +34,7 @@ export function GuidanceHomePage() {
 
   if (questionnairesQuery.isLoading || submissionsQuery.isLoading) {
     return (
-      <div className="flex flex-col gap-3 p-4">
+      <div className="flex flex-col gap-3">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-24 w-full" />
       </div>
@@ -41,24 +42,20 @@ export function GuidanceHomePage() {
   }
 
   if (questionnairesQuery.isError || submissionsQuery.isError) {
-    return (
-      <div className="p-4">
-        <Alert tone="danger" title={t("common:errors.generic")} />
-      </div>
-    );
+    return <Alert tone="danger" title={t("common:errors.generic")} />;
   }
 
   const questionnaires = questionnairesQuery.data ?? [];
   const submissions = submissionsQuery.data ?? [];
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold text-text-primary">{t("questionnaire:title")}</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold text-text-primary tablet:text-3xl">{t("questionnaire:title")}</h1>
       <CrisisDisclaimer />
 
       {questionnaires.length === 0 && <EmptyState title={t("questionnaire:noQuestionnaires")} />}
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         {questionnaires.map((questionnaire) => {
           const submission = latestSubmissionFor(questionnaire.id, submissions);
           const status = submission?.status ?? null;
@@ -71,10 +68,10 @@ export function GuidanceHomePage() {
                 : { label: t("questionnaire:cta.view"), to: `/guidance/submissions/${submission!.submissionId}` };
 
           return (
-            <Card key={questionnaire.id} className="flex items-center justify-between gap-3">
+            <Card key={questionnaire.id} className="flex flex-col gap-3 tablet:flex-row tablet:items-center tablet:justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-text-primary">{questionnaire.title}</h2>
-                <p className="text-xs text-text-muted">{questionnaire.description}</p>
+                <h2 className="font-serif text-lg font-medium text-text-primary">{questionnaire.title}</h2>
+                <p className="mt-1 text-sm text-text-muted">{questionnaire.description}</p>
               </div>
               <div className="flex items-center gap-3">
                 {status && (
@@ -83,10 +80,7 @@ export function GuidanceHomePage() {
                     label={t(`questionnaire:submissionStatus.${status}`)}
                   />
                 )}
-                <Link
-                  to={cta.to}
-                  className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover"
-                >
+                <Link to={cta.to} className={primaryButtonLinkClassName}>
                   {cta.label}
                 </Link>
               </div>

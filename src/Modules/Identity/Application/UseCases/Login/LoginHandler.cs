@@ -36,6 +36,16 @@ public sealed class LoginHandler(
             throw InvalidCredentials();
         }
 
+        if (!user.IsActive)
+        {
+            logger.LogWarning("identity.failed_login: UserId {UserId} account deleted", user.Id);
+            await AuditFailedLoginAsync(user.Id, "account_deleted", cancellationToken);
+            throw new BusinessRuleAppException(
+                "ACCOUNT_DELETED",
+                "errors.accountDeleted",
+                "This account has been deleted.");
+        }
+
         if (user.IsLockedOut(utcNow))
         {
             logger.LogWarning("identity.failed_login: UserId {UserId} is locked out", user.Id);

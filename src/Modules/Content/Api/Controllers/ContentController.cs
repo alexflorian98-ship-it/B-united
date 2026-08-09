@@ -15,7 +15,8 @@ public sealed class ContentController(
     ListContentDomainsHandler listContentDomainsHandler,
     ListPublishedProgramsHandler listPublishedProgramsHandler,
     GetPublishedProgramDetailHandler getPublishedProgramDetailHandler,
-    GetVideoPlaybackHandler getVideoPlaybackHandler) : ControllerBase
+    GetVideoPlaybackHandler getVideoPlaybackHandler,
+    SubmitQuizAttemptHandler submitQuizAttemptHandler) : ControllerBase
 {
     [HttpGet("domains")]
     public async Task<ActionResult<IReadOnlyList<ContentDomainDto>>> ListDomains(CancellationToken cancellationToken)
@@ -30,14 +31,14 @@ public sealed class ContentController(
         [FromQuery] string language = "ro",
         CancellationToken cancellationToken = default)
     {
-        var result = await listPublishedProgramsHandler.HandleAsync(new ListPublishedProgramsQuery(domainId, language), cancellationToken);
+        var result = await listPublishedProgramsHandler.HandleAsync(new ListPublishedProgramsQuery(domainId, language, User.GetUserId()), cancellationToken);
         return Ok(result);
     }
 
     [HttpGet("programs/{slug}")]
     public async Task<ActionResult<ClientProgramDetailDto>> GetProgram(string slug, [FromQuery] string language = "ro", CancellationToken cancellationToken = default)
     {
-        var result = await getPublishedProgramDetailHandler.HandleAsync(slug, language, cancellationToken);
+        var result = await getPublishedProgramDetailHandler.HandleAsync(slug, language, User.GetUserId(), cancellationToken);
         return Ok(result);
     }
 
@@ -45,6 +46,17 @@ public sealed class ContentController(
     public async Task<ActionResult<VideoPlaybackResult>> GetVideoPlayback(Guid contentItemId, CancellationToken cancellationToken)
     {
         var result = await getVideoPlaybackHandler.HandleAsync(contentItemId, User.GetUserId(), cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("content-items/{contentItemId:guid}/quiz/submit")]
+    public async Task<ActionResult<SubmitQuizAttemptResult>> SubmitQuiz(Guid contentItemId, SubmitQuizRequest request, CancellationToken cancellationToken)
+    {
+        var command = new SubmitQuizAttemptCommand(
+            contentItemId,
+            User.GetUserId(),
+            request.Answers.Select(a => new QuizAnswerInput(a.QuestionId, a.SelectedOptionId)).ToList());
+        var result = await submitQuizAttemptHandler.HandleAsync(command, cancellationToken);
         return Ok(result);
     }
 }

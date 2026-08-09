@@ -31,7 +31,7 @@ services:
       ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-bunited};Username=${POSTGRES_USER:-bunited};Password=${POSTGRES_PASSWORD:-change-me}"
       Jwt__Issuer: ${Jwt__Issuer:-bunited}
       Jwt__Audience: ${Jwt__Audience:-bunited-clients}
-      Jwt__SigningKey: ${Jwt__SigningKey:-change-me}
+      Jwt__SigningKey: ${Jwt__SigningKey:-local-dev-only-jwt-signing-key-not-for-production-use}
       Jwt__AccessTokenLifetimeMinutes: ${Jwt__AccessTokenLifetimeMinutes:-15}
       Jwt__RefreshTokenLifetimeDays: ${Jwt__RefreshTokenLifetimeDays:-30}
     ports:

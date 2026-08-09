@@ -1,1 +1,33 @@
-{}
+{
+  "rooms": {
+    "General": "General",
+    "Psychology": "Psychology",
+    "Sport": "Sport",
+    "Nutrition": "Nutrition",
+    "Business": "Business",
+    "FinancialEducation": "Financial Education"
+  },
+  "locked": "Locked",
+  "selectRoom": "Select an available program room",
+  "privacyNotice": {
+    "title": "Shared program area",
+    "body": "This space is visible to clients who own the associated program. Do not post sensitive health, financial, or personal information."
+  },
+  "unknownUser": "Unknown user",
+  "pinned": "Pinned",
+  "messageDeleted": "This message was removed by a moderator.",
+  "report": "Report",
+  "messagePlaceholder": "Write a message…",
+  "send": "Send",
+  "reportModal": {
+    "title": "Report message",
+    "reason": "Reason",
+    "reasons": {
+      "spam": "Spam",
+      "harassment": "Harassment",
+      "sensitiveInfo": "Sensitive information",
+      "other": "Other"
+    },
+    "submit": "Submit report"
+  }
+}

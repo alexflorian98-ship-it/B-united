@@ -17,5 +17,16 @@ public sealed class AddContentItemValidator : AbstractValidator<AddContentItemRe
         RuleFor(x => x.Body)
             .NotEmpty().WithErrorCode("errors.contentItem.bodyRequired")
             .When(x => x.Type == ContentItemType.RichText);
+
+        // A quiz starts empty: neither a video reference nor a body applies. Its questions are
+        // added via separate calls after creation, matching how translations are already a
+        // separate upsert step from creation for every content-item type.
+        RuleFor(x => x.VideoReference)
+            .Empty().WithErrorCode("errors.contentItem.videoReferenceNotAllowed")
+            .When(x => x.Type == ContentItemType.Quiz);
+
+        RuleFor(x => x.Body)
+            .Empty().WithErrorCode("errors.contentItem.bodyNotAllowed")
+            .When(x => x.Type == ContentItemType.Quiz);
     }
 }

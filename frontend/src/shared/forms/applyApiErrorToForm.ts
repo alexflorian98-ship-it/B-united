@@ -14,8 +14,17 @@ const COMMON_NAMESPACE_ERROR_KEYS = new Set([
   "errors.rateLimitExceeded",
 ]);
 
-function resolveMessageKey(messageKey: string): string {
-  return COMMON_NAMESPACE_ERROR_KEYS.has(messageKey) ? `common:${messageKey}` : messageKey;
+/** Backend-owned business-rule errors (Billing, Quiz authoring/grading, etc.) can surface from
+ * more than one page with a different default namespace (admin offer forms, client checkout,
+ * program-detail paywall, the admin quiz builder) — so these live once in `common.json` under
+ * `errors.<domain>.*` rather than being duplicated into every consuming namespace. */
+const COMMON_NAMESPACE_ERROR_PREFIXES = ["errors.billing.", "errors.quiz.", "errors.quizQuestion.", "errors.quizOption.", "errors.contentItem.", "errors.identity."];
+
+export function resolveMessageKey(messageKey: string): string {
+  if (COMMON_NAMESPACE_ERROR_KEYS.has(messageKey) || COMMON_NAMESPACE_ERROR_PREFIXES.some((prefix) => messageKey.startsWith(prefix))) {
+    return `common:${messageKey}`;
+  }
+  return messageKey;
 }
 
 /**

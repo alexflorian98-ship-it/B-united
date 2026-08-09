@@ -1,6 +1,8 @@
 using BUnited.Modules.Content.Application.Dtos;
 using BUnited.Modules.Content.Application.UseCases.Admin.ContentItems;
 using BUnited.Modules.Content.Application.UseCases.Admin.Programs;
+using BUnited.Modules.Content.Application.UseCases.Admin.QuizOptions;
+using BUnited.Modules.Content.Application.UseCases.Admin.QuizQuestions;
 using BUnited.Modules.Content.Application.UseCases.Admin.Sections;
 using BUnited.Modules.Content.Domain;
 using BUnited.Modules.Identity.Contracts;
@@ -26,7 +28,15 @@ public sealed class AdminContentController(
     ReorderContentItemsHandler reorderContentItemsHandler,
     AddContentItemHandler addContentItemHandler,
     UpsertContentItemTranslationHandler upsertContentItemTranslationHandler,
-    DeleteContentItemHandler deleteContentItemHandler) : ControllerBase
+    DeleteContentItemHandler deleteContentItemHandler,
+    AddQuizQuestionHandler addQuizQuestionHandler,
+    UpsertQuizQuestionTranslationHandler upsertQuizQuestionTranslationHandler,
+    DeleteQuizQuestionHandler deleteQuizQuestionHandler,
+    ReorderQuizQuestionsHandler reorderQuizQuestionsHandler,
+    AddQuizOptionHandler addQuizOptionHandler,
+    UpsertQuizOptionTranslationHandler upsertQuizOptionTranslationHandler,
+    DeleteQuizOptionHandler deleteQuizOptionHandler,
+    ReorderQuizOptionsHandler reorderQuizOptionsHandler) : ControllerBase
 {
     [HttpGet("programs")]
     [Authorize(Policy = WellKnownPermissionKeys.ContentView)]
@@ -153,6 +163,76 @@ public sealed class AdminContentController(
     public async Task<IActionResult> DeleteContentItem(Guid contentItemId, CancellationToken cancellationToken)
     {
         await deleteContentItemHandler.HandleAsync(contentItemId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("content-items/{contentItemId:guid}/quiz/questions")]
+    [Authorize(Policy = WellKnownPermissionKeys.ContentEdit)]
+    public async Task<ActionResult<Guid>> AddQuizQuestion(Guid contentItemId, AddQuizQuestionRequest request, CancellationToken cancellationToken)
+    {
+        var questionId = await addQuizQuestionHandler.HandleAsync(
+            new AddQuizQuestionCommand(contentItemId, request.Language, request.Text), cancellationToken);
+        return Ok(questionId);
+    }
+
+    [HttpPost("content-items/{contentItemId:guid}/quiz/questions/reorder")]
+    [Authorize(Policy = WellKnownPermissionKeys.ContentEdit)]
+    public async Task<IActionResult> ReorderQuizQuestions(Guid contentItemId, ReorderQuizQuestionsRequest request, CancellationToken cancellationToken)
+    {
+        await reorderQuizQuestionsHandler.HandleAsync(
+            new ReorderQuizQuestionsCommand(contentItemId, request.OrderedQuizQuestionIds), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPut("quiz-questions/{quizQuestionId:guid}/translations")]
+    [Authorize(Policy = WellKnownPermissionKeys.ContentEdit)]
+    public async Task<IActionResult> UpsertQuizQuestionTranslation(Guid quizQuestionId, UpsertQuizQuestionTranslationRequest request, CancellationToken cancellationToken)
+    {
+        await upsertQuizQuestionTranslationHandler.HandleAsync(
+            new UpsertQuizQuestionTranslationCommand(quizQuestionId, request.Language, request.Text), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete("quiz-questions/{quizQuestionId:guid}")]
+    [Authorize(Policy = WellKnownPermissionKeys.ContentEdit)]
+    public async Task<IActionResult> DeleteQuizQuestion(Guid quizQuestionId, CancellationToken cancellationToken)
+    {
+        await deleteQuizQuestionHandler.HandleAsync(quizQuestionId, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPost("quiz-questions/{quizQuestionId:guid}/options")]
+    [Authorize(Policy = WellKnownPermissionKeys.ContentEdit)]
+    public async Task<ActionResult<Guid>> AddQuizOption(Guid quizQuestionId, AddQuizOptionRequest request, CancellationToken cancellationToken)
+    {
+        var optionId = await addQuizOptionHandler.HandleAsync(
+            new AddQuizOptionCommand(quizQuestionId, request.Language, request.Label, request.IsCorrect), cancellationToken);
+        return Ok(optionId);
+    }
+
+    [HttpPost("quiz-questions/{quizQuestionId:guid}/options/reorder")]
+    [Authorize(Policy = WellKnownPermissionKeys.ContentEdit)]
+    public async Task<IActionResult> ReorderQuizOptions(Guid quizQuestionId, ReorderQuizOptionsRequest request, CancellationToken cancellationToken)
+    {
+        await reorderQuizOptionsHandler.HandleAsync(
+            new ReorderQuizOptionsCommand(quizQuestionId, request.OrderedQuizOptionIds), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPut("quiz-options/{quizOptionId:guid}/translations")]
+    [Authorize(Policy = WellKnownPermissionKeys.ContentEdit)]
+    public async Task<IActionResult> UpsertQuizOptionTranslation(Guid quizOptionId, UpsertQuizOptionTranslationRequest request, CancellationToken cancellationToken)
+    {
+        await upsertQuizOptionTranslationHandler.HandleAsync(
+            new UpsertQuizOptionTranslationCommand(quizOptionId, request.Language, request.Label), cancellationToken);
+        return NoContent();
+    }
+
+    [HttpDelete("quiz-options/{quizOptionId:guid}")]
+    [Authorize(Policy = WellKnownPermissionKeys.ContentEdit)]
+    public async Task<IActionResult> DeleteQuizOption(Guid quizOptionId, CancellationToken cancellationToken)
+    {
+        await deleteQuizOptionHandler.HandleAsync(quizOptionId, cancellationToken);
         return NoContent();
     }
 }

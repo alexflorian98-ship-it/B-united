@@ -2,7 +2,7 @@
 
 ## Purpose
 
-B-United is a commercially viable V1 personal-development platform for one organization and one primary expert. Subscribers receive access to multilingual programs, questionnaire-based written guidance, progress tracking, predefined community rooms, and events through a recurring subscription.
+B-United is a commercially viable V1 personal-development platform for one organization and one primary expert. Clients buy programs separately through one-time payments and receive permanent access only to each purchased program and its associated guidance, progress, community and events.
 
 The full product specification is in `docs/PROMPT.md`. The delivery backlog is in `docs/TASKS.md`.
 
@@ -14,7 +14,7 @@ The imported instructions are mandatory for every task. If a request conflicts w
 
 ## Current status
 
-Phase 0 (Architecture) is complete and approved (P0.32, 2026-08-08; R3 encryption-at-rest deferral captured in ADR-009). Phase 1 (Foundation/Identity), Phase 2 (Content/Progress), Phase 3 (Simulated billing and real local access — built behind a `FakePaymentProvider`, see ADR-010, real provider integration deferred to Phase 8), and Phase 4 (Questionnaire and guidance) are implemented and live-verified end to end. The ASP.NET Core solution and React SPA are both initialized and running. `docs/TASKS.md` has the authoritative per-subtask checklist; `docs/HANDOVER.md` has the narrative summary, known gaps, and bugs found. Do not treat this paragraph as the source of truth for exact completion state — `docs/TASKS.md`'s checkboxes are.
+Phase 0 (Architecture) is complete and approved (P0.32, 2026-08-08; R3 encryption-at-rest deferral captured in ADR-009). Phase 1 (Foundation/Identity), Phase 2 (Content/Progress), Phase 3 (Simulated billing and real local access — built behind a `FakePaymentProvider`, see ADR-010, real provider integration deferred to Phase 8), Phase 4 (Questionnaire and guidance), Phase 5 (Events — registration, capacity/waitlist, idempotent Hangfire-based reminders), and Phase 6 (Community/Chat — fixed rooms, moderation, polling-based instead of SignalR per docs/PROMPT.md §33-34) are implemented and live-verified end to end. Hangfire (real background jobs, PostgreSQL storage) is wired for the first time in Phase 5. The ASP.NET Core solution and React SPA are both initialized and running. `docs/TASKS.md` has the authoritative per-subtask checklist; `docs/HANDOVER.md` has the narrative summary, known gaps, and bugs found. Do not treat this paragraph as the source of truth for exact completion state — `docs/TASKS.md`'s checkboxes are.
 
 ## Architecture
 
@@ -25,7 +25,7 @@ Phase 0 (Architecture) is complete and approved (P0.32, 2026-08-08; R3 encryptio
 - Each module owns its Domain, Application, Infrastructure, Api, Contracts, and Tests layers.
 - Cross-module dependencies go through Contracts. Never reference another module's Domain or Infrastructure layer.
 - Read-only cross-module queries are allowed only in explicit admin/dashboard read models.
-- Billing exclusively owns subscription state and the `PlatformAccess` entitlement. Other modules consume `IAccessContext`.
+- Billing exclusively owns program offers, purchases, payments and `ProgramEntitlement`. Other modules consume `IProgramAccessContext` using both `UserId` and `ProgramId`.
 - Use the transactional outbox only for important cross-module events that require retry or delivery guarantees.
 - UI localization uses i18next locale files. Business-content localization uses dedicated database translation tables.
 - Store video with a dedicated provider; issue short-lived playback access only after server-side authorization.
@@ -50,7 +50,7 @@ skills/b-united-delivery/ Project delivery skill
 - Keep V1 single-organization. Do not add multi-tenancy, microservices, marketplaces, generic plugin systems, or other speculative features.
 - Write all code, identifiers, logs, tests, migrations, comments, and technical documentation in English.
 - Romanian is the default UI language; maintain Romanian/English translation-key parity and never hardcode visible UI text.
-- Enforce authentication, permissions, ownership, and subscription access server-side.
+- Enforce authentication, permissions, ownership, and per-program entitlement access server-side.
 - Never expose EF entities through the API; use DTOs and stable error codes/message keys.
 - Keep business logic outside controllers and React components.
 - Use `decimal` with explicit currency for money and UTC for persisted timestamps.
@@ -74,1143 +74,1143 @@ skills/b-united-delivery/ Project delivery skill
 This section is maintained automatically by `.claude/hooks/update-claude-md.ps1` when a Claude Code session stops. Entries describe workspace snapshots changed during that session, not committed release notes.
 
 <!-- SESSION-CHANGES:START -->
-### 2026-08-08 19:31:30 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+### 2026-08-09 21:20:36 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: Phase 3 (Billing) is complete and documented. Here's the summary: ## Rezumat Phase 3 — Billing (Simulated billing and real local access) **Construit:** - Modulul Billing complet: Domain (Plan, Subscription, Entitlement etc. cu state mach...
+- Base commit: `b2038c4`
+- Outcome: ## Quiz feature is complete Built end-to-end as an explicit, scoped extension of the documented V1 content-item types (following the codebase's own stated "add new types as explicit enum members + handlers" extension rule, per your reque...
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
   - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - ` M docs/adr/ADR-005-Video-Hosting-Provider-Abstraction.md`
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.test.tsx`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.test.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
   - ` M frontend/src/locales/en/admin.json`
   - ` M frontend/src/locales/en/auth.json`
   - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
   - ` M frontend/src/locales/en/common.json`
   - ` M frontend/src/locales/en/content.json`
   - ` M frontend/src/locales/en/dashboard.json`
-  - ` M frontend/src/locales/en/questionnaire.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/en/profile.json`
   - ` M frontend/src/locales/ro/admin.json`
   - ` M frontend/src/locales/ro/auth.json`
   - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
   - ` M frontend/src/locales/ro/common.json`
   - ` M frontend/src/locales/ro/content.json`
   - ` M frontend/src/locales/ro/dashboard.json`
-  - ` M frontend/src/locales/ro/questionnaire.json`
-  - ` M frontend/src/shared/design-system/README.md`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/HANDOVER.md`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? docs/adr/ADR-010-Fake-Payment-Provider-For-V1.md`
-  - `?? frontend/.env.example`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/scripts/check-locale-parity.mjs`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/app/AppProviders.tsx`
-  - `?? frontend/src/app/ErrorBoundary.tsx`
-  - `?? frontend/src/app/router.tsx`
-  - `?? frontend/src/app/screens/ComingSoonPage.tsx`
-  - `?? frontend/src/app/screens/ForbiddenPage.tsx`
-  - `?? frontend/src/app/screens/NotFoundPage.tsx`
-  - `?? frontend/src/app/screens/UnauthorizedPage.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/layouts/AdminLayout.test.tsx`
-  - `?? frontend/src/layouts/AdminLayout.tsx`
-  - `?? frontend/src/layouts/ClientLayout.test.tsx`
-  - ... and 585 more paths
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/locales/ro/profile.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/content/adminContentApi.ts`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ... and 390 more paths
 
-### 2026-08-08 16:14:06 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+### 2026-08-09 21:11:46 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: ## Rezumat **Phase 4 (Chestionar și ghidaj) este acum complet și verificat live end-to-end**, plus module noi de infrastructură care erau doar schele goale înainte: - **Modul nou Notifications** (`INotificationSender`, tipar de logging f...
+- Base commit: `b2038c4`
+- Outcome: Backend and admin authoring (Phases 1-3) are done, tested (333/333 backend, 60/60 frontend), and live-verified — I also caught and fixed a real gap the admin-UI agent found (the admin program-detail read was missing quiz data entirely). ...
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
   - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - ` M docs/adr/ADR-005-Video-Hosting-Provider-Abstraction.md`
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.test.tsx`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.test.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
   - ` M frontend/src/locales/en/admin.json`
   - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
   - ` M frontend/src/locales/en/common.json`
   - ` M frontend/src/locales/en/content.json`
   - ` M frontend/src/locales/en/dashboard.json`
-  - ` M frontend/src/locales/en/questionnaire.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/en/profile.json`
   - ` M frontend/src/locales/ro/admin.json`
   - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
   - ` M frontend/src/locales/ro/common.json`
   - ` M frontend/src/locales/ro/content.json`
   - ` M frontend/src/locales/ro/dashboard.json`
-  - ` M frontend/src/locales/ro/questionnaire.json`
-  - ` M frontend/src/shared/design-system/README.md`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/HANDOVER.md`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.env.example`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/scripts/check-locale-parity.mjs`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/app/AppProviders.tsx`
-  - `?? frontend/src/app/ErrorBoundary.tsx`
-  - `?? frontend/src/app/router.tsx`
-  - `?? frontend/src/app/screens/ComingSoonPage.tsx`
-  - `?? frontend/src/app/screens/ForbiddenPage.tsx`
-  - `?? frontend/src/app/screens/NotFoundPage.tsx`
-  - `?? frontend/src/app/screens/UnauthorizedPage.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/layouts/AdminLayout.test.tsx`
-  - `?? frontend/src/layouts/AdminLayout.tsx`
-  - `?? frontend/src/layouts/ClientLayout.test.tsx`
-  - `?? frontend/src/layouts/ClientLayout.tsx`
-  - `?? frontend/src/layouts/navigation.ts`
-  - `?? frontend/src/locales/en/profile.json`
-  - ... and 521 more paths
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/locales/ro/profile.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/content/adminContentApi.ts`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ... and 390 more paths
 
-### 2026-08-08 15:14:15 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+### 2026-08-09 20:59:15 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: Everything is clean and in order — no stray processes, `.env` restored to the documented default, and the working tree only shows legitimate content changes (no deletions of unrelated work). ## Summary Phase 2 (Content module) is now fun...
+- Base commit: `b2038c4`
+- Outcome: The quiz backend (Phase 1-2) is fully done and live-verified — build clean, 332/332 tests, and I confirmed via curl that authoring, scoring, access-gating, and tampering rejection all work exactly right. The admin quiz-builder UI (Phase ...
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
   - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - ` M docs/adr/ADR-005-Video-Hosting-Provider-Abstraction.md`
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.test.tsx`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.test.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
   - ` M frontend/src/locales/en/admin.json`
   - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
   - ` M frontend/src/locales/en/common.json`
   - ` M frontend/src/locales/en/content.json`
   - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/en/profile.json`
   - ` M frontend/src/locales/ro/admin.json`
   - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
   - ` M frontend/src/locales/ro/common.json`
   - ` M frontend/src/locales/ro/content.json`
   - ` M frontend/src/locales/ro/dashboard.json`
-  - ` M frontend/src/shared/design-system/README.md`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/HANDOVER.md`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.env.example`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/scripts/check-locale-parity.mjs`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/app/AppProviders.tsx`
-  - `?? frontend/src/app/ErrorBoundary.tsx`
-  - `?? frontend/src/app/router.tsx`
-  - `?? frontend/src/app/screens/ComingSoonPage.tsx`
-  - `?? frontend/src/app/screens/ForbiddenPage.tsx`
-  - `?? frontend/src/app/screens/NotFoundPage.tsx`
-  - `?? frontend/src/app/screens/UnauthorizedPage.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/layouts/AdminLayout.test.tsx`
-  - `?? frontend/src/layouts/AdminLayout.tsx`
-  - `?? frontend/src/layouts/ClientLayout.test.tsx`
-  - `?? frontend/src/layouts/ClientLayout.tsx`
-  - `?? frontend/src/layouts/navigation.ts`
-  - `?? frontend/src/locales/en/profile.json`
-  - `?? frontend/src/locales/ro/profile.json`
-  - `?? frontend/src/main.tsx`
-  - ... and 402 more paths
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/locales/ro/profile.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ... and 387 more paths
 
-### 2026-08-08 14:28:20 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+### 2026-08-09 19:35:18 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: **Phase 2.A–2.C is done and live-verified.** Summary: **Backend Content module built from scratch:** - **Schema (2.A)**: `ContentDomain`, `Program`, `Section`, `ContentItem`, `MediaAsset` + translation tables, migrated and seeded (5 doma...
+- Base commit: `b2038c4`
+- Outcome: The backend quiz feature (Phase 1-2: domain, migration, admin authoring, secure grading endpoint) is now being built in the background. Once it's verified, I'll move on to the frontend (admin quiz builder, then the client quiz-taking UI).
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
   - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - ` M docs/adr/ADR-005-Video-Hosting-Provider-Abstraction.md`
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.test.tsx`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.test.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
   - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
   - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/content.json`
   - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/en/profile.json`
+  - ` M frontend/src/locales/ro/admin.json`
   - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
   - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/locales/ro/content.json`
   - ` M frontend/src/locales/ro/dashboard.json`
-  - ` M frontend/src/shared/design-system/README.md`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/HANDOVER.md`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.env.example`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/scripts/check-locale-parity.mjs`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/app/AppProviders.tsx`
-  - `?? frontend/src/app/ErrorBoundary.tsx`
-  - `?? frontend/src/app/router.tsx`
-  - `?? frontend/src/app/screens/ComingSoonPage.tsx`
-  - `?? frontend/src/app/screens/ForbiddenPage.tsx`
-  - `?? frontend/src/app/screens/NotFoundPage.tsx`
-  - `?? frontend/src/app/screens/UnauthorizedPage.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/layouts/AdminLayout.test.tsx`
-  - `?? frontend/src/layouts/AdminLayout.tsx`
-  - `?? frontend/src/layouts/ClientLayout.test.tsx`
-  - `?? frontend/src/layouts/ClientLayout.tsx`
-  - `?? frontend/src/layouts/navigation.ts`
-  - `?? frontend/src/locales/en/profile.json`
-  - `?? frontend/src/locales/ro/profile.json`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/src/modules/admin/AdminHomePage.tsx`
-  - `?? frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
-  - `?? frontend/src/modules/auth/LoginPage.test.tsx`
-  - `?? frontend/src/modules/auth/LoginPage.tsx`
-  - ... and 363 more paths
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/locales/ro/profile.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ... and 350 more paths
 
-### 2026-08-08 10:01:53 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+### 2026-08-09 19:31:15 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: This was a very large batch of work. Summary: ## Backend - **P1.35**: Permission enforcement tests — a real `TestServer` proving all 15 seeded permissions actually gate HTTP access (48 new tests). - **P1.42.a**: New `GET`/`PUT /api/v1/pr...
+- Base commit: `b2038c4`
+- Outcome: Research agent is running. I'll wait for it before drafting the plan.
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
   - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.test.tsx`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.test.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
   - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
   - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/content.json`
   - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/en/profile.json`
+  - ` M frontend/src/locales/ro/admin.json`
   - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
   - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/locales/ro/content.json`
   - ` M frontend/src/locales/ro/dashboard.json`
-  - ` M frontend/src/shared/design-system/README.md`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/HANDOVER.md`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.env.example`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/scripts/check-locale-parity.mjs`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/app/AppProviders.tsx`
-  - `?? frontend/src/app/ErrorBoundary.tsx`
-  - `?? frontend/src/app/router.tsx`
-  - `?? frontend/src/app/screens/ComingSoonPage.tsx`
-  - `?? frontend/src/app/screens/ForbiddenPage.tsx`
-  - `?? frontend/src/app/screens/NotFoundPage.tsx`
-  - `?? frontend/src/app/screens/UnauthorizedPage.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/layouts/AdminLayout.test.tsx`
-  - `?? frontend/src/layouts/AdminLayout.tsx`
-  - `?? frontend/src/layouts/ClientLayout.test.tsx`
-  - `?? frontend/src/layouts/ClientLayout.tsx`
-  - `?? frontend/src/layouts/navigation.ts`
-  - `?? frontend/src/locales/en/profile.json`
-  - `?? frontend/src/locales/ro/profile.json`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/src/modules/admin/AdminHomePage.tsx`
-  - `?? frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
-  - `?? frontend/src/modules/auth/LoginPage.test.tsx`
-  - `?? frontend/src/modules/auth/LoginPage.tsx`
-  - `?? frontend/src/modules/auth/RegisterPage.test.tsx`
-  - ... and 289 more paths
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/locales/ro/profile.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ... and 350 more paths
 
-### 2026-08-08 09:14:30 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+### 2026-08-09 18:54:37 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: **P1.34 is done.** Summary: - **P1.34.a**: `AuthFlowTests.Register_verify_login_refresh_and_logout_flow_succeeds_end_to_end` chains the real `RegisterUserHandler` → `VerifyEmailHandler` → `LoginHandler` → `RefreshTokenHandler` → `RevokeT...
+- Base commit: `b2038c4`
+- Outcome: ## Phase 7 "MVP presentation readiness" is complete All 22 tasks (P7.01–P7.22) across all 5 subsections are now resolved and honestly documented in `docs/TASKS.md` — verified independently at each step (build clean, **325/325 backend tes...
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
   - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.test.tsx`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.test.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
   - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
   - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/en/profile.json`
+  - ` M frontend/src/locales/ro/admin.json`
   - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
   - ` M frontend/src/locales/ro/common.json`
-  - ` M frontend/src/shared/design-system/README.md`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/HANDOVER.md`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/scripts/check-locale-parity.mjs`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/layouts/AdminLayout.test.tsx`
-  - `?? frontend/src/layouts/AdminLayout.tsx`
-  - `?? frontend/src/layouts/ClientLayout.test.tsx`
-  - `?? frontend/src/layouts/ClientLayout.tsx`
-  - `?? frontend/src/layouts/navigation.ts`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/src/setupTests.ts`
-  - `?? frontend/src/shared/design-system/Alert.test.tsx`
-  - `?? frontend/src/shared/design-system/Alert.tsx`
-  - `?? frontend/src/shared/design-system/Badge.test.tsx`
-  - `?? frontend/src/shared/design-system/Badge.tsx`
-  - `?? frontend/src/shared/design-system/Button.test.tsx`
-  - `?? frontend/src/shared/design-system/Button.tsx`
-  - `?? frontend/src/shared/design-system/Card.test.tsx`
-  - `?? frontend/src/shared/design-system/Card.tsx`
-  - `?? frontend/src/shared/design-system/EmptyState.test.tsx`
-  - `?? frontend/src/shared/design-system/EmptyState.tsx`
-  - `?? frontend/src/shared/design-system/Input.test.tsx`
-  - `?? frontend/src/shared/design-system/Input.tsx`
-  - `?? frontend/src/shared/design-system/Skeleton.test.tsx`
-  - `?? frontend/src/shared/design-system/Skeleton.tsx`
-  - `?? frontend/src/shared/design-system/Toast.test.tsx`
-  - `?? frontend/src/shared/design-system/Toast.tsx`
-  - ... and 217 more paths
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/locales/ro/profile.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ... and 349 more paths
 
-### 2026-08-08 09:08:24 UTC - Session `a6a68fab-2979-4f11-b187-68e93565d518`
+### 2026-08-09 18:49:21 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: All green (80/80). **P1.33 is done, with one deliberate exception:** - **P1.33.a/b**: `LoginHandler` and `ConfirmPasswordResetHandler` now emit `user.login`, `user.failed_login` (tagged with a `reason`: `unknown_email`/`locked_out`/`wron...
+- Base commit: `b2038c4`
+- Outcome: That was a follow-up from the already-completed 7.D agent restarting the API after teardown — no new work, just confirming health. The 7.E agent (final Phase 7 slice) is still running; I can see it's already begun adding audit-trail cove...
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
-  - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.test.tsx`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.test.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
   - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
   - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/en/profile.json`
+  - ` M frontend/src/locales/ro/admin.json`
   - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
   - ` M frontend/src/locales/ro/common.json`
-  - ` M frontend/src/shared/design-system/README.md`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/HANDOVER.md`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/scripts/check-locale-parity.mjs`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/layouts/AdminLayout.test.tsx`
-  - `?? frontend/src/layouts/AdminLayout.tsx`
-  - `?? frontend/src/layouts/ClientLayout.test.tsx`
-  - `?? frontend/src/layouts/ClientLayout.tsx`
-  - `?? frontend/src/layouts/navigation.ts`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/src/setupTests.ts`
-  - `?? frontend/src/shared/design-system/Alert.test.tsx`
-  - `?? frontend/src/shared/design-system/Alert.tsx`
-  - `?? frontend/src/shared/design-system/Badge.test.tsx`
-  - `?? frontend/src/shared/design-system/Badge.tsx`
-  - `?? frontend/src/shared/design-system/Button.test.tsx`
-  - `?? frontend/src/shared/design-system/Button.tsx`
-  - `?? frontend/src/shared/design-system/Card.test.tsx`
-  - `?? frontend/src/shared/design-system/Card.tsx`
-  - `?? frontend/src/shared/design-system/EmptyState.test.tsx`
-  - `?? frontend/src/shared/design-system/EmptyState.tsx`
-  - `?? frontend/src/shared/design-system/Input.test.tsx`
-  - `?? frontend/src/shared/design-system/Input.tsx`
-  - `?? frontend/src/shared/design-system/Skeleton.test.tsx`
-  - `?? frontend/src/shared/design-system/Skeleton.tsx`
-  - `?? frontend/src/shared/design-system/Toast.test.tsx`
-  - `?? frontend/src/shared/design-system/Toast.tsx`
-  - ... and 216 more paths
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/locales/ro/profile.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ... and 348 more paths
 
-### 2026-08-08 08:37:56 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 18:42:53 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: ## Handover creat Am scris **[docs/HANDOVER.md](docs/HANDOVER.md)** — document narativ pentru o sesiune Claude Code nouă, fără memoria acestei conversații. Conține: - **Stadiul curent**: Phase 0 complet, Phase 1.A–1.D complete (P1.01–P1....
+- Base commit: `b2038c4`
+- Outcome: The final Phase 7 slice (7.E — operational/demo readiness: error visibility, demo config, reset/seed strategy, full §65 security walkthrough, §37 audit coverage, fake-provider scenarios) is running in the background. Slices 7.A–7.D are a...
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
-  - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.test.tsx`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.test.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
   - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
   - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/en/profile.json`
+  - ` M frontend/src/locales/ro/admin.json`
   - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
   - ` M frontend/src/locales/ro/common.json`
-  - ` M frontend/src/shared/design-system/README.md`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/HANDOVER.md`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/scripts/check-locale-parity.mjs`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/layouts/AdminLayout.test.tsx`
-  - `?? frontend/src/layouts/AdminLayout.tsx`
-  - `?? frontend/src/layouts/ClientLayout.test.tsx`
-  - `?? frontend/src/layouts/ClientLayout.tsx`
-  - `?? frontend/src/layouts/navigation.ts`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/src/setupTests.ts`
-  - `?? frontend/src/shared/design-system/Alert.test.tsx`
-  - `?? frontend/src/shared/design-system/Alert.tsx`
-  - `?? frontend/src/shared/design-system/Badge.test.tsx`
-  - `?? frontend/src/shared/design-system/Badge.tsx`
-  - `?? frontend/src/shared/design-system/Button.test.tsx`
-  - `?? frontend/src/shared/design-system/Button.tsx`
-  - `?? frontend/src/shared/design-system/Card.test.tsx`
-  - `?? frontend/src/shared/design-system/Card.tsx`
-  - `?? frontend/src/shared/design-system/EmptyState.test.tsx`
-  - `?? frontend/src/shared/design-system/EmptyState.tsx`
-  - `?? frontend/src/shared/design-system/Input.test.tsx`
-  - `?? frontend/src/shared/design-system/Input.tsx`
-  - `?? frontend/src/shared/design-system/Skeleton.test.tsx`
-  - `?? frontend/src/shared/design-system/Skeleton.tsx`
-  - `?? frontend/src/shared/design-system/Toast.test.tsx`
-  - `?? frontend/src/shared/design-system/Toast.tsx`
-  - ... and 200 more paths
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/locales/ro/profile.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ... and 346 more paths
 
-### 2026-08-08 08:00:29 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 18:31:09 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: Nicio instanță rămasă activă, build curat, 62/62 teste backend trec. ## Rezumat: Phase 1.C — Localization infrastructure (P1.25–P1.28) complet **P1.25 — i18next setup** - `frontend/src/shared/i18n/i18n.ts`: lazy-loading per namespace via...
+- Base commit: `b2038c4`
+- Outcome: Same two reasons as before — both are server-side rules I won't bypass: 1. **No username field exists.** Login is by email only (`User.Email`/`NormalizedEmail`) — there's no username concept anywhere in the Identity schema. 2. **Password...
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
-  - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.test.tsx`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.test.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
   - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
   - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/en/profile.json`
+  - ` M frontend/src/locales/ro/admin.json`
   - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
   - ` M frontend/src/locales/ro/common.json`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/scripts/check-locale-parity.mjs`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/src/shared/i18n/LanguageSwitcher.tsx`
-  - `?? frontend/src/shared/i18n/i18n.ts`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/Dockerfile`
-  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Application/Errors/AppException.cs`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
-  - ... and 176 more paths
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/locales/ro/profile.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ... and 348 more paths
 
-### 2026-08-08 07:46:58 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 18:17:46 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: ## Rezumat: Modulul Identity complet (P1.12 → P1.24) **Livrat:** - **Domain** (P1.12–15): `User`/`Role`/`Permission`/`RolePermission`/`UserRole`/`RefreshToken`/`EmailVerificationToken`/`PasswordResetToken`/`UserConsent`/`UserPreference` ...
+- Base commit: `b2038c4`
+- Outcome: Slice 7.D (performance verification) is running in the background. Slices 7.A–7.C are all verified complete. I'll continue to 7.E (operational/demo readiness) once this reports back.
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
-  - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/Dockerfile`
-  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Application/Errors/AppException.cs`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
-  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/FluentValidationActionFilterTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/GlobalExceptionHandlerTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
-  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
-  - ... and 164 more paths
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.test.tsx`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.test.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
+  - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/en/profile.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
+  - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/locales/ro/profile.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ... and 346 more paths
 
-### 2026-08-07 23:03:43 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 18:09:16 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: ## Rezultat Docker Desktop e funcțional acum (a fost nevoie de activarea WSL2 + Virtual Machine Platform din Windows Features + restart). Am rulat verificarea completă end-to-end: - `docker compose up --build -d` — imaginea `api` s-a con...
+- Base commit: `b2038c4`
+- Outcome: Slice 7.C (accessibility audit) is running in the background — frontend-only, so it won't conflict with backend work. Slices 7.A and 7.B are verified complete. I'll continue to 7.D/7.E once this reports back.
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
-  - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/Dockerfile`
-  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Application/Errors/AppException.cs`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
-  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/FluentValidationActionFilterTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/GlobalExceptionHandlerTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
-  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
-  - ... and 82 more paths
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.test.tsx`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.test.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
+  - ` M frontend/src/locales/en/common.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/en/profile.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
+  - ` M frontend/src/locales/ro/common.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/locales/ro/profile.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ... and 341 more paths
 
-### 2026-08-07 22:32:01 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 17:43:19 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: ## Rezumat: P1.09 → P1.11.c complet **P1.09 — Middleware standardizat de erori** - `AppException`/`NotFoundAppException`/`BusinessRuleAppException` (framework-agnostic, `BuildingBlocks/Application`) + `GlobalExceptionHandler`/`ErrorRespo...
+- Base commit: `b2038c4`
+- Outcome: Slice 7.A (expert dashboard) is verified complete. Slice 7.B (GDPR export/deletion/retention policy) is now running in the background — this one also has a chance to close two previously-blocked backlog items (P4.20 questionnaire deletio...
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M .env.example`
   - ` M README.md`
-  - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - `?? .dockerignore`
-  - `?? .github/workflows/ci.yml`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/Dockerfile`
-  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Application/Errors/AppException.cs`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
-  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/FluentValidationActionFilterTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/GlobalExceptionHandlerTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
-  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
-  - ... and 82 more paths
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ` M frontend/src/modules/billing/BillingPage.tsx`
+  - ` M frontend/src/modules/billing/billingApi.ts`
+  - ` M frontend/src/modules/content/ProgramDetailPage.tsx`
+  - ` M frontend/src/modules/content/ProgramPlayerPage.tsx`
+  - ` M frontend/src/modules/content/ProgramsPage.tsx`
+  - ` M frontend/src/modules/content/YouTubePlayer.tsx`
+  - ... and 314 more paths
 
-### 2026-08-07 22:18:07 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 17:15:16 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: ## P1.08 complet **Livrat** ([RateLimitingExtensions.cs](src/BuildingBlocks/Security/Abuse/RateLimitingExtensions.cs)): - Politică globală: 100 req/min per IP, cu `/health*` exclus explicit (monitorizarea nu trebuie limitată). - Politică...
+- Base commit: `b2038c4`
+- Outcome: Confirmed: within section 3.G (the program-commerce migration), exactly **one** unchecked parent line remains — `P3.34`, which is correct as-is, since its sub-item `P3.34.b` is a deliberately flagged, accepted deviation (pre-migration de...
 - Workspace changes:
-  - ` M .claude/settings.json`
   - ` M README.md`
-  - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
-  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
-  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdContext.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdExtensions.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdMiddleware.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/ICorrelationIdAccessor.cs`
-  - `?? src/BuildingBlocks/Observability/HealthChecks/HealthCheckEndpointExtensions.cs`
-  - `?? src/BuildingBlocks/Observability/Logging/SensitiveDataDestructuringPolicy.cs`
-  - `?? src/BuildingBlocks/Observability/Logging/SensitiveLogValueAttribute.cs`
-  - ... and 71 more paths
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ` M frontend/src/modules/billing/BillingPage.tsx`
+  - ` M frontend/src/modules/billing/billingApi.ts`
+  - ` M frontend/src/modules/content/ProgramDetailPage.tsx`
+  - ` M frontend/src/modules/content/ProgramPlayerPage.tsx`
+  - ` M frontend/src/modules/content/ProgramsPage.tsx`
+  - ` M frontend/src/modules/content/YouTubePlayer.tsx`
+  - ` M frontend/src/modules/content/contentApi.ts`
+  - ... and 298 more paths
 
-### 2026-08-07 22:08:11 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 17:04:31 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: ## P1.07 complet **Livrat:** - [BearerSecuritySchemeTransformers.cs](src/Api/OpenApi/BearerSecuritySchemeTransformers.cs) — două document/operation transformers pentru generatorul OpenAPI nativ .NET 9: definesc schema `Bearer` (HTTP, JWT...
+- Base commit: `b2038c4`
+- Outcome: ## The program-commerce migration is now fully complete (P3.33–P3.45) Everything from `docs/TASKS.md` section 3.G is done and verified. This final pass closed all three remaining Slice 7 gaps — and found a real bug along the way: 1. **Em...
 - Workspace changes:
-  - ` M .claude/settings.json`
   - ` M README.md`
-  - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/OpenApi/BearerSecuritySchemeTransformers.cs`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
-  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
-  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdContext.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdExtensions.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdMiddleware.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/ICorrelationIdAccessor.cs`
-  - `?? src/BuildingBlocks/Observability/HealthChecks/HealthCheckEndpointExtensions.cs`
-  - `?? src/BuildingBlocks/Observability/Logging/SensitiveDataDestructuringPolicy.cs`
-  - `?? src/BuildingBlocks/Observability/Logging/SensitiveLogValueAttribute.cs`
-  - ... and 70 more paths
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ` M frontend/src/modules/billing/BillingPage.tsx`
+  - ` M frontend/src/modules/billing/billingApi.ts`
+  - ` M frontend/src/modules/content/ProgramDetailPage.tsx`
+  - ` M frontend/src/modules/content/ProgramPlayerPage.tsx`
+  - ` M frontend/src/modules/content/ProgramsPage.tsx`
+  - ` M frontend/src/modules/content/YouTubePlayer.tsx`
+  - ` M frontend/src/modules/content/contentApi.ts`
+  - ... and 298 more paths
 
-### 2026-08-07 22:05:23 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 16:04:11 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: ## P1.06 aproape complet (2 din 3 subtask-uri, unul parțial din motive de mediu) **Livrat:** - [HealthCheckEndpointExtensions.cs](src/BuildingBlocks/Observability/HealthChecks/HealthCheckEndpointExtensions.cs) — `/health/live` (liveness,...
+- Base commit: `b2038c4`
+- Outcome: The handover doc is now consistent and current. Here's the final status: ## Status: all 7 migration slices complete, 307/307 backend tests, 59/59 frontend tests, backend live and healthy **What I did this turn:** 1. Verified Slice 5 (Eve...
 - Workspace changes:
-  - ` M .claude/settings.json`
   - ` M README.md`
-  - ` M docker-compose.yml`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
-  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
-  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdContext.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdExtensions.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdMiddleware.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/ICorrelationIdAccessor.cs`
-  - `?? src/BuildingBlocks/Observability/HealthChecks/HealthCheckEndpointExtensions.cs`
-  - `?? src/BuildingBlocks/Observability/Logging/SensitiveDataDestructuringPolicy.cs`
-  - `?? src/BuildingBlocks/Observability/Logging/SensitiveLogValueAttribute.cs`
-  - `?? src/BuildingBlocks/Observability/Logging/SerilogConfigurationExtensions.cs`
-  - ... and 69 more paths
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ` M frontend/src/modules/billing/BillingPage.tsx`
+  - ` M frontend/src/modules/billing/billingApi.ts`
+  - ` M frontend/src/modules/content/ProgramDetailPage.tsx`
+  - ` M frontend/src/modules/content/ProgramPlayerPage.tsx`
+  - ` M frontend/src/modules/content/ProgramsPage.tsx`
+  - ` M frontend/src/modules/content/YouTubePlayer.tsx`
+  - ` M frontend/src/modules/content/contentApi.ts`
+  - ... and 298 more paths
 
-### 2026-08-07 21:58:58 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 12:01:39 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: ## P1.05 complet **Livrat** (`BuildingBlocks/Observability`, plus wiring în `src/Api/Program.cs`): - [SerilogConfigurationExtensions.cs](src/BuildingBlocks/Observability/Logging/SerilogConfigurationExtensions.cs) — `AddBUnitedLogging()`:...
+- Base commit: `b2038c4`
+- Outcome: Handover written to **`docs/HANDOVER_PROGRAM_COMMERCE_MIGRATION.md`** — self-contained for a fresh agent with no memory of this session. It covers: - What the migration is and why (with pointers to ADR-003, PROMPT.md, TASKS.md P3.33–P3.4...
 - Workspace changes:
-  - ` M .claude/settings.json`
   - ` M README.md`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
-  - `?? src/BuildingBlocks/Infrastructure.Tests/BUnitedDbContextTests.cs`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
-  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/BUnited.BuildingBlocks.Observability.Tests.csproj`
-  - `?? src/BuildingBlocks/Observability.Tests/CorrelationIdMiddlewareTests.cs`
-  - `?? src/BuildingBlocks/Observability.Tests/SensitiveDataDestructuringPolicyTests.cs`
-  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdContext.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdExtensions.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/CorrelationIdMiddleware.cs`
-  - `?? src/BuildingBlocks/Observability/CorrelationId/ICorrelationIdAccessor.cs`
-  - `?? src/BuildingBlocks/Observability/Logging/SensitiveDataDestructuringPolicy.cs`
-  - `?? src/BuildingBlocks/Observability/Logging/SensitiveLogValueAttribute.cs`
-  - `?? src/BuildingBlocks/Observability/Logging/SerilogConfigurationExtensions.cs`
-  - `?? src/BuildingBlocks/Security/BUnited.BuildingBlocks.Security.csproj`
-  - `?? src/Jobs/BUnited.Jobs.csproj`
-  - ... and 67 more paths
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ` M frontend/src/modules/billing/BillingPage.tsx`
+  - ` M frontend/src/modules/content/ProgramDetailPage.tsx`
+  - ` M frontend/src/modules/content/ProgramPlayerPage.tsx`
+  - ` M frontend/src/modules/content/ProgramsPage.tsx`
+  - ` M frontend/src/modules/dashboard/ClientHomePage.tsx`
+  - ` M frontend/src/modules/expert/ExpertQueuePage.tsx`
+  - ` M frontend/src/modules/expert/ExpertSubmissionPage.tsx`
+  - ` M frontend/src/modules/profile/ProfilePage.tsx`
+  - ... and 290 more paths
 
-### 2026-08-07 21:50:26 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 11:46:24 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: ## P1.04 complet **Livrat** (`BuildingBlocks/Infrastructure`): - [BUnitedDbContext.cs](src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs) — `DbContext` de bază: aplică convenția snake_case (tabele/coloane/chei/FK/indecși,...
+- Base commit: `b2038c4`
+- Outcome: Slice 5 (Events program association + Chat's enum-to-entity conversion — the largest remaining backend piece) is running in the background. Once it's back, I'll verify and then move to Slice 6 (frontend).
 - Workspace changes:
-  - ` M .claude/settings.json`
   - ` M README.md`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Domain/IAuditableEntity.cs`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/AuditableEntitySaveChangesInterceptor.cs`
-  - `?? src/BuildingBlocks/Infrastructure/Persistence/BUnitedDbContext.cs`
-  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
-  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
-  - `?? src/BuildingBlocks/Security/BUnited.BuildingBlocks.Security.csproj`
-  - `?? src/BuildingBlocks/Tests/BUnited.BuildingBlocks.Infrastructure.Tests.csproj`
-  - `?? src/BuildingBlocks/Tests/BUnitedDbContextTests.cs`
-  - `?? src/Jobs/BUnited.Jobs.csproj`
-  - `?? src/Migrations/BUnited.Migrations.csproj`
-  - `?? src/Modules/Admin/Api/BUnited.Modules.Admin.Api.csproj`
-  - `?? src/Modules/Admin/Application/BUnited.Modules.Admin.Application.csproj`
-  - `?? src/Modules/Admin/Contracts/BUnited.Modules.Admin.Contracts.csproj`
-  - `?? src/Modules/Admin/Domain/BUnited.Modules.Admin.Domain.csproj`
-  - `?? src/Modules/Admin/Infrastructure/BUnited.Modules.Admin.Infrastructure.csproj`
-  - `?? src/Modules/Admin/Tests/BUnited.Modules.Admin.Tests.csproj`
-  - `?? src/Modules/Audit/Api/BUnited.Modules.Audit.Api.csproj`
-  - `?? src/Modules/Audit/Application/BUnited.Modules.Audit.Application.csproj`
-  - `?? src/Modules/Audit/Contracts/BUnited.Modules.Audit.Contracts.csproj`
-  - ... and 57 more paths
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ` M frontend/src/modules/billing/BillingPage.tsx`
+  - ` M frontend/src/modules/content/ProgramDetailPage.tsx`
+  - ` M frontend/src/modules/content/ProgramPlayerPage.tsx`
+  - ` M frontend/src/modules/content/ProgramsPage.tsx`
+  - ` M frontend/src/modules/dashboard/ClientHomePage.tsx`
+  - ` M frontend/src/modules/expert/ExpertQueuePage.tsx`
+  - ` M frontend/src/modules/expert/ExpertSubmissionPage.tsx`
+  - ` M frontend/src/modules/profile/ProfilePage.tsx`
+  - ... and 270 more paths
 
-### 2026-08-07 21:42:32 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 11:26:15 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: Build-ul întregii soluții trece fără erori sau avertismente. ## Rezumat **P1.03 aproape complet** (2 din 3 subtask-uri finalizate, unul rămâne blocat de mediu): - **P1.03.a — nefinalizat**: Docker nu e instalat/disponibil în acest mediu ...
+- Base commit: `b2038c4`
+- Outcome: Slice 4 (Questionnaires program scoping) is running in the background. Slices 1-3 are verified and merged; the local backend and frontend are up, with the player-navigation fix in place. I'll check in once Slice 4 completes and move to S...
 - Workspace changes:
-  - ` M .claude/settings.json`
   - ` M README.md`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
-  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
-  - `?? src/BuildingBlocks/Security/BUnited.BuildingBlocks.Security.csproj`
-  - `?? src/Jobs/BUnited.Jobs.csproj`
-  - `?? src/Migrations/BUnited.Migrations.csproj`
-  - `?? src/Modules/Admin/Api/BUnited.Modules.Admin.Api.csproj`
-  - `?? src/Modules/Admin/Application/BUnited.Modules.Admin.Application.csproj`
-  - `?? src/Modules/Admin/Contracts/BUnited.Modules.Admin.Contracts.csproj`
-  - `?? src/Modules/Admin/Domain/BUnited.Modules.Admin.Domain.csproj`
-  - `?? src/Modules/Admin/Infrastructure/BUnited.Modules.Admin.Infrastructure.csproj`
-  - `?? src/Modules/Admin/Tests/BUnited.Modules.Admin.Tests.csproj`
-  - `?? src/Modules/Audit/Api/BUnited.Modules.Audit.Api.csproj`
-  - `?? src/Modules/Audit/Application/BUnited.Modules.Audit.Application.csproj`
-  - `?? src/Modules/Audit/Contracts/BUnited.Modules.Audit.Contracts.csproj`
-  - `?? src/Modules/Audit/Domain/BUnited.Modules.Audit.Domain.csproj`
-  - `?? src/Modules/Audit/Infrastructure/BUnited.Modules.Audit.Infrastructure.csproj`
-  - `?? src/Modules/Audit/Tests/BUnited.Modules.Audit.Tests.csproj`
-  - `?? src/Modules/Billing/Api/BUnited.Modules.Billing.Api.csproj`
-  - `?? src/Modules/Billing/Application/BUnited.Modules.Billing.Application.csproj`
-  - ... and 52 more paths
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
+  - ` M frontend/src/locales/en/content.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
+  - ` M frontend/src/locales/ro/content.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ` M frontend/src/modules/billing/BillingPage.tsx`
+  - ` M frontend/src/modules/content/ProgramDetailPage.tsx`
+  - ` M frontend/src/modules/content/ProgramPlayerPage.tsx`
+  - ` M frontend/src/modules/content/ProgramsPage.tsx`
+  - ` M frontend/src/modules/dashboard/ClientHomePage.tsx`
+  - ` M frontend/src/modules/expert/ExpertQueuePage.tsx`
+  - ` M frontend/src/modules/expert/ExpertSubmissionPage.tsx`
+  - ` M frontend/src/modules/profile/ProfilePage.tsx`
+  - ... and 242 more paths
 
-### 2026-08-07 21:28:35 UTC - Session `b4454828-6a63-4424-b507-f0d8423e5c3d`
+### 2026-08-09 11:05:27 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: A rulat cu succes: `test ok`, directorul curent este `/c/Proiecte/B-united`. Vrei să rulez ceva specific (build, teste, etc.)?
+- Base commit: `b2038c4`
+- Outcome: Confirmed — this exactly matches the hasher I used to generate the hash (same `PasswordHasher<object>` from ASP.NET Core Identity), so login will verify correctly. **Done.** Password reset for the admin account: - **Email:** `admin@bunit...
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M README.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - `?? .vscode/settings.json`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
-  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
-  - `?? src/BuildingBlocks/Security/BUnited.BuildingBlocks.Security.csproj`
-  - `?? src/Jobs/BUnited.Jobs.csproj`
-  - `?? src/Migrations/BUnited.Migrations.csproj`
-  - `?? src/Modules/Admin/Api/BUnited.Modules.Admin.Api.csproj`
-  - `?? src/Modules/Admin/Application/BUnited.Modules.Admin.Application.csproj`
-  - `?? src/Modules/Admin/Contracts/BUnited.Modules.Admin.Contracts.csproj`
-  - `?? src/Modules/Admin/Domain/BUnited.Modules.Admin.Domain.csproj`
-  - `?? src/Modules/Admin/Infrastructure/BUnited.Modules.Admin.Infrastructure.csproj`
-  - `?? src/Modules/Admin/Tests/BUnited.Modules.Admin.Tests.csproj`
-  - `?? src/Modules/Audit/Api/BUnited.Modules.Audit.Api.csproj`
-  - `?? src/Modules/Audit/Application/BUnited.Modules.Audit.Application.csproj`
-  - `?? src/Modules/Audit/Contracts/BUnited.Modules.Audit.Contracts.csproj`
-  - `?? src/Modules/Audit/Domain/BUnited.Modules.Audit.Domain.csproj`
-  - `?? src/Modules/Audit/Infrastructure/BUnited.Modules.Audit.Infrastructure.csproj`
-  - `?? src/Modules/Audit/Tests/BUnited.Modules.Audit.Tests.csproj`
-  - `?? src/Modules/Billing/Api/BUnited.Modules.Billing.Api.csproj`
-  - `?? src/Modules/Billing/Application/BUnited.Modules.Billing.Application.csproj`
-  - `?? src/Modules/Billing/Contracts/BUnited.Modules.Billing.Contracts.csproj`
-  - ... and 51 more paths
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ` M frontend/src/modules/billing/BillingPage.tsx`
+  - ` M frontend/src/modules/content/ProgramDetailPage.tsx`
+  - ` M frontend/src/modules/content/ProgramPlayerPage.tsx`
+  - ` M frontend/src/modules/content/ProgramsPage.tsx`
+  - ` M frontend/src/modules/dashboard/ClientHomePage.tsx`
+  - ` M frontend/src/modules/expert/ExpertQueuePage.tsx`
+  - ` M frontend/src/modules/expert/ExpertSubmissionPage.tsx`
+  - ` M frontend/src/modules/profile/ProfilePage.tsx`
+  - ` M frontend/src/modules/questionnaires/GuidanceHomePage.tsx`
+  - ` M frontend/src/modules/questionnaires/QuestionInput.tsx`
+  - ... and 231 more paths
 
-### 2026-08-07 21:27:08 UTC - Session `41ed0245-59c6-41c8-a8b3-106ac28b6224`
+### 2026-08-09 10:55:24 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
 
-- Base commit: `79a4df4`
-- Outcome: ## Summary **P0.32 gate cleared first** (required before any Phase 1 work): recorded explicit approval of the Phase 0 architecture, added [ADR-009](docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md) to formally capture the R3 encryption-...
+- Base commit: `b2038c4`
+- Outcome: Slice 2 (admin offer management + catalogue commercial data) is now running in the background. I'll verify it against the real build/test suite once it completes, then continue to Slice 3 (Progress module access gating).
 - Workspace changes:
-  - ` M .claude/settings.json`
-  - ` M docs/ARCHITECTURE.md`
+  - ` M README.md`
+  - ` M docs/HANDOVER.md`
+  - ` M docs/PROMPT.md`
   - ` M docs/TASKS.md`
-  - `?? BUnited.sln`
-  - `?? Directory.Build.props`
-  - `?? docs/adr/ADR-009-Data-At-Rest-Encryption-Scope.md`
-  - `?? frontend/.oxlintrc.json`
-  - `?? frontend/index.html`
-  - `?? frontend/package-lock.json`
-  - `?? frontend/package.json`
-  - `?? frontend/public/favicon.svg`
-  - `?? frontend/public/icons.svg`
-  - `?? frontend/src/App.tsx`
-  - `?? frontend/src/index.css`
-  - `?? frontend/src/main.tsx`
-  - `?? frontend/tsconfig.app.json`
-  - `?? frontend/tsconfig.json`
-  - `?? frontend/tsconfig.node.json`
-  - `?? frontend/vite.config.ts`
-  - `?? global.json`
-  - `?? src/Api/BUnited.Api.csproj`
-  - `?? src/Api/BUnited.Api.http`
-  - `?? src/Api/Program.cs`
-  - `?? src/Api/Properties/launchSettings.json`
-  - `?? src/Api/appsettings.Development.json`
-  - `?? src/Api/appsettings.json`
-  - `?? src/BuildingBlocks/Application/BUnited.BuildingBlocks.Application.csproj`
-  - `?? src/BuildingBlocks/Domain/BUnited.BuildingBlocks.Domain.csproj`
-  - `?? src/BuildingBlocks/Infrastructure/BUnited.BuildingBlocks.Infrastructure.csproj`
-  - `?? src/BuildingBlocks/Localization/BUnited.BuildingBlocks.Localization.csproj`
-  - `?? src/BuildingBlocks/Observability/BUnited.BuildingBlocks.Observability.csproj`
-  - `?? src/BuildingBlocks/Security/BUnited.BuildingBlocks.Security.csproj`
-  - `?? src/Jobs/BUnited.Jobs.csproj`
-  - `?? src/Migrations/BUnited.Migrations.csproj`
-  - `?? src/Modules/Admin/Api/BUnited.Modules.Admin.Api.csproj`
-  - `?? src/Modules/Admin/Application/BUnited.Modules.Admin.Application.csproj`
-  - `?? src/Modules/Admin/Contracts/BUnited.Modules.Admin.Contracts.csproj`
-  - `?? src/Modules/Admin/Domain/BUnited.Modules.Admin.Domain.csproj`
-  - `?? src/Modules/Admin/Infrastructure/BUnited.Modules.Admin.Infrastructure.csproj`
-  - `?? src/Modules/Admin/Tests/BUnited.Modules.Admin.Tests.csproj`
-  - `?? src/Modules/Audit/Api/BUnited.Modules.Audit.Api.csproj`
-  - `?? src/Modules/Audit/Application/BUnited.Modules.Audit.Application.csproj`
-  - `?? src/Modules/Audit/Contracts/BUnited.Modules.Audit.Contracts.csproj`
-  - `?? src/Modules/Audit/Domain/BUnited.Modules.Audit.Domain.csproj`
-  - `?? src/Modules/Audit/Infrastructure/BUnited.Modules.Audit.Infrastructure.csproj`
-  - `?? src/Modules/Audit/Tests/BUnited.Modules.Audit.Tests.csproj`
-  - `?? src/Modules/Billing/Api/BUnited.Modules.Billing.Api.csproj`
-  - `?? src/Modules/Billing/Application/BUnited.Modules.Billing.Application.csproj`
-  - `?? src/Modules/Billing/Contracts/BUnited.Modules.Billing.Contracts.csproj`
-  - `?? src/Modules/Billing/Domain/BUnited.Modules.Billing.Domain.csproj`
-  - ... and 50 more paths
+  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
+  - ` M frontend/index.html`
+  - ` M frontend/public/favicon.svg`
+  - ` M frontend/src/app/router.tsx`
+  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
+  - ` M frontend/src/app/screens/NotFoundPage.tsx`
+  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
+  - ` M frontend/src/index.css`
+  - ` M frontend/src/layouts/AdminLayout.tsx`
+  - ` M frontend/src/layouts/ClientLayout.tsx`
+  - ` M frontend/src/locales/en/admin.json`
+  - ` M frontend/src/locales/en/auth.json`
+  - ` M frontend/src/locales/en/billing.json`
+  - ` M frontend/src/locales/en/chat.json`
+  - ` M frontend/src/locales/en/dashboard.json`
+  - ` M frontend/src/locales/en/events.json`
+  - ` M frontend/src/locales/ro/admin.json`
+  - ` M frontend/src/locales/ro/auth.json`
+  - ` M frontend/src/locales/ro/billing.json`
+  - ` M frontend/src/locales/ro/chat.json`
+  - ` M frontend/src/locales/ro/dashboard.json`
+  - ` M frontend/src/locales/ro/events.json`
+  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
+  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
+  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
+  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
+  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/LoginPage.tsx`
+  - ` M frontend/src/modules/auth/RegisterPage.tsx`
+  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
+  - ` M frontend/src/modules/auth/VerifyEmailPage.tsx`
+  - ` M frontend/src/modules/billing/BillingPage.tsx`
+  - ` M frontend/src/modules/content/ProgramDetailPage.tsx`
+  - ` M frontend/src/modules/content/ProgramPlayerPage.tsx`
+  - ` M frontend/src/modules/content/ProgramsPage.tsx`
+  - ` M frontend/src/modules/dashboard/ClientHomePage.tsx`
+  - ` M frontend/src/modules/expert/ExpertQueuePage.tsx`
+  - ` M frontend/src/modules/expert/ExpertSubmissionPage.tsx`
+  - ` M frontend/src/modules/profile/ProfilePage.tsx`
+  - ` M frontend/src/modules/questionnaires/GuidanceHomePage.tsx`
+  - ` M frontend/src/modules/questionnaires/QuestionInput.tsx`
+  - ... and 205 more paths
 <!-- SESSION-CHANGES:END -->

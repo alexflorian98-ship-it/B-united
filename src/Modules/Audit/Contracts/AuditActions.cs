@@ -11,13 +11,21 @@ public static class AuditActions
     public const string UserFailedLogin = "user.failed_login";
     public const string UserPasswordReset = "user.password_reset";
     public const string UserRoleChanged = "user.role_changed";
+    public const string UserAccountDeleted = "user.account_deleted";
 
-    public const string SubscriptionCreated = "subscription.created";
-    public const string SubscriptionActivated = "subscription.activated";
-    public const string SubscriptionCanceled = "subscription.canceled";
-    public const string SubscriptionExpired = "subscription.expired";
+    public const string PurchaseCreated = "purchase.created";
+    public const string PurchaseSucceeded = "purchase.succeeded";
+    public const string PurchaseRefunded = "purchase.refunded";
+
+    public const string ProgramAccessGranted = "program_access.granted";
+    public const string ProgramAccessRevoked = "program_access.revoked";
 
     public const string PaymentWebhookProcessed = "payment.webhook_processed";
+
+    public const string ProgramOfferCreated = "program_offer.created";
+    public const string ProgramOfferPriceChanged = "program_offer.price_changed";
+    public const string ProgramOfferActivated = "program_offer.activated";
+    public const string ProgramOfferDeactivated = "program_offer.deactivated";
 
     public const string QuestionnaireSubmitted = "questionnaire.submitted";
     public const string QuestionnaireRead = "questionnaire.read";

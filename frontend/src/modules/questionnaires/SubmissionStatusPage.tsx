@@ -34,7 +34,7 @@ export function SubmissionStatusPage() {
 
   if (submissionQuery.isLoading) {
     return (
-      <div className="flex flex-col gap-3 p-4">
+      <div className="flex flex-col gap-3">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-24 w-full" />
       </div>
@@ -42,11 +42,7 @@ export function SubmissionStatusPage() {
   }
 
   if (!submissionQuery.data) {
-    return (
-      <div className="p-4">
-        <Alert tone="danger" title={t("common:errors.notFound")} />
-      </div>
-    );
+    return <Alert tone="danger" title={t("common:errors.notFound")} />;
   }
 
   const submission = submissionQuery.data;
@@ -56,22 +52,24 @@ export function SubmissionStatusPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <h1 className="text-lg font-semibold text-text-primary">{t("questionnaire:title")}</h1>
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold text-text-primary tablet:text-3xl">{t("questionnaire:title")}</h1>
       <CrisisDisclaimer />
 
       {submission.status === "Submitted" && (
         <Card>
-          <p className="text-sm font-medium text-text-primary">{t("questionnaire:underReview.title")}</p>
+          <p className="font-serif text-lg font-medium text-text-primary">{t("questionnaire:underReview.title")}</p>
           <p className="mt-2 text-sm text-text-secondary">{t("questionnaire:underReview.body")}</p>
         </Card>
       )}
 
       {submission.status === "Answered" && guidanceQuery.data && (
         <Card>
-          <p className="text-xs text-text-muted">{t("questionnaire:response.versionLabel", { version: guidanceQuery.data.version })}</p>
+          <p className="text-xs uppercase tracking-wide text-text-muted">
+            {t("questionnaire:response.versionLabel", { version: guidanceQuery.data.version })}
+          </p>
           <div
-            className="prose prose-sm mt-2 max-w-none text-text-primary"
+            className="prose prose-sm mt-3 max-w-none text-text-primary [&_a]:text-primary [&_h1]:font-serif [&_h2]:font-serif"
             // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(guidanceQuery.data.body) }}
           />
@@ -100,7 +98,7 @@ export function SubmissionStatusPage() {
                   value={followUpQuestion}
                   onChange={(e) => setFollowUpQuestion(e.target.value)}
                   rows={3}
-                  className="rounded-md border border-border-default px-3 py-2 text-sm text-text-primary"
+                  className="rounded-lg border border-border-default bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted"
                 />
                 <Button
                   className="self-start"
