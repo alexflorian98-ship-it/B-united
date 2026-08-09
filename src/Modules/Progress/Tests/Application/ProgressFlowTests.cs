@@ -85,6 +85,42 @@ public sealed class ProgressFlowTests
     }
 
     [Fact]
+    public async Task Recording_video_progress_round_trips_the_exact_resume_position_and_watch_percentage()
+    {
+        var (connection, context) = TestDbContextFactory.Create();
+        using var _ = connection;
+        using var __ = context;
+
+        var sectionId = Guid.NewGuid();
+        var videoItemId = Guid.NewGuid();
+        var sectionItems = new[] { videoItemId };
+        var (_, lookup, access) = SetUpOwnedProgram(sectionId, sectionItems, UserId);
+
+        var recordHandler = new RecordVideoProgressHandler(context, TimeProvider.System, lookup, access);
+        await recordHandler.HandleAsync(
+            new RecordVideoProgressCommand(UserId, videoItemId, sectionId, sectionItems, 213, 42.5),
+            CancellationToken.None);
+
+        var contentProgress = await new GetContentProgressHandler(context, lookup, access).HandleAsync(UserId, [videoItemId], CancellationToken.None);
+        var dto = Assert.Single(contentProgress);
+        Assert.Equal(213, dto.LastVideoPositionSeconds);
+        Assert.Equal(42.5, dto.WatchPercentage);
+        Assert.Equal("InProgress", dto.Status);
+
+        // A later report (e.g. the user resumed and skipped further ahead) must overwrite,
+        // not accumulate, the persisted position.
+        await recordHandler.HandleAsync(
+            new RecordVideoProgressCommand(UserId, videoItemId, sectionId, sectionItems, 480, 76.0),
+            CancellationToken.None);
+
+        var updatedProgress = await new GetContentProgressHandler(context, lookup, access).HandleAsync(UserId, [videoItemId], CancellationToken.None);
+        var updatedDto = Assert.Single(updatedProgress);
+        Assert.Equal(480, updatedDto.LastVideoPositionSeconds);
+        Assert.Equal(76.0, updatedDto.WatchPercentage);
+        Assert.Equal("InProgress", updatedDto.Status);
+    }
+
+    [Fact]
     public async Task Progress_for_one_user_is_isolated_from_another_users_progress_on_the_same_item()
     {
         var (connection, context) = TestDbContextFactory.Create();
