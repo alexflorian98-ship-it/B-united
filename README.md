@@ -139,9 +139,10 @@ docker compose up --build
 This builds and starts `bunited-postgres` (its own disposable Docker
 volume — never your host's native PostgreSQL data) and `bunited-api` on
 `http://localhost:8080`, running EF Core migrations and the idempotent
-seeders (roles/permissions, content domains, one seeded program with an
-active offer) automatically on startup. Then, in a second terminal, start
-the SPA against it:
+seeders (roles/permissions, content domains, one fully translated demo
+program — "Mindful Living" / "Trai constient" — with an active offer, and
+two ready-to-use demo accounts) automatically on startup. Then, in a
+second terminal, start the SPA against it:
 
 ```
 cd frontend
@@ -151,20 +152,38 @@ VITE_API_BASE_URL=http://localhost:8080/api/v1 npm run dev
 
 and open `http://localhost:5173`.
 
-**Primary presentation journey** (client side): register a new account →
-verify the email (the `LoggingIdentityEmailSender` logs the verification
-event to the Api console; see `docs/HANDOVER.md` for the current
-known-gap around retrieving the raw link without a real mail provider) →
-browse the program catalogue → buy a program (`FakePaymentProvider`
-resolves synchronously — pick the "success" demo outcome) → consume its
-content (video + rich-text items, progress tracked automatically) →
-submit a questionnaire → receive expert guidance → post in a community
-chat room → register for an event.
+**Seeded demo accounts** — ready to sign in immediately, no email
+verification needed (both accounts are pre-verified by the seeder):
 
-**Reverse admin/expert journey**: sign in as `admin@bunited.local` →
-author/publish a program and its offer → review a submitted
-questionnaire and publish guidance as the expert → moderate a chat
-message → publish/cancel an event.
+| Role   | Email                       | Password           |
+| ------ | ---------------------------- | ------------------- |
+| Client | `demo.client@bunited.local`  | `DemoAccount123!`   |
+| Expert | `demo.expert@bunited.local`  | `DemoAccount123!`   |
+
+`demo.client@bunited.local` already owns the seeded "Mindful Living"
+program (a completed purchase/entitlement, one content item in progress,
+one completed) so a presentation can skip straight to consuming content,
+questionnaires, chat, and events without a checkout step first. This
+account is seeded only outside `Production` (`DemoAccountSeeder` mirrors
+P3.32's Production safety gate) — never rely on it, or its password,
+existing in a real deployment.
+
+**Primary presentation journey** (client side): sign in as
+`demo.client@bunited.local` (or register a new account → verify the
+email — the `LoggingIdentityEmailSender` logs the verification event to
+the Api console; see `docs/HANDOVER.md` for the current known-gap around
+retrieving the raw link without a real mail provider) → browse the
+program catalogue → buy a program (`FakePaymentProvider` resolves
+synchronously — pick the "success" demo outcome) → consume its content
+(video + rich-text items, progress tracked automatically) → submit a
+questionnaire → receive expert guidance → post in a community chat room
+→ register for an event.
+
+**Reverse admin/expert journey**: sign in as `admin@bunited.local` (full
+admin) or `demo.expert@bunited.local` (expert-only) → author/publish a
+program and its offer → review a submitted questionnaire and publish
+guidance as the expert → moderate a chat message → publish/cancel an
+event.
 
 **Resetting between demo runs**: `docker compose down -v` removes the
 `postgres-data` volume entirely, so the next `docker compose up` starts

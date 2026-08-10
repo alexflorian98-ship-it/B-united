@@ -21,6 +21,7 @@ using BUnited.Modules.Events.Api.Controllers;
 using BUnited.Modules.Events.Application.Jobs;
 using BUnited.Modules.Events.Infrastructure;
 using BUnited.Modules.Identity.Api.Controllers;
+using BUnited.Modules.Identity.Application.Abstractions;
 using BUnited.Modules.Identity.Infrastructure;
 using BUnited.Modules.Notifications.Infrastructure;
 using BUnited.Modules.Progress.Api.Controllers;
@@ -103,6 +104,7 @@ using (var startupScope = app.Services.CreateScope())
     await ContentSeeder.SeedAsync(db);
     await DemoProgramSeeder.SeedAsync(db);
     await ProgramOfferSeeder.SeedAsync(db);
+    await DemoAccountSeeder.SeedAsync(db, startupScope.ServiceProvider.GetRequiredService<IPasswordHasher>(), app.Environment);
 }
 
 // P5.08: idempotent 24h/1h event reminder sweep, every 5 minutes. Registered here (post-build,
