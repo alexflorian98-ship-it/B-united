@@ -30,6 +30,7 @@ public static class BillingModuleExtensions
         services.AddScoped<TriggerDemoEventHandler>();
         services.AddScoped<ListMyPurchasesHandler>();
         services.AddScoped<ListMyInvoicesHandler>();
+        services.AddScoped<GetMyInvoiceHandler>();
         services.AddScoped<ListMyEntitlementsHandler>();
         services.AddScoped<ListPurchasesHandler>();
         services.AddScoped<GetPurchaseDetailHandler>();

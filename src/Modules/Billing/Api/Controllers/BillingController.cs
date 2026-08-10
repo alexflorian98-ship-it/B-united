@@ -15,6 +15,7 @@ namespace BUnited.Modules.Billing.Api.Controllers;
 public sealed class BillingController(
     ListMyPurchasesHandler listMyPurchasesHandler,
     ListMyInvoicesHandler listMyInvoicesHandler,
+    GetMyInvoiceHandler getMyInvoiceHandler,
     ListMyEntitlementsHandler listMyEntitlementsHandler,
     CreateProgramPurchaseHandler createProgramPurchaseHandler,
     TriggerDemoEventHandler triggerDemoEventHandler) : ControllerBase
@@ -30,6 +31,16 @@ public sealed class BillingController(
     public async Task<ActionResult<IReadOnlyList<MyInvoiceDto>>> ListMyInvoices(CancellationToken cancellationToken)
     {
         var result = await listMyInvoicesHandler.HandleAsync(User.GetUserId(), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>P3.19.b: single-invoice detail/receipt view, reachable from a row in the
+    /// my-invoices list. Ownership-scoped in the handler — a mismatched or unknown invoice both
+    /// surface as 404, never a 403 (CLAUDE.md never-confirm-existence rule).</summary>
+    [HttpGet("my-invoices/{invoiceId:guid}")]
+    public async Task<ActionResult<MyInvoiceDto>> GetMyInvoice(Guid invoiceId, CancellationToken cancellationToken)
+    {
+        var result = await getMyInvoiceHandler.HandleAsync(User.GetUserId(), invoiceId, cancellationToken);
         return Ok(result);
     }
 

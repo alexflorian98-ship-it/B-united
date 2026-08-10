@@ -13,8 +13,25 @@ export interface ProgramOfferListResult { items: ProgramOfferSummary[]; totalCou
 export interface CreateProgramOfferRequest { programId: string; amount: number; currency: string; activateImmediately: boolean }
 export interface UpdateProgramOfferPriceRequest { amount: number; currency: string }
 
+export type PurchaseSortBy = "CreatedAt" | "Amount";
+
+export interface ListPurchasesFilter {
+  page?: number;
+  pageSize?: number;
+  status?: PurchaseSummary["status"] | "";
+  programId?: string;
+  sortBy?: PurchaseSortBy;
+  descending?: boolean;
+}
+
 export const adminBillingApi = {
-  listPurchases: (page = 1, pageSize = 25) => apiRequest<PurchaseListResult>(`/admin/billing/purchases?page=${page}&pageSize=${pageSize}`),
+  listPurchases: (filter: ListPurchasesFilter = {}) => {
+    const { page = 1, pageSize = 25, status, programId, sortBy = "CreatedAt", descending = true } = filter;
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), sortBy, descending: String(descending) });
+    if (status) params.set("status", status);
+    if (programId) params.set("programId", programId);
+    return apiRequest<PurchaseListResult>(`/admin/billing/purchases?${params.toString()}`);
+  },
   getPurchase: (purchaseId: string) => apiRequest<PurchaseDetail>(`/admin/billing/purchases/${purchaseId}`),
   listOffers: () => apiRequest<ProgramOfferListResult>("/admin/billing/offers"),
   createOffer: (request: CreateProgramOfferRequest) => apiRequest<{ programOfferId: string }>("/admin/billing/offers", { method: "POST", body: request }),

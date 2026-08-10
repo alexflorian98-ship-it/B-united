@@ -712,15 +712,15 @@ the purchased program. Provider-specific production integrations are deferred to
 - [x] P3.18 Local demo subscription controls
   - [x] P3.18.a Add demo-only actions for renew, fail payment, cancel and expire — each button additionally disabled client-side when invalid for the current status (e.g. Renew disabled while Canceled, since the state diagram has no direct Canceled→Active edge), live-verified visually
   - [x] P3.18.b Wire the "Manage subscription" UI with a visible simulated-payment notice — `billing:demo.notice` `Alert`, always shown above the demo controls
-- [~] P3.19 Simulated invoice list/detail — **list only, no distinct detail/receipt view**
+- [x] P3.19 Simulated invoice list/detail
   - [x] P3.19.a Build invoice list UI using locally generated invoice metadata — inline in `BillingPage.tsx`/`AdminBillingSubscriptionDetailPage.tsx`
-  - [ ] P3.19.b Show a local invoice detail/receipt view — **not built**: each invoice row shows amount/currency/status/date inline; there is no separate single-invoice detail page. A real, minor gap against the literal spec — the list already carries every field an invoice has in this schema, so a detail view would currently just repeat the same four fields on its own page.
+  - [x] P3.19.b Show a local invoice detail/receipt view — `InvoiceDetailPage.tsx` at `/billing/invoices/:invoiceId`, reachable from a click on any invoice row in `BillingPage.tsx`. Backed by a new ownership-scoped `GetMyInvoiceHandler`/`GET /billing/my-invoices/{invoiceId}` (never confirms existence of another user's invoice — 404 either way, matching the module's established pattern). Locale keys added in both `ro`/`en`.
 
 ### 3.E Admin billing UI (§54)
 
-- [~] P3.20 Subscriber table (Subscriber, Email, Status, Current Period, Access Until, Payment State, Created) — `AdminBillingListPage.tsx`, live-verified
+- [x] P3.20 Subscriber table (Subscriber, Email, Status, Current Period, Access Until, Payment State, Created) — `AdminBillingListPage.tsx`, live-verified
   - [x] P3.20.a Build the table with the specified columns — **simplified**: no separate "Subscriber" (display name) column — Identity has no display-name field yet (only `Email`), so that column is Email-only, same simplification already noted for Phase 4's expert queue
-  - [ ] P3.20.b Wire filtering/sorting and pagination — **partial**: the backend endpoint is paginated (`page`/`pageSize` query params) but the UI has no filter/sort controls or a pager widget yet — same "no test data volume exists yet to justify one" reasoning as Phase 2's P2.14.b
+  - [x] P3.20.b Wire filtering/sorting and pagination — `ListPurchasesQuery`/`ListPurchasesHandler` extended with server-side `status`/`programId` filters and `sortBy` (CreatedAt/Amount)/`descending` sort; `AdminBillingListPage.tsx` adds status-filter and sort-by controls plus a prev/next pager driven by the endpoint's existing `page`/`pageSize`/`totalCount`. Scoped to exactly the columns/fields the backend can filter/sort on, per this file's own "don't claim a capability the backend can't perform" convention.
 - [x] P3.21 Subscription detail view (plan, provider subscription id, status, period, payments, invoices, entitlement, webhook timeline) — `AdminBillingSubscriptionDetailPage.tsx`, live-verified
   - [x] P3.21.a Build the detail view combining Billing data (read-only cross-module projection where needed) — client email resolved via `Identity.Contracts.IUserLookup`, the same read-only cross-module pattern established in Phase 4
   - [x] P3.21.b Render the webhook timeline for the subscription — every event, newest first, with type/timestamp/processed-state

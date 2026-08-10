@@ -34,6 +34,7 @@ export const billingApi = {
   listMyPurchases: () => apiRequest<Purchase[]>("/billing/my-purchases"),
   listMyEntitlements: () => apiRequest<ProgramEntitlement[]>("/billing/my-entitlements"),
   listMyInvoices: () => apiRequest<MyInvoice[]>("/billing/my-invoices"),
+  getMyInvoice: (invoiceId: string) => apiRequest<MyInvoice>(`/billing/my-invoices/${invoiceId}`),
   checkout: (programId: string, outcome: CheckoutOutcomeValue = CheckoutOutcome.Success) =>
     apiRequest<CheckoutResult>(`/billing/programs/${programId}/checkout`, { method: "POST", body: { outcome } }),
   triggerDemoAction: (programId: string, action: DemoActionName) =>

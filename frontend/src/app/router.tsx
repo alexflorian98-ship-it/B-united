@@ -24,6 +24,7 @@ import { AdminQuestionnaireEditorPage } from "../modules/admin/questionnaires/Ad
 import { ExpertQueuePage } from "../modules/expert/ExpertQueuePage";
 import { ExpertSubmissionPage } from "../modules/expert/ExpertSubmissionPage";
 import { BillingPage } from "../modules/billing/BillingPage";
+import { InvoiceDetailPage } from "../modules/billing/InvoiceDetailPage";
 import { AdminBillingListPage } from "../modules/admin/billing/AdminBillingListPage";
 import { AdminBillingSubscriptionDetailPage } from "../modules/admin/billing/AdminBillingSubscriptionDetailPage";
 import { EventsListPage } from "../modules/events/EventsListPage";
@@ -98,6 +99,7 @@ export function AppRouter() {
           <Route path="/guidance/:questionnaireId/fill" element={<QuestionnaireFillPage />} />
           <Route path="/guidance/submissions/:submissionId" element={<SubmissionStatusPage />} />
           <Route path="/billing" element={<BillingPage />} />
+          <Route path="/billing/invoices/:invoiceId" element={<InvoiceDetailPage />} />
           {/* Nested inside the persistent client nav (unlike the player below) so users can
               always reach every other destination without relying on the browser back button —
               its own internal room-sidebar (P6.12) sits inside this shell, not instead of it. */}

@@ -24,9 +24,16 @@ public sealed class AdminBillingController(
     GetProgramOfferDetailHandler getProgramOfferDetailHandler) : ControllerBase
 {
     [HttpGet("purchases")]
-    public async Task<ActionResult<PurchaseListResult>> ListPurchases([FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken cancellationToken = default)
+    public async Task<ActionResult<PurchaseListResult>> ListPurchases(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 25,
+        [FromQuery] PurchaseStatus? status = null,
+        [FromQuery] Guid? programId = null,
+        [FromQuery] PurchaseSortBy sortBy = PurchaseSortBy.CreatedAt,
+        [FromQuery] bool descending = true,
+        CancellationToken cancellationToken = default)
     {
-        var result = await listPurchasesHandler.HandleAsync(new ListPurchasesQuery(page, pageSize), cancellationToken);
+        var result = await listPurchasesHandler.HandleAsync(new ListPurchasesQuery(page, pageSize, status, programId, sortBy, descending), cancellationToken);
         return Ok(result);
     }
 

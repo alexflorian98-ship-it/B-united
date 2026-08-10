@@ -213,6 +213,18 @@
       "currency": "Monedă",
       "submit": "Salvează prețul",
       "success": "Prețul a fost actualizat."
+    },
+    "filters": {
+      "status": "Status",
+      "allStatuses": "Toate statusurile",
+      "sortBy": "Sortează după",
+      "sortByCreatedAt": "Dată",
+      "sortByAmount": "Sumă",
+      "descending": "Descrescător",
+      "ascending": "Crescător",
+      "pageInfo": "Pagina {{page}} din {{totalPages}}",
+      "previousPage": "Anterior",
+      "nextPage": "Următor"
     }
   },
   "events": {
