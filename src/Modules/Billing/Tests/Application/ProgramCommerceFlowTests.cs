@@ -166,6 +166,50 @@ public sealed class ProgramCommerceFlowTests
         Assert.Single(fx.DbContext.ProgramEntitlements.Where(e => e.UserId == userId && e.ProgramId == programId));
     }
 
+    /// <summary>P3.23.b. Unlike <see cref="Duplicate_event_delivery_grants_a_single_entitlement"/>
+    /// (sequential — the second call's "does a row already exist" pre-check sees the first call's
+    /// completed commit and takes the clean early-return path), this fires two truly concurrent
+    /// calls, each on its own thread and its own <see cref="DbContext"/>/connection, for the SAME
+    /// provider event. Both can pass the pre-check before either commits, so the loser is expected
+    /// to hit the real unique-index violation on <c>WebhookEvent.ProviderEventId</c> as a
+    /// <see cref="DbUpdateException"/> — <see cref="ProcessProviderEventHandler"/> must catch that
+    /// and recover as an idempotent no-op rather than let it surface to the caller (which, for a
+    /// live webhook endpoint, would mean reporting a delivery failure back to the payment provider
+    /// for an event that in fact was fully processed).</summary>
+    [Fact]
+    public async Task Concurrent_duplicate_event_delivery_processes_exactly_once()
+    {
+        var (connection1, context1, connection2, context2) = TestDbContextFactory.CreateConcurrentPair();
+        using var _1 = connection1;
+        using var _2 = connection2;
+        using var __1 = context1;
+        using var __2 = context2;
+
+        var (programId, offerId, priceId) = SeedActiveOffer(context1);
+        var userId = Guid.NewGuid();
+        var purchase = Purchase.Create(userId, programId, offerId, priceId, 99.00m, "RON");
+        context1.Purchases.Add(purchase);
+        await context1.SaveChangesAsync();
+
+        var paymentProvider = new FakePaymentProvider();
+        var evt = paymentProvider.CreateDemoEvent(purchase.Id, ProviderEventType.PaymentSucceeded, 99.00m, "RON", DateTime.UtcNow);
+
+        var handler1 = new ProcessProviderEventHandler(context1, new FakeAuditLogger());
+        var handler2 = new ProcessProviderEventHandler(context2, new FakeAuditLogger());
+
+        // Both requests race the SAME provider event on separate threads — neither call is
+        // allowed to surface an unhandled exception to its caller.
+        var task1 = Task.Run(() => handler1.HandleAsync(evt, CancellationToken.None));
+        var task2 = Task.Run(() => handler2.HandleAsync(evt, CancellationToken.None));
+        await Task.WhenAll(task1, task2);
+
+        Assert.Single(context1.WebhookEvents.Where(e => e.ProviderEventId == evt.ProviderEventId));
+        Assert.Single(context1.ProgramEntitlements.Where(e => e.UserId == userId && e.ProgramId == programId));
+        Assert.Single(context1.Payments.Where(p => p.PurchaseId == purchase.Id));
+        Assert.Single(context1.Invoices.Where(i => i.PurchaseId == purchase.Id));
+        Assert.True(context1.ProgramEntitlements.Single(e => e.UserId == userId && e.ProgramId == programId).IsActive);
+    }
+
     [Fact]
     public async Task Out_of_order_event_does_not_regress_state()
     {
@@ -204,6 +248,42 @@ public sealed class ProgramCommerceFlowTests
 
         Assert.Equal(first.PurchaseId, second.PurchaseId);
         Assert.Single(fx.DbContext.Purchases.Where(p => p.UserId == userId && p.ProgramId == programId));
+    }
+
+    /// <summary>P3.31.b. A client whose first checkout attempt hit a transient provider outcome
+    /// (Timeout — modeled identically to ProviderError per P3.31.a) retries the exact same
+    /// purchase. Documents the actual current behavior: the retry reuses the still-Pending
+    /// purchase created by the first attempt (same guard as
+    /// <see cref="Duplicate_checkout_reuses_the_pending_purchase"/>) and, once it resolves
+    /// successfully, grants exactly one entitlement with no duplicate <see cref="Purchase"/> or
+    /// <see cref="ProgramEntitlement"/> row — a clean retry succeeds, it is not rejected as
+    /// "already exists".</summary>
+    [Fact]
+    public async Task Retry_after_transient_provider_failure_succeeds_without_duplicating_purchase_or_entitlement()
+    {
+        var fx = CreateFixture(out var connection);
+        using var _ = connection;
+        var (programId, _, _) = SeedActiveOffer(fx.DbContext);
+        var userId = Guid.NewGuid();
+
+        var first = await fx.PurchaseHandler.HandleAsync(new CreateProgramPurchaseCommand(userId, programId, CheckoutOutcome.Timeout), CancellationToken.None);
+        Assert.Equal(PurchaseStatus.Pending.ToString(), first.Status);
+
+        var retry = await fx.PurchaseHandler.HandleAsync(new CreateProgramPurchaseCommand(userId, programId, CheckoutOutcome.Success), CancellationToken.None);
+
+        Assert.Equal(first.PurchaseId, retry.PurchaseId);
+        Assert.Equal(PurchaseStatus.Succeeded.ToString(), retry.Status);
+        Assert.Single(fx.DbContext.Purchases.Where(p => p.UserId == userId && p.ProgramId == programId));
+        Assert.Single(fx.DbContext.ProgramEntitlements.Where(e => e.UserId == userId && e.ProgramId == programId));
+        Assert.True(await fx.AccessContext.HasProgramAccessAsync(userId, programId, CancellationToken.None));
+
+        // A second retry after the purchase already succeeded is rejected up front by the
+        // already-owned guard — it must not create a second purchase or a second entitlement.
+        var ex = await Assert.ThrowsAsync<BusinessRuleAppException>(() =>
+            fx.PurchaseHandler.HandleAsync(new CreateProgramPurchaseCommand(userId, programId, CheckoutOutcome.Success), CancellationToken.None));
+        Assert.Equal(ProgramAccessErrorCodes.ProgramAlreadyOwned, ex.Code);
+        Assert.Single(fx.DbContext.Purchases.Where(p => p.UserId == userId && p.ProgramId == programId));
+        Assert.Single(fx.DbContext.ProgramEntitlements.Where(e => e.UserId == userId && e.ProgramId == programId));
     }
 
     [Fact]
