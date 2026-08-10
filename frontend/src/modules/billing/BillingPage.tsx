@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { Alert } from "../../shared/design-system/Alert";
 import { Button } from "../../shared/design-system/Button";
 import { Card } from "../../shared/design-system/Card";
@@ -67,6 +68,6 @@ export function BillingPage() {
       <h2 className="text-lg font-semibold text-text-primary">{t("billing:ownedPrograms.title")}</h2>
       <div className="mt-3 flex flex-col gap-2">{entitlements.data!.map((item) => <Card key={item.programId} className="flex items-center justify-between gap-3"><span className="min-w-0 truncate font-medium">{programLabel(item.programId)}</span><StatusBadge status={item.status === "Active" ? "success" : "neutral"} label={t(`billing:entitlement.status.${item.status}`)} /></Card>)}</div>
     </section>
-    <section><h2 className="text-lg font-semibold text-text-primary">{t("billing:invoices.title")}</h2><div className="mt-3 flex flex-col gap-2">{invoices.data!.map((invoice) => <Card key={invoice.id} className="grid gap-2 tablet:grid-cols-[minmax(0,1fr)_auto_auto_auto] tablet:items-center"><span className="min-w-0 truncate">{programLabel(invoice.programId, invoice.programTitleSnapshot)}</span><span>{formatDateTime(invoice.issuedAtUtc)}</span><span className="font-medium">{formatMoney(invoice.amount, invoice.currency)}</span><span>{invoice.status}</span></Card>)}</div></section>
+    <section><h2 className="text-lg font-semibold text-text-primary">{t("billing:invoices.title")}</h2><div className="mt-3 flex flex-col gap-2">{invoices.data!.map((invoice) => <Link key={invoice.id} to={`/billing/invoices/${invoice.id}`}><Card className="grid gap-2 tablet:grid-cols-[minmax(0,1fr)_auto_auto_auto] tablet:items-center transition-colors hover:border-border-strong"><span className="min-w-0 truncate">{programLabel(invoice.programId, invoice.programTitleSnapshot)}</span><span>{formatDateTime(invoice.issuedAtUtc)}</span><span className="font-medium">{formatMoney(invoice.amount, invoice.currency)}</span><span>{invoice.status}</span></Card></Link>)}</div></section>
   </div>;
 }

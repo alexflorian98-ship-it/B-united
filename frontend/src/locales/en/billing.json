@@ -3,6 +3,13 @@
   "myPurchases": { "title": "Purchase history", "empty": "You have not purchased a program yet.", "program": "Program {{id}}", "programUnavailable": "Program unavailable in catalogue" },
   "ownedPrograms": { "title": "Owned programs" },
   "invoices": { "title": "Invoices" },
+  "invoiceDetail": {
+    "title": "Invoice detail",
+    "back": "Back to billing",
+    "amount": "Amount",
+    "issuedAt": "Issued on",
+    "invoiceId": "Invoice ID"
+  },
   "purchase": { "status": { "Pending": "Pending", "Succeeded": "Succeeded", "Failed": "Failed", "Refunded": "Refunded", "Chargeback": "Charged back" } },
   "entitlement": { "status": { "Active": "Permanent access", "Revoked": "Access revoked" } },
   "demo": { "title": "Payment testing options", "Succeed": "Simulate success", "Fail": "Simulate failure", "Refund": "Simulate refund", "ChargeBack": "Simulate chargeback" }

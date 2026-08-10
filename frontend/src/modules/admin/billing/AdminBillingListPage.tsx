@@ -14,7 +14,7 @@ import { Input } from "../../../shared/design-system/Input";
 import { Skeleton } from "../../../shared/design-system/Skeleton";
 import { applyApiErrorToForm } from "../../../shared/forms/applyApiErrorToForm";
 import { ProgramStatus, adminContentApi } from "../content/adminContentApi";
-import { adminBillingApi } from "./adminBillingApi";
+import { adminBillingApi, type PurchaseSortBy, type PurchaseSummary } from "./adminBillingApi";
 
 const createOfferSchema = z.object({
   programId: z.string().min(1),
@@ -135,10 +135,20 @@ function UpdatePriceForm({ offerId, onDone }: { offerId: string; onDone: () => v
   );
 }
 
+const PURCHASE_STATUSES: PurchaseSummary["status"][] = ["Pending", "Succeeded", "Failed", "Refunded", "Chargeback"];
+const PAGE_SIZE = 25;
+
 export function AdminBillingListPage() {
   const { t } = useTranslation(["admin", "common"]);
   const client = useQueryClient();
-  const purchases = useQuery({ queryKey: ["admin-purchases"], queryFn: () => adminBillingApi.listPurchases() });
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<PurchaseSummary["status"] | "">("");
+  const [sortBy, setSortBy] = useState<PurchaseSortBy>("CreatedAt");
+  const [descending, setDescending] = useState(true);
+  const purchases = useQuery({
+    queryKey: ["admin-purchases", page, statusFilter, sortBy, descending],
+    queryFn: () => adminBillingApi.listPurchases({ page, pageSize: PAGE_SIZE, status: statusFilter, sortBy, descending }),
+  });
   const offers = useQuery({ queryKey: ["admin-offers"], queryFn: adminBillingApi.listOffers });
   const programs = useQuery({
     queryKey: ["admin-programs-all"],
@@ -146,7 +156,7 @@ export function AdminBillingListPage() {
   });
   const status = useMutation({ mutationFn: ({ id, active }: { id: string; active: boolean }) => active ? adminBillingApi.deactivateOffer(id) : adminBillingApi.activateOffer(id), onSuccess: () => client.invalidateQueries({ queryKey: ["admin-offers"] }) });
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
-  if (purchases.isLoading || offers.isLoading || programs.isLoading) return <Skeleton className="h-64 w-full" />;
+  if (offers.isLoading || programs.isLoading) return <Skeleton className="h-64 w-full" />;
   const programTitleById = new Map(programs.data?.items.map((program) => [program.id, program.title]));
   const programLabel = (programId: string) => programTitleById.get(programId) ?? programId;
   // Purchase history carries its own immutable snapshot label (Slice A5) — prefer it over the
@@ -170,7 +180,43 @@ export function AdminBillingListPage() {
       </div>)}</div>}
     </section>
     <section><h2 className="text-lg font-semibold">{t("admin:billing.purchases")}</h2>
-      {purchases.data?.items.length === 0 ? <EmptyState title={t("admin:billing.noPurchases")} /> : <div className="mt-3 overflow-x-auto rounded-lg border border-border-default bg-surface"><table className="w-full text-left text-sm"><caption className="sr-only">{t("admin:billing.purchasesTableCaption")}</caption><thead><tr><th scope="col" className="p-3">{t("admin:billing.columns.email")}</th><th scope="col" className="p-3">{t("admin:billing.columns.program")}</th><th scope="col" className="p-3">{t("admin:billing.columns.amount")}</th><th scope="col" className="p-3">{t("admin:billing.columns.status")}</th><th scope="col" className="p-3">{t("admin:billing.columns.actions")}</th></tr></thead><tbody>{purchases.data?.items.map((p) => <tr key={p.purchaseId} className="border-t border-border-default"><td className="p-3">{p.email ?? p.userId}</td><td className="p-3">{purchaseLabel(p.programId, p.programTitleSnapshot)}</td><td className="p-3">{p.amount.toFixed(2)} {p.currency}</td><td className="p-3">{p.status}</td><td className="p-3"><Link to={`/admin/billing/purchases/${p.purchaseId}`}><Button variant="secondary">{t("admin:billing.view")}</Button></Link></td></tr>)}</tbody></table></div>}
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-text-secondary">{t("admin:billing.filters.status")}</span>
+          <select
+            value={statusFilter}
+            onChange={(event) => { setStatusFilter(event.target.value as PurchaseSummary["status"] | ""); setPage(1); }}
+            className="rounded-md border border-border-default px-3 py-2 text-sm text-text-primary"
+          >
+            <option value="">{t("admin:billing.filters.allStatuses")}</option>
+            {PURCHASE_STATUSES.map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-text-secondary">{t("admin:billing.filters.sortBy")}</span>
+          <select
+            value={sortBy}
+            onChange={(event) => { setSortBy(event.target.value as PurchaseSortBy); setPage(1); }}
+            className="rounded-md border border-border-default px-3 py-2 text-sm text-text-primary"
+          >
+            <option value="CreatedAt">{t("admin:billing.filters.sortByCreatedAt")}</option>
+            <option value="Amount">{t("admin:billing.filters.sortByAmount")}</option>
+          </select>
+        </label>
+        <Button variant="secondary" onClick={() => setDescending((current) => !current)}>
+          {descending ? t("admin:billing.filters.descending") : t("admin:billing.filters.ascending")}
+        </Button>
+      </div>
+      {purchases.isLoading ? <Skeleton className="mt-3 h-32 w-full" /> : purchases.isError ? <Alert tone="danger" title={t("common:errors.generic")} /> : purchases.data!.items.length === 0 ? <EmptyState title={t("admin:billing.noPurchases")} /> : <>
+        <div className="mt-3 overflow-x-auto rounded-lg border border-border-default bg-surface"><table className="w-full text-left text-sm"><caption className="sr-only">{t("admin:billing.purchasesTableCaption")}</caption><thead><tr><th scope="col" className="p-3">{t("admin:billing.columns.email")}</th><th scope="col" className="p-3">{t("admin:billing.columns.program")}</th><th scope="col" className="p-3">{t("admin:billing.columns.amount")}</th><th scope="col" className="p-3">{t("admin:billing.columns.status")}</th><th scope="col" className="p-3">{t("admin:billing.columns.actions")}</th></tr></thead><tbody>{purchases.data!.items.map((p) => <tr key={p.purchaseId} className="border-t border-border-default"><td className="p-3">{p.email ?? p.userId}</td><td className="p-3">{purchaseLabel(p.programId, p.programTitleSnapshot)}</td><td className="p-3">{p.amount.toFixed(2)} {p.currency}</td><td className="p-3">{p.status}</td><td className="p-3"><Link to={`/admin/billing/purchases/${p.purchaseId}`}><Button variant="secondary">{t("admin:billing.view")}</Button></Link></td></tr>)}</tbody></table></div>
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="text-xs text-text-muted">{t("admin:billing.filters.pageInfo", { page, totalPages: Math.max(1, Math.ceil(purchases.data!.totalCount / PAGE_SIZE)) })}</span>
+          <div className="flex gap-2">
+            <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>{t("admin:billing.filters.previousPage")}</Button>
+            <Button variant="secondary" disabled={page * PAGE_SIZE >= purchases.data!.totalCount} onClick={() => setPage((current) => current + 1)}>{t("admin:billing.filters.nextPage")}</Button>
+          </div>
+        </div>
+      </>}
     </section>
   </div>;
 }

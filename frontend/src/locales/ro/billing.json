@@ -3,6 +3,13 @@
   "myPurchases": { "title": "Istoric achiziții", "empty": "Nu ai cumpărat încă niciun program.", "program": "Program {{id}}", "programUnavailable": "Program indisponibil în catalog" },
   "ownedPrograms": { "title": "Programe deținute" },
   "invoices": { "title": "Facturi" },
+  "invoiceDetail": {
+    "title": "Detalii factură",
+    "back": "Înapoi la facturare",
+    "amount": "Sumă",
+    "issuedAt": "Emisă la",
+    "invoiceId": "ID factură"
+  },
   "purchase": { "status": { "Pending": "În așteptare", "Succeeded": "Reușită", "Failed": "Eșuată", "Refunded": "Rambursată", "Chargeback": "Plată contestată" } },
   "entitlement": { "status": { "Active": "Acces permanent", "Revoked": "Acces revocat" } },
   "demo": { "title": "Opțiuni de testare a plății", "Succeed": "Simulează reușita", "Fail": "Simulează eșecul", "Refund": "Simulează rambursarea", "ChargeBack": "Simulează contestarea" }

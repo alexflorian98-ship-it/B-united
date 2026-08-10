@@ -213,6 +213,18 @@
       "currency": "Currency",
       "submit": "Save price",
       "success": "Price updated."
+    },
+    "filters": {
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "sortBy": "Sort by",
+      "sortByCreatedAt": "Date",
+      "sortByAmount": "Amount",
+      "descending": "Descending",
+      "ascending": "Ascending",
+      "pageInfo": "Page {{page}} of {{totalPages}}",
+      "previousPage": "Previous",
+      "nextPage": "Next"
     }
   },
   "events": {
