@@ -101,6 +101,7 @@ using (var startupScope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
     await IdentitySeeder.SeedAsync(db);
     await ContentSeeder.SeedAsync(db);
+    await DemoProgramSeeder.SeedAsync(db);
     await ProgramOfferSeeder.SeedAsync(db);
 }
 

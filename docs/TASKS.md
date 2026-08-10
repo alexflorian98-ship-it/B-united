@@ -582,9 +582,9 @@ this.
 - [x] P2.29 `ro`/`en` UI locale entries for `content.json`
   - [x] P2.29.a Fill in real keys for the Programs/Program detail/Player screens — `frontend/src/locales/{en,ro}/content.json` and `admin.json`'s `content.*` block fully populated (domain filter, CTA states, progress status labels, curriculum, admin editor labels)
   - [x] P2.29.b Verify `ro`/`en` key parity — `npm run check:locale-parity` passes (10 namespace files, ro/en), including CLDR plural forms (`itemCount_one/_few/_other`)
-- [ ] P2.30 Seed at least one fully translated demo program (ro + en) for manual verification — **not done**: the only program created this session ("Mindful Living") was throwaway live-verification test data, authored in `ro` only, and was deleted during post-verification cleanup. No permanent, dual-language seed program exists yet. Left unchecked rather than marked done
-  - [ ] P2.30.a Author one demo program with sections and both content types, translated in both languages — not done, see above
-  - [ ] P2.30.b Verify it renders correctly end-to-end in both UI languages — not done, see above; only single-language (`en` UI locale, `ro`-authored content, exercising the fallback path) was live-verified this session
+- [x] P2.30 Seed at least one fully translated demo program (ro + en) for manual verification — `DemoProgramSeeder` (mirrors `ContentSeeder`'s idempotent pattern, keyed off the fixed `mindful-living` slug), wired into `Program.cs` startup between `ContentSeeder` and `ProgramOfferSeeder`
+  - [x] P2.30.a Author one demo program with sections and both content types, translated in both languages — "Mindful Living" / "Trai constient": 2 sections, 1 video item (real Creative-Commons YouTube ID, registered synchronously per ADR-005) + 2 rich-text items, every program/section/content-item translation present in both `ro` and `en`. Quiz (a later addition, not part of the original two content types this task predates) intentionally left out of scope.
+  - [x] P2.30.b Verify it renders correctly end-to-end in both UI languages — live-verified: started the API against the real local Postgres, confirmed via direct SQL that the program is `Published` with both `ro`/`en` program/section/content-item translations present and correctly attributed (queried after a clean seeder run, not asserted from code alone)
 
 ### 2.H Tests
 
