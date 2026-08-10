@@ -954,8 +954,8 @@ Deliverable: expert-led personalization works end-to-end.
   - [x] P4.31.a Second follow-up attempt is rejected — `QuestionnaireFlowTests` (same full-flow test) + live-verified via curl and Playwright
 - [x] P4.32 Cross-user questionnaire access denial tests
   - [x] P4.32.a User A cannot read/submit against User B's questionnaire submission — `QuestionnaireFlowTests.A_users_submission_is_invisible_to_another_user` + live-verified (404, not 403, per §35)
-- [ ] P4.33 Admin-has-no-implicit-access test — **not automated**: the permission matrix itself guarantees this by construction (Administrator's seeded permission set contains none of `questionnaire.submit`/`.review`/`.answer` — see `IdentitySeeder.RolePermissionMatrix`), and this was true before this batch of work, not introduced by it. No dedicated test asserts it for the Questionnaires module specifically (the closest existing coverage is Identity's own permission-matrix tests). Left unchecked as a real, narrow gap rather than marked done.
-  - [ ] P4.33.a Administrator role without explicit grant cannot read submission/guidance content — not automated, see above
+- [x] P4.33 Admin-has-no-implicit-access test
+  - [x] P4.33.a Administrator role without explicit grant cannot read submission/guidance content — `QuestionnaireAdminAccessAuthorizationTests`, an HTTP-level test (`QuestionnairesApiTestHost`, the real JWT/permission-policy pipeline hosting the actual `ExpertQuestionnairesController`, mirroring `Identity.Tests`' `PermissionTestHostFixture` pattern): a token holding unrelated permissions but not `questionnaire.review` gets 403 from the real submission-detail endpoint, an anonymous caller gets 401, and a token holding `questionnaire.review` succeeds with 200 — proving the `[Authorize(Policy = ...)]` attribute on the actual controller action, not just the permission matrix by construction.
 
 ---
 
@@ -1101,9 +1101,9 @@ May move after launch under delivery pressure (§69).
 
 ### 6.E Tests
 
-- [~] P6.20 Moderation action tests (delete, mute, pin) with permission checks
+- [x] P6.20 Moderation action tests (delete, mute, pin) with permission checks
   - [x] Delete/mute/pin business logic: `Deleting_a_message_soft_deletes_it_and_hides_its_body_from_the_room_feed`, `A_muted_user_cannot_send_a_message`, `An_expired_mute_no_longer_blocks_sending`, `Pinning_and_unpinning_a_message_toggles_its_flag`.
-  - [ ] P6.20.a **Not covered**: an HTTP-level "authorized moderator can act; regular user cannot" test (the `PermissionEnforcementTests`/`TestServer` pattern from `Identity.Tests`) — not built this pass; `chat.moderate` gating was live-verified via curl (an admin token succeeded, no unauthorized-token negative case was driven through curl either). A hollow placeholder test was deliberately not written — an assertion-free test would be worse than an honest gap note.
+  - [x] P6.20.a `ChatModerationAuthorizationTests` (`ChatAdminApiTestHostFixture`, the real JWT/permission-policy pipeline hosting the actual `AdminChatController`, mirroring `Identity.Tests`' `PermissionTestHostFixture` pattern): a token with `chat.moderate` can mute a user (204, `Mute` row persisted), a token without it is forbidden (403, no row created), and an anonymous caller is unauthorized (401).
 - [x] P6.21 Report flow test
   - [x] P6.21.a `Report_flow_appears_in_the_queue_and_can_be_dismissed` + live-verified via curl (report → admin open-reports list → resolve).
 - [x] P6.22 Anonymization-on-delete test preserving message continuity
