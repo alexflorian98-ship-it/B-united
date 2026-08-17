@@ -1,9 +1,70 @@
-# Handover — B-United (as of 2026-08-08)
+# Handover — B-United (as of 2026-08-08, updated 2026-08-10)
 
 Written for a fresh Claude Code session picking up this repo with no memory of prior
 conversations. Read this first, then `CLAUDE.md` (auto-loaded project instructions) and
 `docs/TASKS.md` (the authoritative, granular backlog — this doc is a narrative supplement,
 **not** a replacement for it).
+
+## Session update — 2026-08-10
+
+Closed 11 of the 14 real, narrow gaps this file and `docs/TASKS.md` had flagged as open across
+Phases 1–7 (all live-verified, not just unit-tested; full backend `dotnet test` and frontend
+`npm run build`/`test`/`check:locale-parity` green throughout — 12 backend test projects, 0
+failures; 67/67 frontend tests). In commit order on `master`:
+
+- **P2.33/P2.35** (Progress/Content): added the missing xunit coverage for video resume-position
+  round-tripping and playback-URL authorization — the behavior was already correct, only the test
+  was missing (P2.35 turned out to already be covered by an existing test the old TASKS.md note
+  predated; the note was just stale).
+- **P3.23.b/P3.31.b/P7.22.e** (Billing): a genuinely concurrent duplicate-webhook test (confirmed
+  `ProcessProviderEventHandler` already recovers via its existing `DbUpdateException` catch — no
+  code change needed, the old "doesn't catch it" note was stale), a checkout-retry-after-
+  transient-failure test, and a new `FakePaymentProviderContractTests` regression guard for the
+  shape a real `IPaymentProvider` would need to match.
+- **P4.33.a/P6.20.a** (Questionnaires/Chat): real HTTP-level tests hosting the actual production
+  controllers (`ExpertQuestionnairesController`/`AdminChatController`) behind the real JWT +
+  permission-policy pipeline — mirrors `Identity.Tests`' `PermissionTestHostFixture` pattern
+  rather than a synthetic endpoint, so a wiring mistake on the real controller would fail these,
+  not just the generic policy middleware. See `src/Modules/Chat/Tests/Security/` and
+  `src/Modules/Questionnaires/Tests/TestSupport/QuestionnairesApiTestHost.cs`.
+- **P3.19.b/P3.20.b** (Billing frontend): a client invoice-detail page
+  (`GET /billing/my-invoices/{invoiceId}`, ownership-scoped, 404 not 403 for a foreign invoice)
+  and server-side status/programId filters + CreatedAt/Amount sort + a prev/next pager on the
+  admin purchases table, wired end to end (backend query params → UI controls).
+- **P2.30**: `DemoProgramSeeder` — a permanent, idempotent, fully ro/en-translated demo program
+  ("Mindful Living" / "Trai constient": 2 sections, 1 video + 2 rich-text items), wired into
+  startup between `ContentSeeder` and `ProgramOfferSeeder`. Live-verified via direct SQL against
+  the real local Postgres after a clean seeder run.
+- **P7.18.b**: `DemoAccountSeeder` — `demo.client@bunited.local`/`demo.expert@bunited.local`
+  (real `IPasswordHasher`-hashed passwords, pre-verified, correct roles, **Production-gated** —
+  silently skips itself when `IHostEnvironment.IsProduction()`, mirroring P3.32's demo-adapter
+  check), plus a `Succeeded` purchase + `Payment` + `Invoice` + active `ProgramEntitlement` for
+  the client against the P2.30 program, and `ContentProgress` showing one item in-progress (video,
+  45%) and one completed (rich text). Live-verified: logged in as both accounts over real HTTP,
+  confirmed `my-purchases`/`my-entitlements` and `ownershipState: "Owned"`. Credentials documented
+  in `README.md`'s demo section — **password is `DemoAccount123!` for both, intentionally**
+  (never reachable in Production; see the seeder's own doc comment before changing this).
+
+**Still open, deliberately not rushed:**
+- **P7.18.a** (a dedicated Demo-gated reset command/endpoint, replacing the interim
+  `docker compose down -v` procedure) — a destructive-operation surface that deserves its own
+  focused pass, not a tail-end addition.
+- **P7.22.a/d/f** (deterministic email-scenario simulation for `LoggingIdentityEmailSender` +
+  a safe way to retrieve a verification/reset link in Demo without ever logging it or letting one
+  user read another's) — the "safe retrieval" half specifically needs careful design to avoid a
+  cross-user token leak; not attempted this pass rather than shipped half-safe.
+- **P1.30.b** (Storybook) — unchanged from the original "explicitly skipped, marked optional"
+  status below.
+- **P4.11.c** (transactional outbox for `GuidancePublished`) — explicitly **not** attempted: no
+  outbox infrastructure exists anywhere in this codebase (confirmed by grep), so building it would
+  be a new, durable architecture decision requiring its own ADR per
+  `docs/DEVELOPMENT_INSTRUCTIONS.md` §1 — flagged back rather than built silently as a side effect
+  of a test-coverage task.
+
+Six background agents (git worktree-isolated) were dispatched in parallel for this batch; five
+hit a session/rate limit mid-task. Their completed work (including tests they'd already written)
+was recovered, finished, and verified directly rather than discarded — see individual commit
+messages for exactly which parts were agent-authored vs. finished by the orchestrating session.
 
 ## Where things stand
 
@@ -145,9 +206,9 @@ conversations. Read this first, then `CLAUDE.md` (auto-loaded project instructio
     reports every ~15s while playing plus immediately on pause/ended/unmount.
   - **Four real application bugs found only by live Playwright testing against the real stack**,
     none caught by the (fully green) backend test suite — see items 13–16 below.
-  - **P2.30 (a permanent, fully-translated demo program) was not done.** The only program created
-    this session ("Mindful Living") was throwaway live-verification data, authored `ro`-only, and
-    was deleted during cleanup. No dual-language seed program exists in the DB right now.
+  - **P2.30 (a permanent, fully-translated demo program) was not done at the time this bullet was
+    written.** Closed in the 2026-08-10 session update above — `DemoProgramSeeder` now seeds
+    "Mindful Living" permanently, ro+en, on every startup.
   - **P2.H frontend test coverage is a real gap**: unlike Phase 1 (which got extensive Vitest
     component coverage for every new auth page), none of this batch's new Content/Progress/Admin
     pages have component tests — only backend xunit tests plus manual/live Playwright verification.
@@ -248,13 +309,13 @@ conversations. Read this first, then `CLAUDE.md` (auto-loaded project instructio
     `Administrator` (not `Expert`, which retains only `billing.view`) — P3.22's "restricted to
     technical administrators" requirement, enforced server-side in `GetSubscriptionDetailHandler`,
     never left to the frontend to hide.
-  - **Real, honest gaps** (see `docs/TASKS.md` P3.11.b/P3.13/P3.19.b/P3.20.b/P3.23.b/P3.29/
-    P3.30/P3.31.b for the exact notes): no outbox events (same infrastructure gap as Phase 4), no
-    distinct checkout-processing interstitial page (not needed — the fake provider resolves
-    synchronously), no invoice detail view (list already shows every field), no admin
-    filter/sort UI, no concurrent-duplicate-webhook test, no cross-user billing access-denial
-    test (the client API has no by-ID lookup surface at all, so the leak is prevented by
-    construction — but that's a different, untested guarantee than an explicit ownership check).
+  - **Real, honest gaps** (see `docs/TASKS.md` P3.11.b/P3.13/P3.29/P3.30 for the exact notes): no
+    outbox events (same infrastructure gap as Phase 4), no distinct checkout-processing
+    interstitial page (not needed — the fake provider resolves synchronously), no cross-user
+    billing access-denial test (the client API has no by-ID lookup surface at all, so the leak is
+    prevented by construction — but that's a different, untested guarantee than an explicit
+    ownership check). P3.19.b (invoice detail view), P3.20.b (admin filter/sort UI), and P3.23.b
+    (concurrent-duplicate-webhook test) were closed in the 2026-08-10 session update above.
   - See `docs/TASKS.md` P3.01–P3.32 for the exact per-subtask notes.
 - **Phase 5 (Events, P5.01–P5.20)**: complete. New `Events` module (Domain/Application/
   Infrastructure/Api/Contracts/Tests, same 6-layer shape as every other module) — `Event`/
@@ -340,19 +401,20 @@ conversations. Read this first, then `CLAUDE.md` (auto-loaded project instructio
   - **Real, honest gaps**: P6.04.a (no SignalR, see above), P6.11 (no anonymization, see above,
     blocked on account deletion not existing), P6.13.a ("load older messages" isn't wired to a UI
     control — the cursor-pagination API exists and is tested, but only the newest 50-message page
-    ever loads in the client), P6.20.a (no HTTP-level "moderator can act, regular user can't"
-    permission test — `chat.moderate` gating was live-verified with an admin token only, no
-    negative case driven through curl), P6.22 (blocked on P6.11). As with Phase 5, **no browser-
-    level (Playwright) verification of the Chat UI was performed** — no Playwright tool was
-    available in this session.
+    ever loads in the client), P6.22 (blocked on P6.11). As with Phase 5, **no browser-level
+    (Playwright) verification of the Chat UI was performed** — no Playwright tool was available in
+    this session. P6.20.a (HTTP-level moderator-permission test) was closed in the 2026-08-10
+    session update above.
   - See `docs/TASKS.md` P6.01–P6.22 for the exact per-subtask notes.
-- **Next open task**: Phase 7 (MVP presentation readiness — expert dashboard, GDPR data
-  rights/export, accessibility audit, performance) or Phase 8 (real Stripe/video/email provider
-  integrations, once credentials exist), or closing any of this session's flagged gaps: Phase 3's
-  (P3.19.b/P3.20.b/P3.23.b/P3.30/P3.31.b), Phase 4's (P4.22.b/P4.27.c), Phase 5's
-  (P5.06.c/P5.12.b), Phase 6's (P6.04.a SignalR/P6.11 anonymization/P6.13.a load-older-messages/
-  P6.20.a permission test), the real transactional outbox, or the Serilog status-code logging bug
-  above. Whichever the user wants next.
+- **Next open task** (as of 2026-08-10): the remaining real gaps are P7.18.a (dedicated reset
+  command), P7.22.a/d/f (email-scenario simulation + safe Demo link retrieval — needs careful
+  cross-user-leak-safe design), P1.30.b (Storybook, explicitly optional), P4.11.c/the real
+  transactional outbox (needs an ADR before implementation — no outbox infra exists anywhere in
+  this codebase), P3.30 (cross-user billing access-denial test), Phase 4's (P4.22.b/P4.27.c),
+  Phase 5's (P5.06.c/P5.12.b), Phase 6's (P6.04.a SignalR/P6.11 anonymization/P6.13.a
+  load-older-messages), or the Serilog status-code logging bug above — or Phase 8 (real
+  Stripe/video/email provider integrations, once credentials exist). Whichever the user wants
+  next.
 
 `docs/TASKS.md` has a `[x]`/`[ ]` checkbox per subtask with an inline note on what was actually
 done and how it was verified — that's the precise source of truth, not this document.
@@ -602,8 +664,8 @@ Each of these was caught by actually running the code, not by reading it:
 - **P2.08/P2.17** (video upload/transcode pipeline + its UI): not applicable to V1's YouTube-based
   `IVideoProvider` (ADR-005) — there is no upload/processing step to build a pipeline or UI for.
   Revisit only if a real upload-based provider ever replaces YouTube.
-- **P2.30** (a permanent, dual-language seed demo program): not done — see the Phase 2.D–2.H
-  summary above.
+- ~~**P2.30** (a permanent, dual-language seed demo program)~~ — closed 2026-08-10, see the
+  session update at the top of this file.
 - **P2.33/P2.35** (resume-position and playback-authorization automated tests): the underlying
   behavior is implemented and was live-verified, but neither has a dedicated xunit test yet — see
   `docs/TASKS.md` P2.33/P2.35 for the precise gap.
@@ -625,11 +687,9 @@ Each of these was caught by actually running the code, not by reading it:
 - **Server log status-code inaccuracy for exception-mapped responses** (bug #20 above): a real,
   low-severity fix that's still open — `UseSerilogRequestLogging()`/`UseExceptionHandler()`
   ordering in `src/Api/Program.cs`.
-- **P3.19.b** (invoice detail/receipt view), **P3.20.b** (admin subscriber filter/sort UI),
-  **P3.23.b** (concurrent-duplicate-webhook test), **P3.30** (cross-user billing access-denial
-  test — prevented by construction, not by an explicit checked guard), **P3.31.b** (checkout-retry
-  test): all real, narrow gaps — see the Phase 3 summary above and `docs/TASKS.md` for the exact
-  per-subtask notes.
+- ~~**P3.19.b**/**P3.20.b**/**P3.23.b**/**P3.31.b**~~ — closed 2026-08-10, see the session update
+  at the top of this file. **P3.30** (cross-user billing access-denial test — prevented by
+  construction, not by an explicit checked guard) remains open.
 - **P3.H / P4.H / P2.H / P5.H / P6.H frontend component tests**: the same gap, now spanning
   Content/Progress (Phase 2), Questionnaires (Phase 4), Billing (Phase 3), Events (Phase 5), and
   Chat (Phase 6) — no Vitest coverage exists for any of these modules' pages, only backend tests +
@@ -648,13 +708,21 @@ Each of these was caught by actually running the code, not by reading it:
   as a feature anywhere in this codebase yet — same category as P4.20/P7.06.
 - **P6.13.a** ("load older messages" not wired): the cursor-pagination API exists and is tested,
   but the client only ever loads the newest 50-message page — no "load older" UI control.
-- **P6.20.a** (no HTTP-level Chat permission test): `chat.moderate` gating was live-verified with
-  an admin token only; no `PermissionEnforcementTests`-style negative case (`chat.use`-only user
-  hitting an admin endpoint) was written for Chat specifically.
+- ~~**P6.20.a** (no HTTP-level Chat permission test)~~ — closed 2026-08-10, see the session update
+  at the top of this file.
 - **No browser-level (Playwright) verification of the Events or Chat UI**: no Playwright tool was
   available in this session, unlike every prior phase's frontend verification. Backend was fully
   live-verified via curl against real Postgres for both phases; frontend has build/type/component-
   test/locale-parity coverage only.
+- **P7.18.a** (dedicated Demo-gated reset command/endpoint): the interim `docker compose down -v`
+  procedure is still the only reset path — see the 2026-08-10 session update at the top of this
+  file for why this was deliberately not rushed.
+- **P7.22.a/d/f** (deterministic email-scenario simulation + safe Demo link retrieval): open — see
+  the 2026-08-10 session update at the top of this file for the specific cross-user-leak concern
+  that needs careful design before this is attempted.
+- **P4.33.a-style admin-has-no-implicit-access coverage for Questionnaires**: closed 2026-08-10
+  (see session update above) — kept here as a pointer since earlier phases of this file didn't
+  list it as a gap in the first place (it was tracked only in `docs/TASKS.md`).
 
 ## Working-style notes for this repo
 
