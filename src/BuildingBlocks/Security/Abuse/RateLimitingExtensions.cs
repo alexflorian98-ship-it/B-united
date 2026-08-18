@@ -5,6 +5,7 @@ using BUnited.BuildingBlocks.Observability.ErrorHandling;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BUnited.BuildingBlocks.Security.Abuse;
@@ -16,22 +17,28 @@ namespace BUnited.BuildingBlocks.Security.Abuse;
 /// <c>[EnableRateLimiting(RateLimitingExtensions.AuthPolicyName)]</c> once those endpoints
 /// exist, see P1.18+). Rejections are written using the standard error contract shape
 /// (docs/ARCHITECTURE.md §24: code/messageKey/correlationId).
+///
+/// Limits are configuration-bound (see <see cref="RateLimitingOptions"/>) so the local
+/// Development environment can grant a canonical multi-project Playwright run headroom above
+/// the production auth budget without ever touching the production default: appsettings.json
+/// (loaded in every environment, including Production) still defaults to the original 5
+/// requests/minute, and only appsettings.Development.json raises it.
 /// </summary>
 public static class RateLimitingExtensions
 {
     public const string AuthPolicyName = "auth";
 
-    private const int GlobalPermitLimit = 100;
-    private static readonly TimeSpan GlobalWindow = TimeSpan.FromMinutes(1);
-
-    private const int AuthPermitLimit = 5;
-    private static readonly TimeSpan AuthWindow = TimeSpan.FromMinutes(1);
-
-    public static IServiceCollection AddBUnitedRateLimiting(this IServiceCollection services)
+    public static IServiceCollection AddBUnitedRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<RateLimitingOptions>(configuration.GetSection(RateLimitingOptions.SectionName));
+
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            var rateLimiting = configuration
+                .GetSection(RateLimitingOptions.SectionName)
+                .Get<RateLimitingOptions>() ?? new RateLimitingOptions();
 
             options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
             {
@@ -44,8 +51,8 @@ public static class RateLimitingExtensions
                     ResolvePartitionKey(httpContext),
                     _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = GlobalPermitLimit,
-                        Window = GlobalWindow,
+                        PermitLimit = rateLimiting.Global.PermitLimit,
+                        Window = TimeSpan.FromSeconds(rateLimiting.Global.WindowSeconds),
                         QueueLimit = 0,
                     });
             });
@@ -55,8 +62,8 @@ public static class RateLimitingExtensions
                     ResolvePartitionKey(httpContext),
                     _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = AuthPermitLimit,
-                        Window = AuthWindow,
+                        PermitLimit = rateLimiting.Auth.PermitLimit,
+                        Window = TimeSpan.FromSeconds(rateLimiting.Auth.WindowSeconds),
                         QueueLimit = 0,
                     }));
 

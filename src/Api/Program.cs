@@ -70,7 +70,7 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString, name: "postgresql", tags: [HealthCheckEndpointExtensions.ReadinessTag]);
 
-builder.Services.AddBUnitedRateLimiting();
+builder.Services.AddBUnitedRateLimiting(builder.Configuration);
 builder.Services.AddBUnitedCors(builder.Configuration);
 
 // Strict-Transport-Security is only meaningful once the host is actually reached over HTTPS

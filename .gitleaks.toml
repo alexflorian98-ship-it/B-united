@@ -1,0 +1,46 @@
+title = "B-United gitleaks config"
+
+# Extends gitleaks' maintained default ruleset (do not weaken detection); only adds a narrow
+# allowlist for specific, documented, non-secret literal strings that are known to trip
+# high-entropy/generic-api-key style rules. Nothing here exempts a file or directory wholesale —
+# each entry matches one exact, already-reviewed placeholder value, so a real secret pasted
+# anywhere (including inside a Tests/ directory) is still caught.
+[extend]
+useDefault = true
+
+[[allowlist]]
+description = """
+In-memory test-host JWT HS256 signing keys. These strings never sign a real token outside an
+xunit TestServer created and torn down within a single test run (see e.g.
+src/Modules/Identity/Tests/Security/JwtTamperingTests.cs, src/Modules/Billing/Tests/TestSupport/
+BillingApiTestHost.cs) — they exist only to satisfy JwtOptions' minimum-length validation
+(JwtAuthenticationExtensions.cs, 32-byte HS256 floor) and are never read by any running
+Api instance.
+"""
+regexes = [
+  '''this-is-a-test-signing-key-that-is-long-enough-1234567890''',
+  '''a-completely-different-signing-key-thats-also-long-enough-000''',
+]
+
+[[allowlist]]
+description = """
+The documented placeholder Jwt:SigningKey value that JwtAuthenticationExtensions.cs explicitly
+refuses to start Production with (see DocumentedPlaceholderSigningKey and its
+IsProduction()-guarded startup check) — its entire purpose is to be an obviously-fake value that
+can never reach a live deployment, not a secret to protect.
+"""
+regexes = [
+  '''change-me-to-a-random-base64-value-at-least-32-bytes-long''',
+]
+
+[[allowlist]]
+description = """
+Local-only demo credentials seeded by src/Migrations/Seed/DemoAccountSeeder.cs and the
+Development-only FakeWebhookController signature secret (ADR-010's FakePaymentProvider never
+talks to a real payment provider) — both are already named to make their non-production nature
+explicit, and neither is ever read outside a local `Development`/demo environment.
+"""
+regexes = [
+  '''DemoAccount123!''',
+  '''dev-only-demo-webhook-secret-not-for-production''',
+]

@@ -74,6 +74,12 @@ skills/b-united-delivery/ Project delivery skill
 This section is maintained automatically by `.claude/hooks/update-claude-md.ps1` when a Claude Code session stops. Entries describe workspace snapshots changed during that session, not committed release notes.
 
 <!-- SESSION-CHANGES:START -->
+### 2026-08-18 11:48:04 UTC - Session `4fbf55ad-0455-4957-9d96-f0fc0f7d9e1d`
+
+- Base commit: `8aa4d38`
+- Outcome: Pushed to `origin/master` (`697a90d..8aa4d38`). 88 files changed, 5750 insertions / 1010 deletions, all cleanly staged — no auth-token dumps or secrets were included (`frontend/e2e/.auth/` is gitignored). CI will now run against this com...
+- Workspace changes: clean working tree
+
 ### 2026-08-18 09:51:02 UTC - Session `4fbf55ad-0455-4957-9d96-f0fc0f7d9e1d`
 
 - Base commit: `cff5b36`
@@ -717,61 +723,4 @@ This section is maintained automatically by `.claude/hooks/update-claude-md.ps1`
   - ` M frontend/src/modules/auth/RegisterPage.tsx`
   - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
   - ... and 387 more paths
-
-### 2026-08-09 19:35:18 UTC - Session `28393552-1807-4b62-9af7-47d59a98c876`
-
-- Base commit: `b2038c4`
-- Outcome: The backend quiz feature (Phase 1-2: domain, migration, admin authoring, secure grading endpoint) is now being built in the background. Once it's verified, I'll move on to the frontend (admin quiz builder, then the client quiz-taking UI).
-- Workspace changes:
-  - ` M README.md`
-  - ` M docker-compose.yml`
-  - ` M docs/HANDOVER.md`
-  - ` M docs/PROMPT.md`
-  - ` M docs/TASKS.md`
-  - ` M docs/adr/ADR-003-Subscription-Entitlement-Ownership.md`
-  - ` M docs/adr/ADR-007-Controlled-Cross-Module-Read-Models.md`
-  - ` M frontend/index.html`
-  - ` M frontend/public/favicon.svg`
-  - ` M frontend/src/app/router.tsx`
-  - ` M frontend/src/app/screens/ForbiddenPage.tsx`
-  - ` M frontend/src/app/screens/NotFoundPage.tsx`
-  - ` M frontend/src/app/screens/UnauthorizedPage.tsx`
-  - ` M frontend/src/index.css`
-  - ` M frontend/src/layouts/AdminLayout.test.tsx`
-  - ` M frontend/src/layouts/AdminLayout.tsx`
-  - ` M frontend/src/layouts/ClientLayout.test.tsx`
-  - ` M frontend/src/layouts/ClientLayout.tsx`
-  - ` M frontend/src/locales/en/admin.json`
-  - ` M frontend/src/locales/en/auth.json`
-  - ` M frontend/src/locales/en/billing.json`
-  - ` M frontend/src/locales/en/chat.json`
-  - ` M frontend/src/locales/en/common.json`
-  - ` M frontend/src/locales/en/content.json`
-  - ` M frontend/src/locales/en/dashboard.json`
-  - ` M frontend/src/locales/en/events.json`
-  - ` M frontend/src/locales/en/profile.json`
-  - ` M frontend/src/locales/ro/admin.json`
-  - ` M frontend/src/locales/ro/auth.json`
-  - ` M frontend/src/locales/ro/billing.json`
-  - ` M frontend/src/locales/ro/chat.json`
-  - ` M frontend/src/locales/ro/common.json`
-  - ` M frontend/src/locales/ro/content.json`
-  - ` M frontend/src/locales/ro/dashboard.json`
-  - ` M frontend/src/locales/ro/events.json`
-  - ` M frontend/src/locales/ro/profile.json`
-  - ` M frontend/src/modules/admin/AdminHomePage.tsx`
-  - ` M frontend/src/modules/admin/billing/AdminBillingListPage.tsx`
-  - ` M frontend/src/modules/admin/billing/AdminBillingSubscriptionDetailPage.tsx`
-  - ` M frontend/src/modules/admin/billing/adminBillingApi.ts`
-  - ` M frontend/src/modules/admin/content/AdminNewProgramPage.tsx`
-  - ` M frontend/src/modules/admin/content/AdminProgramEditorPage.tsx`
-  - ` M frontend/src/modules/admin/content/AdminProgramListPage.tsx`
-  - ` M frontend/src/modules/admin/questionnaires/AdminNewQuestionnairePage.tsx`
-  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireEditorPage.tsx`
-  - ` M frontend/src/modules/admin/questionnaires/AdminQuestionnaireListPage.tsx`
-  - ` M frontend/src/modules/auth/ConfirmPasswordResetPage.tsx`
-  - ` M frontend/src/modules/auth/LoginPage.tsx`
-  - ` M frontend/src/modules/auth/RegisterPage.tsx`
-  - ` M frontend/src/modules/auth/RequestPasswordResetPage.tsx`
-  - ... and 350 more paths
 <!-- SESSION-CHANGES:END -->
