@@ -115,7 +115,7 @@ using (var startupScope = app.Services.CreateScope())
     await ContentSeeder.SeedAsync(db);
     await DemoProgramSeeder.SeedAsync(db);
     await ProgramOfferSeeder.SeedAsync(db);
-    await DemoChatRoomSeeder.SeedAsync(db);
+    await ProgramChatRoomBackfillSeeder.SeedAsync(db);
     await DemoAccountSeeder.SeedAsync(db, startupScope.ServiceProvider.GetRequiredService<IPasswordHasher>(), app.Environment);
 }
 

@@ -34,7 +34,7 @@ public sealed class QuizFlowTests
         var contentItemId = await new AddContentItemHandler(context, new YouTubeVideoProvider()).HandleAsync(
             new AddContentItemCommand(sectionId, ContentItemType.Quiz, true, "ro", "Quiz", null, null), CancellationToken.None);
 
-        await new ProgramStatusHandler(context, new FakeAuditLogger()).PublishAsync(programId, ActorId, CancellationToken.None);
+        await new ProgramStatusHandler(context, new FakeAuditLogger(), new RecordingChatRoomProvisioner()).PublishAsync(programId, ActorId, CancellationToken.None);
 
         return (context, connection, programId, contentItemId);
     }

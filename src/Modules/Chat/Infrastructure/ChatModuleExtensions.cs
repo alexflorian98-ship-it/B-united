@@ -3,6 +3,8 @@ using BUnited.Modules.Chat.Application.UseCases.Admin;
 using BUnited.Modules.Chat.Application.UseCases.Client;
 using BUnited.Modules.Chat.Application.UseCases.DataRights;
 using BUnited.Modules.Chat.Application.UseCases.Moderation;
+using BUnited.Modules.Chat.Application.UseCases.Provisioning;
+using BUnited.Modules.Chat.Contracts;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -34,6 +36,9 @@ public static class ChatModuleExtensions
         services.AddScoped<CreateChatRoomHandler>();
         services.AddScoped<UpdateChatRoomHandler>();
         services.AddScoped<ListChatRoomsAdminHandler>();
+
+        // Cross-module contract consumed by Content's program-publish flow
+        services.AddScoped<IProgramChatRoomProvisioner, ProgramChatRoomProvisioner>();
 
         services.AddValidatorsFromAssemblyContaining<SendMessageValidator>();
 

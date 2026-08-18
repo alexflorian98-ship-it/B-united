@@ -49,10 +49,17 @@ public sealed class ContentFlowTests
         Assert.Empty(beforePublish);
 
         var auditLogger = new FakeAuditLogger();
-        var statusHandler = new ProgramStatusHandler(context, auditLogger);
+        var chatRoomProvisioner = new RecordingChatRoomProvisioner();
+        var statusHandler = new ProgramStatusHandler(context, auditLogger, chatRoomProvisioner);
         await statusHandler.PublishAsync(programId, ActorId, CancellationToken.None);
 
         Assert.Contains(auditLogger.Entries, e => e.Action == "content.published" && e.EntityId == programId.ToString());
+
+        // Publishing must provision exactly one chat room request, named after the program's own
+        // default-language title — no separate manual admin step (product decision, 2026-08-18).
+        var provisionCall = Assert.Single(chatRoomProvisioner.Calls);
+        Assert.Equal(programId, provisionCall.ProgramId);
+        Assert.Equal("Gestionarea anxietatii", provisionCall.ProgramName);
 
         var afterPublishRo = await listHandler.HandleAsync(new ListPublishedProgramsQuery(null, "ro", null), CancellationToken.None);
         var program = Assert.Single(afterPublishRo);
@@ -91,7 +98,7 @@ public sealed class ContentFlowTests
             new AddContentItemCommand(sectionId, ContentItemType.RichText, true, "ro", "Notite", "<p>Continut</p>", null),
             CancellationToken.None);
 
-        await new ProgramStatusHandler(context, new FakeAuditLogger()).PublishAsync(programId, ActorId, CancellationToken.None);
+        await new ProgramStatusHandler(context, new FakeAuditLogger(), new RecordingChatRoomProvisioner()).PublishAsync(programId, ActorId, CancellationToken.None);
 
         var userId = Guid.NewGuid();
         var accessContext = new FakeProgramAccessContext();
@@ -132,7 +139,7 @@ public sealed class ContentFlowTests
             new AddContentItemCommand(sectionId, ContentItemType.RichText, true, "ro", "Notite", "<p>Continut</p>", null),
             CancellationToken.None);
 
-        await new ProgramStatusHandler(context, new FakeAuditLogger()).PublishAsync(programId, ActorId, CancellationToken.None);
+        await new ProgramStatusHandler(context, new FakeAuditLogger(), new RecordingChatRoomProvisioner()).PublishAsync(programId, ActorId, CancellationToken.None);
 
         var offerLookup = new FakeProgramOfferLookup();
         offerLookup.SetActiveOffer(programId, 199.00m, "RON");
@@ -236,7 +243,7 @@ public sealed class ContentFlowTests
         var programId = await new CreateProgramHandler(context).HandleAsync(
             new CreateProgramCommand(domainId, "prog", "ro", "T", "S", "D", ActorId), CancellationToken.None);
 
-        var statusHandler = new ProgramStatusHandler(context, new FakeAuditLogger());
+        var statusHandler = new ProgramStatusHandler(context, new FakeAuditLogger(), new RecordingChatRoomProvisioner());
         await statusHandler.ArchiveAsync(programId, ActorId, CancellationToken.None);
 
         var exception = await Assert.ThrowsAsync<BusinessRuleAppException>(
