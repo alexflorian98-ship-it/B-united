@@ -745,7 +745,7 @@ the purchased program. Provider-specific production integrations are deferred to
   - [x] P3.28.a Expired user re-subscribes → access restored, historical data (progress, guidance, chat) preserved — `BillingFlowTests.Re_subscribing_after_expiration_restores_access` covers billing's own history (payments/periods accumulate rather than reset, live-verified: 3 payments/2 periods after a full fail→cancel→expire→renew cycle); progress/guidance/chat preservation isn't separately tested here since Billing never touches those tables at all — there is structurally nothing that could delete them
 - [~] P3.29 Entitlement tests for every subscription state — covered by multiple targeted tests rather than one parameterized test
   - [~] P3.29.a Parameterized test across Trialing/Active/PastDue/Canceled/Expired — **not literally parameterized**: `EntitlementTests` + `BillingFlowTests` between them exercise every state's access outcome, but as separate named tests, not a single `[Theory]`. Equivalent coverage, different shape.
-- [ ] P3.30 Cross-user billing data access denial tests — **not tested**: the client billing API has no by-ID lookup at all (`GET /billing/status` always resolves from the caller's own JWT `sub` claim), so there is structurally no parameter surface for one user to request another's data through the client API. This is enforced by construction rather than by a checked ownership guard, which is a materially different (and untested) guarantee than Questionnaires' explicit ownership-check pattern — flagged as a real gap in test coverage even though the design itself prevents the leak.
+- [x] P3.30 Cross-user billing data access denial tests — **note was stale**: since P3.19.b (2026-08-10), `GET /billing/my-invoices/{invoiceId}` is exactly the by-ID surface this note claimed didn't exist. `GetMyInvoiceHandlerTests.Throws_not_found_when_the_invoice_belongs_to_another_user` already covered the handler in isolation; the remaining gap was an HTTP-level test proving the real `BillingController` behind the actual JWT/authorization pipeline enforces it (the same P4.33.a/P6.20.a-style gap). Closed with a new `BillingApiTestHost` (mirrors `Questionnaires.Tests.TestSupport.QuestionnairesApiTestHost`, plus real `GlobalExceptionHandler`/`CorrelationId` wiring so `NotFoundAppException` maps to a real 404 response) and `BillingCrossUserAccessTests` (3 tests: cross-user invoice → 404, owner → 200, unauthenticated → 401). 71 Billing tests total (+3).
 - [x] P3.31 Fake-provider scenario matrix
   - [x] P3.31.a Test checkout success, decline, provider error and timeout — `BillingFlowTests.{Successful_checkout_activates_subscription_and_grants_access, Declined_checkout_does_not_activate, Provider_error_checkout_produces_no_event_and_no_state_change}`; Timeout isn't tested as a fourth distinct case since `FakePaymentProvider.SimulateCheckout` treats it identically to ProviderError (both return `null` — "the provider never got back to us")
   - [x] P3.31.b Test retry after transient failure without duplicate subscription or entitlement — `ProgramCommerceFlowTests.Retry_after_transient_provider_failure_succeeds_without_duplicating_purchase_or_entitlement`: first attempt times out (`Pending`), retry with `Success` reuses the same `Purchase` row and grants exactly one `ProgramEntitlement`; a further retry after success is rejected by the existing `ProgramAlreadyOwned` guard without creating a second purchase/entitlement.
@@ -1006,7 +1006,7 @@ Deliverable: subscribers can discover and register for live activities.
   - [x] P5.11.b `EventDetailPage` — full description, capacity + waitlist counts, join link (shown only once actually `Registered`, not just waitlisted).
 - [x] P5.12 Registration/waitlist UI with status feedback
   - [x] P5.12.a Register/cancel wired as mutations with immediate query invalidation + an inline success `Alert` distinguishing "Registered" vs "full — waitlisted" feedback.
-  - [~] P5.12.b **Partial.** A promoted user's own `EventDetailPage`/`EventsListPage` reflects the new "Registered" status on next fetch (react-query refetch on focus/navigation), but no push/toast notification is sent *at promotion time* — `CancelRegistrationHandler` schedules the promoted registration's reminders but does not call `INotificationSender`. Documented gap, not wired this pass.
+  - [x] P5.12.b Closed 2026-08-17: `CancelRegistrationHandler` now calls `INotificationSender` for the promoted registration, reusing `NotificationType.EventRegistrationConfirmed` (docs/PROMPT.md §32's notification-type list is spec-fixed — a promotion is semantically the same event a fresh `Registered` outcome is, and `RegisterForEventHandler` already sends this exact type/payload shape) rather than adding a new enum member. Sent unconditionally (not gated by `INotificationPreferenceLookup`), matching `RegisterForEventHandler`'s own confirmation send — a registration-status confirmation is transactional per §32 ("Security and transactional notifications cannot be disabled"), unlike the opt-out-able `EventReminder`. Two new tests in `EventRegistrationFlowTests`; live-verified against real Postgres (register 2 users at capacity 1 → cancel the seat-holder → `LoggingNotificationSender` log line shows `EventRegistrationConfirmed` sent to the promoted user's email, sourced from `EventsController.CancelRegistration`; promoted user's status confirmed `Registered` via the admin event-detail read). The promoted user's own `EventDetailPage`/`EventsListPage` still separately reflects the status on next fetch, unchanged.
 - [x] P5.13 Dashboard "upcoming event" card (§41)
   - [x] P5.13.a Added to `ClientHomePage` (still Phase 1's minimal dashboard — the full §41 hero/progress-overview redesign remains a pre-existing, separately-tracked gap, not in this phase's scope) — shows the nearest registered/waitlisted event, its own `DisplayTimezone`, and status.
 
@@ -1081,7 +1081,7 @@ May move after launch under delivery pressure (§69).
 - [x] P6.12 Room list/switcher
   - [x] P6.12.a `ChatPage`'s room sidebar (desktop) / horizontal scroller (mobile), with an unread-count badge per room.
 - [x] P6.13 Message list with pagination + pinned message highlight
-  - [x] P6.13.a Polling-refreshed message list (see P6.04 note — infinite/paginated *scroll* specifically wasn't wired; the initial 50-message page loads and polling keeps it current, but "load older" via the `nextBeforeCursor` isn't wired to a UI control yet). **Gap**: no "load older messages" button.
+  - [x] P6.13.a Closed 2026-08-17: polling-refreshed message list plus a "Load older messages" button, wired to the already-existing `nextBeforeCursor` cursor-pagination API. Older pages are kept in separate component state (`olderMessages`/`olderCursor` in `ChatPage.tsx`) so the 5s poll of the newest page never wipes them out — once at least one older page has been loaded, the "next older" cursor is owned entirely by that manual state rather than re-derived from the live-polled page (which shifts as new messages arrive). Merged-and-deduplicated-by-id for rendering. Live-verified via Playwright against real Postgres: seeded 55 messages in a throwaway program-scoped room, confirmed the button appears only when a 50-message page is truncated, clicking it loads the remaining 5 (message counts 50 → 55, oldest message now present, no duplicates), the button disappears once `nextBeforeCursor` comes back null, and the loaded older messages survive two full 5s poll cycles without being wiped. All throwaway room/messages/read-state rows deleted afterward.
   - [x] P6.13.b Pinned messages are sorted to the top and visually distinguished (amber border + "Pinned" label).
 - [x] P6.14 Persistent localized privacy notice per room (§34)
   - [x] P6.14.a A persistent `Alert` at the top of `ChatPage`, ro/en, the exact §34 warning ("shared public subscriber area... avoid posting sensitive health/financial/personal information").
@@ -1149,9 +1149,10 @@ questionnaires, upcoming events, purchase revenue".
 ### 7.C Accessibility (§59)
 
 - [~] P7.07 WCAG 2.2 AA audit pass: keyboard nav, focus states, semantic HTML, labels, contrast
-  - [~] P7.07.a Run an automated accessibility scan across key screens — **no automated tool available this pass** (no Playwright/axe-core browser-automation tool offered in this environment); a thorough manual code-level review was substituted instead (every page in `frontend/src/modules/**/*.tsx`, every design-system primitive, `index.css`) — a real automated axe scan remains a residual gap, not done
+  - [x] P7.07.a Run an automated accessibility scan across key screens — now covered by `frontend/e2e/ui-ux.spec.ts` (`@axe-core/playwright`, run per primary route on both desktop and mobile viewports) plus the earlier manual code-level review. The 2026-08-18 audit run confirmed zero serious/critical axe violations across `/`, `/programs`, `/events`, `/guidance`, `/community`, `/billing`, `/profile` on both viewports (see `docs/E2E_AUDIT_RESULT.md`); the automated axe scan found and led to the fix of the `--color-text-muted` contrast failure below.
   - [x] P7.07.b Manually verify keyboard-only navigation on critical flows — verified by code review: `Modal.tsx` uses the native `<dialog>` element (focus trap/return/Escape all handled by the browser), `IconButton` requires a `label` prop, `Input`/`PasswordInput` correctly wire `<label htmlFor>`, focus-visible ring is a global CSS rule not overridden anywhere
   - Fixed this pass: `LanguageSwitcher.tsx` had a hardcoded English `aria-label="Language"` silently overriding its own already-localized label (screen readers always announced English regardless of UI language); `Alert.tsx`/`Toast.tsx` had a hardcoded English `aria-label="Dismiss"` (added a required/optional `dismissLabel` prop instead, since no call site used `onDismiss` yet, so this was a safe non-breaking fix); `ChatPage.tsx`'s message composer gained an `aria-label` reusing the existing translated placeholder key. Contrast checked against the token palette (`--color-text-primary`/`--color-text-secondary` on `--color-background`/`--color-surface`) — comfortably exceeds 4.5:1; app has no dark mode so only one palette needed checking.
+  - 2026-08-18: the automated axe scan (P7.07.a) found `--color-text-muted` (`#8a8a72`) failed WCAG AA on `/events`, `/billing`, and `/profile` (3.16:1 against `--color-background`, 3.47:1 against `--color-surface`, both below the 4.5:1 normal-text floor). Fixed at the token level in `frontend/src/index.css` — darkened to `#5f5f4a` (5.84:1 on `--color-background`, 6.41:1 on `--color-surface`), preserving the same warm-olive hue and the lighter-than-`--color-text-secondary` hierarchy. `text-text-muted` usages were audited and all sit on light `--color-background`/`--color-surface`/`--color-surface-sunken` surfaces (e.g. the mobile bottom nav in `ClientLayout.tsx`), never on the dark `--color-primary` sidebar, so a single token fix was sufficient — no second dark-surface token was needed.
   - **Documented residual gap**: `ProgramsPage.tsx`/`AdminProgramListPage.tsx`/`AdminQuestionnaireListPage.tsx` use `role="tablist"`/`role="tab"` on what are functionally filter-toggle buttons, with no associated `tabpanel` and no arrow-key roving-tabindex per the ARIA APG tab pattern — basic keyboard operability (Tab/Enter/Space, correct `aria-selected`) works, so not a hard blocker, but not a fully compliant ARIA widget. Left as-is rather than restructuring three components' interaction model in this pass.
 - [~] P7.08 Accessible dialogs/tables audit
   - [x] P7.08.a Verify modal/drawer focus trapping and ARIA roles — `Modal.tsx` verified correct as built (native `<dialog>`), no changes needed
@@ -1421,8 +1422,76 @@ specific vendor.
 - [ ] P8.11 Integrate backend/frontend error monitoring with sensitive-data filtering
 - [ ] P8.12 Configure PostgreSQL backups and complete a restore drill
 - [ ] P8.13 Build deployment and migration pipeline with verified rollback
-- [ ] P8.14 Lock down production CORS, rate limits, domains, TLS and security headers
+- [ ] P8.14 Lock down production CORS, rate limits, domains, TLS and security headers — substantially done in code, remainder is environment configuration only (see the 2026-08-18 security-gap-closure pass below and `docs/E2E_AUDIT_RESULT.md` §3.8): `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Resource-Policy`, `Cache-Control: no-store`, and non-Development `Strict-Transport-Security` all ship from `SecurityHeadersMiddleware`; a mode-aware CSP `<meta>` tag ships from the SPA (`frontend/vite.config.ts`'s `cspMetaTagPlugin`, zero violations against the real production build — CSP is no longer deferred); CORS explicitly rejects wildcard origins (`CorsExtensions`, real gap found and fixed this pass); forwarded-headers processing is safe-by-default (`ForwardedHeadersExtensions`, real dangerous default found and fixed this pass). Remaining: `frame-ancestors`/`upgrade-insecure-requests` CSP directives, `ForwardedHeaders:KnownProxies`/`KnownNetworks` values, and live TLS/HSTS/CORS/Swagger/demo-credential verification all require a real deployed domain — run `scripts/security/Test-ProductionSecurity.ps1` (smoke-tested against localhost, never against a real domain) the moment one exists, per `docs/security/PRODUCTION_VERIFICATION_RUNBOOK.md`.
 - [ ] P8.15 Run full provider, security, privacy, accessibility and performance acceptance passes
+
+---
+
+## 2026-08-18 security-gap-closure pass (post-audit expansion)
+
+Full detail, coverage matrix (PASS/FAIL/BLOCKED/NOT APPLICABLE per control), exact commands, and
+findings ordered by severity live in `docs/E2E_AUDIT_RESULT.md` — this is a pointer, not a
+duplicate. Summary: closed the two-user IDOR test suite, the auth/token-lifecycle test gaps,
+billing invariant tests, a real Content-Security-Policy, forwarded-headers/CORS hardening,
+log-leakage verification, a dependency vulnerability scan (found and fixed a real CVE), a real
+OWASP ZAP DAST pass (found and fixed 2 real findings), and wrote the Stripe-webhook test spec,
+upload-security checklist, production-verification runbook, and penetration-test scope documents
+for the items that cannot be closed without infrastructure that doesn't exist yet.
+
+- [x] SEC.01 Two-user authenticated IDOR/ownership suite — new `QuestionnaireCrossUserAccessTests`
+  (found and fixed a real gap in `QuestionnairesApiTestHost`'s missing exception handler), new
+  Events/Billing ownership tests; pre-existing coverage for invoices/progress/video-playback
+  confirmed sufficient. Chat and file-download IDOR marked NOT APPLICABLE with justification
+  (fixed shared rooms; no upload endpoint exists).
+- [x] SEC.02 Auth/token lifecycle — new `RevokeAllSessionsHandlerTests`, `JwtTamperingTests`
+  (malformed/tampered/wrong-key/alg-none), `ProductionSecretSafetyTests` (placeholder signing key
+  rejected in Production). Found and fixed a real concurrency bug: concurrent `/auth/refresh`
+  calls on the same token could both succeed before this pass (no optimistic concurrency) — now a
+  concurrency token on `RefreshToken.RevokedAtUtc` makes the loser fail safely.
+- [x] SEC.03 Billing invariants testable without a real Stripe integration — new
+  `Entitlement_is_scoped_to_both_user_and_program_not_either_alone` against the real
+  `BillingProgramAccessContext`. Stripe-specific signature/replay/timestamp-tolerance testing
+  specified but marked NOT APPLICABLE/REQUIRED BEFORE STRIPE PRODUCTION in
+  `docs/security/STRIPE_WEBHOOK_TEST_SPEC.md` (Phase 8 item, ties to P8.01-P8.05).
+- [x] SEC.04 Upload security — confirmed NOT APPLICABLE (no upload endpoint exists); mandatory
+  14-item pre-launch checklist written in `docs/security/UPLOAD_SECURITY_CHECKLIST.md`, to become
+  required acceptance criteria whenever the `Files` module is first implemented.
+- [x] SEC.05 Log-leakage verification — `scripts/security/Test-LogLeakage.ps1`, executed live
+  against the running Docker container with synthetic canaries (password/bearer-token/refresh-
+  token), zero leaks. Found and fixed a real gap: `SensitiveLogValueAttribute` existed but was
+  applied to zero real production DTOs before this pass — now applied to the four commands that
+  actually carry passwords/tokens, with new `SensitiveCommandLoggingTests` proving the real
+  Serilog policy redacts them.
+- [x] SEC.06 Dependency/SAST gates — `dotnet list package --vulnerable` found and this pass fixed
+  a real High-severity CVE (Newtonsoft.Json 11.0.1, CVE-2024-21907, transitive via Hangfire) in
+  the production Api; `npm audit` clean. CI (`ci.yml`) gained `npm audit --audit-level=high`, a
+  `dependency-review` job, a `secret-scan` job (Gitleaks), and a new `codeql.yml` workflow —
+  written and YAML-validated, not yet executed by a real GitHub Actions runner.
+- [x] SEC.07 Content-Security-Policy — implemented via `frontend/vite.config.ts`'s
+  `cspMetaTagPlugin` (mode-aware: strict in `npm run build`, relaxed only for `npm run dev`'s own
+  HMR needs). Found and fixed a real `unsafe-eval` dependency (Zod v4's internal JIT-capability
+  probe — fixed via Zod's own `jitless` config, not by loosening the policy). Verified zero CSP
+  violations against the real production build across the full client journey
+  (`frontend/e2e/csp.spec.ts`). `frame-ancestors`/`upgrade-insecure-requests` remain
+  BLOCKED — REQUIRES DEPLOYED DOMAIN (meta-tag-inapplicable / HTTP-only in nature).
+- [x] SEC.08 Forwarded-headers/CORS/TLS/HSTS hardening — found and fixed two real dangerous
+  defaults: ASP.NET Core's `ForwardedHeadersMiddleware` trusts every caller when
+  `KnownProxies`/`KnownNetworks` are empty (fixed: skip registering the middleware entirely when
+  unconfigured), and `CorsPolicyBuilder.WithOrigins("*")` genuinely enables wildcard matching
+  (fixed: filtered out before building the policy). New
+  `scripts/security/Test-ProductionSecurity.ps1` + `docs/security/PRODUCTION_VERIFICATION_RUNBOOK.md`,
+  smoke-tested against localhost; real production values remain BLOCKED — REQUIRES DEPLOYED DOMAIN.
+- [x] SEC.09 DAST — actually executed (not just documented): OWASP ZAP passive + active scans
+  (185 combined rule checks) against the local Docker Compose demo stack, using the real OpenAPI
+  document for endpoint discovery. Found and fixed 2 real low/informational findings
+  (`Cross-Origin-Resource-Policy` missing, 404 responses cacheable); re-scan confirms both gone.
+  Full methodology and results in `docs/security/DAST.md`.
+- [ ] SEC.10 External penetration test — scope document written
+  (`docs/security/PENTEST_SCOPE.md`); the actual engagement remains
+  BLOCKED — REQUIRES AUTHORIZED EXTERNAL TESTER AND DEPLOYED ENVIRONMENT.
+- [x] SEC.11 Reporting model — `docs/E2E_AUDIT_RESULT.md` rewritten to separate the automated
+  score (100/100, qualified as "not a complete security certification") from the full
+  program-coverage matrix (PASS/FAIL/BLOCKED/NOT APPLICABLE per control).
 
 ---
 

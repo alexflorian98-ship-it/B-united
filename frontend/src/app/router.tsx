@@ -1,51 +1,59 @@
+import { lazy, Suspense } from "react";
+import { useTranslation } from "react-i18next";
 import { Outlet, Route, Routes } from "react-router-dom";
 import { AdminLayout } from "../layouts/AdminLayout";
 import { ClientLayout } from "../layouts/ClientLayout";
-import { AdminHomePage } from "../modules/admin/AdminHomePage";
-import { AdminNewProgramPage } from "../modules/admin/content/AdminNewProgramPage";
-import { AdminProgramEditorPage } from "../modules/admin/content/AdminProgramEditorPage";
-import { AdminProgramListPage } from "../modules/admin/content/AdminProgramListPage";
-import { ConfirmPasswordResetPage } from "../modules/auth/ConfirmPasswordResetPage";
-import { LoginPage } from "../modules/auth/LoginPage";
-import { RegisterPage } from "../modules/auth/RegisterPage";
-import { RequestPasswordResetPage } from "../modules/auth/RequestPasswordResetPage";
-import { VerifyEmailPage } from "../modules/auth/VerifyEmailPage";
-import { ProgramDetailPage } from "../modules/content/ProgramDetailPage";
-import { ProgramPlayerPage } from "../modules/content/ProgramPlayerPage";
-import { ProgramsPage } from "../modules/content/ProgramsPage";
-import { ClientHomePage } from "../modules/dashboard/ClientHomePage";
-import { ProfilePage } from "../modules/profile/ProfilePage";
-import { GuidanceHomePage } from "../modules/questionnaires/GuidanceHomePage";
-import { QuestionnaireFillPage } from "../modules/questionnaires/QuestionnaireFillPage";
-import { SubmissionStatusPage } from "../modules/questionnaires/SubmissionStatusPage";
-import { AdminQuestionnaireListPage } from "../modules/admin/questionnaires/AdminQuestionnaireListPage";
-import { AdminNewQuestionnairePage } from "../modules/admin/questionnaires/AdminNewQuestionnairePage";
-import { AdminQuestionnaireEditorPage } from "../modules/admin/questionnaires/AdminQuestionnaireEditorPage";
-import { ExpertQueuePage } from "../modules/expert/ExpertQueuePage";
-import { ExpertSubmissionPage } from "../modules/expert/ExpertSubmissionPage";
-import { BillingPage } from "../modules/billing/BillingPage";
-import { InvoiceDetailPage } from "../modules/billing/InvoiceDetailPage";
-import { AdminBillingListPage } from "../modules/admin/billing/AdminBillingListPage";
-import { AdminBillingSubscriptionDetailPage } from "../modules/admin/billing/AdminBillingSubscriptionDetailPage";
-import { EventsListPage } from "../modules/events/EventsListPage";
-import { EventDetailPage } from "../modules/events/EventDetailPage";
-import { AdminEventsListPage } from "../modules/admin/events/AdminEventsListPage";
-import { AdminNewEventPage } from "../modules/admin/events/AdminNewEventPage";
-import { AdminEventEditorPage } from "../modules/admin/events/AdminEventEditorPage";
-import { ChatPage } from "../modules/chat/ChatPage";
-import { AdminChatModerationPage } from "../modules/admin/chat/AdminChatModerationPage";
-import { AdminClientListPage } from "../modules/admin/users/AdminClientListPage";
-import { AdminClientDetailPage } from "../modules/admin/users/AdminClientDetailPage";
-import { AdminAuditPage } from "../modules/admin/audit/AdminAuditPage";
 import { RequireAnyPermission } from "../shared/auth/RequireAnyPermission";
 import { RequireAuth } from "../shared/auth/RequireAuth";
 import { RequireGuest } from "../shared/auth/RequireGuest";
 import { RequirePermission } from "../shared/auth/RequirePermission";
 import { WellKnownPermissions } from "../shared/permissions/wellKnownPermissions";
 import { ADMIN_NAV_PERMISSIONS, ADMIN_SHELL_PERMISSIONS } from "../layouts/navigation";
-import { ForbiddenPage } from "./screens/ForbiddenPage";
-import { NotFoundPage } from "./screens/NotFoundPage";
-import { UnauthorizedPage } from "./screens/UnauthorizedPage";
+
+// Every route screen is route-level code-split (React.lazy + Suspense) instead of bundled into
+// the single entry chunk: the admin surface alone (program/questionnaire/event/chat authoring,
+// audit, client management) is never touched by a client-only user, and vice versa for the
+// client experience an admin-only account never opens. This keeps the initial chunk close to
+// what any single session actually needs instead of shipping every screen up front.
+const AdminHomePage = lazy(() => import("../modules/admin/AdminHomePage").then((m) => ({ default: m.AdminHomePage })));
+const AdminNewProgramPage = lazy(() => import("../modules/admin/content/AdminNewProgramPage").then((m) => ({ default: m.AdminNewProgramPage })));
+const AdminProgramEditorPage = lazy(() => import("../modules/admin/content/AdminProgramEditorPage").then((m) => ({ default: m.AdminProgramEditorPage })));
+const AdminProgramListPage = lazy(() => import("../modules/admin/content/AdminProgramListPage").then((m) => ({ default: m.AdminProgramListPage })));
+const ConfirmPasswordResetPage = lazy(() => import("../modules/auth/ConfirmPasswordResetPage").then((m) => ({ default: m.ConfirmPasswordResetPage })));
+const LoginPage = lazy(() => import("../modules/auth/LoginPage").then((m) => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import("../modules/auth/RegisterPage").then((m) => ({ default: m.RegisterPage })));
+const RequestPasswordResetPage = lazy(() => import("../modules/auth/RequestPasswordResetPage").then((m) => ({ default: m.RequestPasswordResetPage })));
+const VerifyEmailPage = lazy(() => import("../modules/auth/VerifyEmailPage").then((m) => ({ default: m.VerifyEmailPage })));
+const ProgramDetailPage = lazy(() => import("../modules/content/ProgramDetailPage").then((m) => ({ default: m.ProgramDetailPage })));
+const ProgramPlayerPage = lazy(() => import("../modules/content/ProgramPlayerPage").then((m) => ({ default: m.ProgramPlayerPage })));
+const ProgramsPage = lazy(() => import("../modules/content/ProgramsPage").then((m) => ({ default: m.ProgramsPage })));
+const ClientHomePage = lazy(() => import("../modules/dashboard/ClientHomePage").then((m) => ({ default: m.ClientHomePage })));
+const ProfilePage = lazy(() => import("../modules/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
+const GuidanceHomePage = lazy(() => import("../modules/questionnaires/GuidanceHomePage").then((m) => ({ default: m.GuidanceHomePage })));
+const QuestionnaireFillPage = lazy(() => import("../modules/questionnaires/QuestionnaireFillPage").then((m) => ({ default: m.QuestionnaireFillPage })));
+const SubmissionStatusPage = lazy(() => import("../modules/questionnaires/SubmissionStatusPage").then((m) => ({ default: m.SubmissionStatusPage })));
+const AdminQuestionnaireListPage = lazy(() => import("../modules/admin/questionnaires/AdminQuestionnaireListPage").then((m) => ({ default: m.AdminQuestionnaireListPage })));
+const AdminNewQuestionnairePage = lazy(() => import("../modules/admin/questionnaires/AdminNewQuestionnairePage").then((m) => ({ default: m.AdminNewQuestionnairePage })));
+const AdminQuestionnaireEditorPage = lazy(() => import("../modules/admin/questionnaires/AdminQuestionnaireEditorPage").then((m) => ({ default: m.AdminQuestionnaireEditorPage })));
+const ExpertQueuePage = lazy(() => import("../modules/expert/ExpertQueuePage").then((m) => ({ default: m.ExpertQueuePage })));
+const ExpertSubmissionPage = lazy(() => import("../modules/expert/ExpertSubmissionPage").then((m) => ({ default: m.ExpertSubmissionPage })));
+const BillingPage = lazy(() => import("../modules/billing/BillingPage").then((m) => ({ default: m.BillingPage })));
+const InvoiceDetailPage = lazy(() => import("../modules/billing/InvoiceDetailPage").then((m) => ({ default: m.InvoiceDetailPage })));
+const AdminBillingListPage = lazy(() => import("../modules/admin/billing/AdminBillingListPage").then((m) => ({ default: m.AdminBillingListPage })));
+const AdminBillingSubscriptionDetailPage = lazy(() => import("../modules/admin/billing/AdminBillingSubscriptionDetailPage").then((m) => ({ default: m.AdminBillingSubscriptionDetailPage })));
+const EventsListPage = lazy(() => import("../modules/events/EventsListPage").then((m) => ({ default: m.EventsListPage })));
+const EventDetailPage = lazy(() => import("../modules/events/EventDetailPage").then((m) => ({ default: m.EventDetailPage })));
+const AdminEventsListPage = lazy(() => import("../modules/admin/events/AdminEventsListPage").then((m) => ({ default: m.AdminEventsListPage })));
+const AdminNewEventPage = lazy(() => import("../modules/admin/events/AdminNewEventPage").then((m) => ({ default: m.AdminNewEventPage })));
+const AdminEventEditorPage = lazy(() => import("../modules/admin/events/AdminEventEditorPage").then((m) => ({ default: m.AdminEventEditorPage })));
+const ChatPage = lazy(() => import("../modules/chat/ChatPage").then((m) => ({ default: m.ChatPage })));
+const AdminChatModerationPage = lazy(() => import("../modules/admin/chat/AdminChatModerationPage").then((m) => ({ default: m.AdminChatModerationPage })));
+const AdminClientListPage = lazy(() => import("../modules/admin/users/AdminClientListPage").then((m) => ({ default: m.AdminClientListPage })));
+const AdminClientDetailPage = lazy(() => import("../modules/admin/users/AdminClientDetailPage").then((m) => ({ default: m.AdminClientDetailPage })));
+const AdminAuditPage = lazy(() => import("../modules/admin/audit/AdminAuditPage").then((m) => ({ default: m.AdminAuditPage })));
+const ForbiddenPage = lazy(() => import("./screens/ForbiddenPage").then((m) => ({ default: m.ForbiddenPage })));
+const NotFoundPage = lazy(() => import("./screens/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
+const UnauthorizedPage = lazy(() => import("./screens/UnauthorizedPage").then((m) => ({ default: m.UnauthorizedPage })));
 
 function ClientLayoutRoute() {
   return (
@@ -63,6 +71,17 @@ function AdminLayoutRoute() {
   );
 }
 
+/** Route-transition fallback shown only for the brief window a lazy chunk takes to download —
+ * matches SessionProvider's own bootstrap loading state so a route change never flashes blank. */
+function RouteLoadingFallback() {
+  const { t } = useTranslation();
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center" role="status" aria-live="polite">
+      <span className="text-sm text-text-muted">{t("status.loading")}</span>
+    </div>
+  );
+}
+
 /**
  * The full route tree from §40/§45's navigation: every remaining nav destination resolves to a
  * real screen (the last two placeholders — Notifications, Settings — were removed rather than
@@ -75,7 +94,8 @@ function AdminLayoutRoute() {
  */
 export function AppRouter() {
   return (
-    <Routes>
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <Routes>
       <Route element={<RequireGuest />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -156,6 +176,7 @@ export function AppRouter() {
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }

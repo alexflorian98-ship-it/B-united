@@ -14,6 +14,8 @@
     "body": "Acest spațiu este vizibil clienților care dețin programul asociat. Nu posta informații medicale, financiare sau personale sensibile."
   },
   "unknownUser": "Utilizator necunoscut",
+  "loadOlderMessages": "Încarcă mesaje mai vechi",
+  "loadingOlderMessages": "Se încarcă…",
   "pinned": "Fixat",
   "messageDeleted": "Acest mesaj a fost șters de un moderator.",
   "report": "Raportează",

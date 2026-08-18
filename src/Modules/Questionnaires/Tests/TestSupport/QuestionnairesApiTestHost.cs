@@ -1,3 +1,6 @@
+using BUnited.BuildingBlocks.Application.Access;
+using BUnited.BuildingBlocks.Observability.CorrelationId;
+using BUnited.BuildingBlocks.Observability.ErrorHandling;
 using BUnited.Modules.Identity.Application.Configuration;
 using BUnited.Modules.Identity.Infrastructure.Security;
 using BUnited.Modules.Questionnaires.Api.Controllers;
@@ -44,11 +47,23 @@ internal sealed class QuestionnairesApiTestHost : IAsyncDisposable
 
     public FakeAuditLogger AuditLogger { get; }
 
-    private QuestionnairesApiTestHost(SqliteConnection connection, TestDbContext dbContext, FakeAuditLogger auditLogger, IHost host)
+    public FakeProgramAccessContext ProgramAccess { get; }
+
+    public FakeConsentContext Consent { get; }
+
+    private QuestionnairesApiTestHost(
+        SqliteConnection connection,
+        TestDbContext dbContext,
+        FakeAuditLogger auditLogger,
+        FakeProgramAccessContext programAccess,
+        FakeConsentContext consent,
+        IHost host)
     {
         _connection = connection;
         DbContext = dbContext;
         AuditLogger = auditLogger;
+        ProgramAccess = programAccess;
+        Consent = consent;
         _host = host;
         Client = host.GetTestClient();
     }
@@ -59,6 +74,8 @@ internal sealed class QuestionnairesApiTestHost : IAsyncDisposable
         var auditLogger = new FakeAuditLogger();
         var userLookup = new FakeUserLookup();
         var notificationSender = new FakeNotificationSender();
+        var programAccess = new FakeProgramAccessContext();
+        var consent = new FakeConsentContext();
 
         var hostBuilder = new HostBuilder()
             .ConfigureWebHost(webBuilder =>
@@ -82,10 +99,15 @@ internal sealed class QuestionnairesApiTestHost : IAsyncDisposable
                     services.AddSingleton<Identity.Contracts.IUserLookup>(userLookup);
                     services.AddSingleton<Audit.Contracts.IAuditLogger>(auditLogger);
                     services.AddSingleton<Notifications.Contracts.INotificationSender>(notificationSender);
+                    services.AddSingleton<IProgramAccessContext>(programAccess);
+                    services.AddSingleton<Identity.Contracts.IConsentContext>(consent);
                     services.AddQuestionnairesModule();
 
                     services.AddIdentityJwtAuthentication(context.Configuration);
                     services.AddIdentityPermissionPolicies();
+
+                    services.AddCorrelationId();
+                    services.AddBUnitedErrorHandling();
 
                     services.AddRouting();
                     services.AddControllers().AddApplicationPart(typeof(ExpertQuestionnairesController).Assembly);
@@ -93,6 +115,13 @@ internal sealed class QuestionnairesApiTestHost : IAsyncDisposable
 
                 webBuilder.Configure(app =>
                 {
+                    // Without this, an unhandled application exception (e.g. NotFoundAppException
+                    // from an ownership check) propagates as a raw .NET exception through
+                    // TestServer instead of becoming the real API's mapped HTTP response — the
+                    // exact real-pipeline behavior BillingApiTestHost already wires for the same
+                    // reason.
+                    app.UseExceptionHandler();
+                    app.UseCorrelationId();
                     app.UseRouting();
                     app.UseAuthentication();
                     app.UseAuthorization();
@@ -101,11 +130,14 @@ internal sealed class QuestionnairesApiTestHost : IAsyncDisposable
             });
 
         var host = await hostBuilder.StartAsync();
-        return new QuestionnairesApiTestHost(connection, dbContext, auditLogger, host);
+        return new QuestionnairesApiTestHost(connection, dbContext, auditLogger, programAccess, consent, host);
     }
 
     public string IssueToken(IReadOnlyCollection<string> permissionKeys) =>
-        new JwtTokenGenerator(JwtOptions).GenerateAccessToken(Guid.NewGuid(), "permission-test@example.com", permissionKeys).Token;
+        IssueToken(Guid.NewGuid(), permissionKeys);
+
+    public string IssueToken(Guid userId, IReadOnlyCollection<string> permissionKeys) =>
+        new JwtTokenGenerator(JwtOptions).GenerateAccessToken(userId, $"{userId:N}@example.com", permissionKeys).Token;
 
     public async ValueTask DisposeAsync()
     {

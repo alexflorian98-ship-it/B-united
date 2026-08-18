@@ -39,6 +39,17 @@ public sealed class MarkContentCompletedHandler(
 
         await SectionProgressRecalculator.RecalculateAsync(dbContext, command.UserId, command.SectionId, command.SectionContentItemIds, cancellationToken);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Same concurrent-first-insert race as RecordVideoProgressHandler's identical catch
+            // block — see its comment for the full explanation.
+            dbContext.ChangeTracker.Clear();
+            await SectionProgressRecalculator.RecalculateAsync(dbContext, command.UserId, command.SectionId, command.SectionContentItemIds, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
     }
 }

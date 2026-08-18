@@ -20,7 +20,9 @@
   /* Color: Text — deep warm charcoal/green-black on cream ------------------------------------ */
   --color-text-primary: #23291f;
   --color-text-secondary: #55604c;
-  --color-text-muted: #8a8a72;
+  /* WCAG 2.2 AA: >= 4.5:1 against both --color-background (5.84:1) and --color-surface (6.41:1).
+     The prior #8a8a72 only reached 3.16:1/3.47:1 (docs/E2E_AUDIT_RESULT.md finding, 2026-08-18). */
+  --color-text-muted: #5f5f4a;
 
   /* Color: Brand — deep forest green ---------------------------------------------------------- */
   --color-primary: #1f3d2e;

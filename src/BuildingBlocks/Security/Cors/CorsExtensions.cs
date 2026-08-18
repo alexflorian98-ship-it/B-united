@@ -29,11 +29,18 @@ public static class CorsExtensions
 
     private static void ConfigurePolicy(CorsPolicyBuilder policy, string[] allowedOrigins)
     {
-        if (allowedOrigins.Length == 0)
+        // Defense-in-depth against a config mistake: ASP.NET Core's CorsPolicyBuilder treats a
+        // literal "*" passed to WithOrigins as an actual wildcard (allow any origin), not an
+        // inert string — confirmed via CorsExtensionsTests. DEVELOPMENT_INSTRUCTIONS.md §6 is
+        // explicit that wildcard origins are forbidden, so one is filtered out here rather than
+        // trusted to never appear in Cors:AllowedOrigins.
+        var explicitOrigins = allowedOrigins.Where(origin => origin != "*").ToArray();
+
+        if (explicitOrigins.Length == 0)
         {
             return;
         }
 
-        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod();
+        policy.WithOrigins(explicitOrigins).AllowAnyHeader().AllowAnyMethod();
     }
 }

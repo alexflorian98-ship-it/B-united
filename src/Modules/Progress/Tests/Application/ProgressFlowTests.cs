@@ -221,6 +221,49 @@ public sealed class ProgressFlowTests
     }
 
     [Fact]
+    public async Task Concurrent_progress_reports_for_the_same_section_do_not_throw_or_duplicate_the_section_row()
+    {
+        var (connection1, context1, connection2, context2) = TestDbContextFactory.CreateConcurrentPair();
+        using var _1 = connection1;
+        using var _2 = connection2;
+        using var __1 = context1;
+        using var __2 = context2;
+
+        var sectionId = Guid.NewGuid();
+        var videoItemId = Guid.NewGuid();
+        var richTextItemId = Guid.NewGuid();
+        var sectionItems = new[] { videoItemId, richTextItemId };
+
+        // Both handlers need their own lookup/access fakes wired against the SAME program/section,
+        // since FakeContentItemProgramLookup/FakeProgramAccessContext hold in-memory state that
+        // isn't shared across the two DbContext instances any more than the real cross-module
+        // contracts would be.
+        var (_, lookup1, access1) = SetUpOwnedProgram(sectionId, sectionItems, UserId);
+        var (_, lookup2, access2) = SetUpOwnedProgram(sectionId, sectionItems, UserId);
+
+        var handler1 = new RecordVideoProgressHandler(context1, TimeProvider.System, lookup1, access1);
+        var handler2 = new MarkContentCompletedHandler(context2, TimeProvider.System, lookup2, access2);
+
+        // Two different content items in the same section, reported at the same time — both race
+        // to be the first to create that section's SectionProgress row (P5.06.c-style real
+        // concurrent-writer race, found live via Playwright: two video-position reports for the
+        // same section, e.g. from a React StrictMode double-invoked mount effect, threw an
+        // unhandled DbUpdateException on the ix_section_progress_entries_user_id_section_id
+        // unique index before this handler learned to recover from it).
+        var task1 = Task.Run(() => handler1.HandleAsync(
+            new RecordVideoProgressCommand(UserId, videoItemId, sectionId, sectionItems, 540, 95.0), CancellationToken.None));
+        var task2 = Task.Run(() => handler2.HandleAsync(
+            new MarkContentCompletedCommand(UserId, richTextItemId, sectionId, sectionItems), CancellationToken.None));
+        await Task.WhenAll(task1, task2);
+
+        var sectionProgress = await new GetSectionProgressHandler(context1, lookup1, access1).HandleAsync(UserId, [sectionId], CancellationToken.None);
+        var section = Assert.Single(sectionProgress);
+        Assert.Equal(2, section.CompletedItemCount);
+        Assert.Equal(2, section.TotalItemCount);
+        Assert.Equal("Completed", section.Status);
+    }
+
+    [Fact]
     public async Task Recording_video_progress_for_an_unknown_content_item_throws_not_found()
     {
         var (connection, context) = TestDbContextFactory.Create();

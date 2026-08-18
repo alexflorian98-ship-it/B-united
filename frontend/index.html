@@ -5,6 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>B-United</title>
+    <!--
+      Content-Security-Policy meta tag is injected here by vite.config.ts's csp-meta-tag plugin
+      (via the transformIndexHtml hook), not written statically — see that plugin for the full
+      source inventory and rationale, and for why the `npm run dev` policy is deliberately looser
+      than the one that ships in `npm run build`'s output (Vite's dev-mode HMR injects inline
+      <style> tags and needs eval for fast refresh; neither is present in a production build).
+    -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

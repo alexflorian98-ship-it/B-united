@@ -72,6 +72,38 @@ public sealed class ProgramCommerceFlowTests
         Assert.Contains(fx.AuditLogger.Entries, e => e.Action == "program_access.granted");
     }
 
+    /// <summary>Security-gap-closure item #1 (two-user IDOR suite, "program entitlements") and
+    /// item #3 ("entitlement is scoped to user ID and program ID"): exercises the REAL
+    /// <see cref="BillingProgramAccessContext"/> — not the <c>FakeProgramAccessContext</c> every
+    /// other module's tests use — with two distinct users who each purchase a DIFFERENT program,
+    /// proving entitlement is a (UserId, ProgramId) pair, not just a per-user flag or a
+    /// per-program flag. Either dimension being wrong would let one client watch another
+    /// client's paid content.</summary>
+    [Fact]
+    public async Task Entitlement_is_scoped_to_both_user_and_program_not_either_alone()
+    {
+        var fx = CreateFixture(out var connection);
+        using var _ = connection;
+        var (programA, _, _) = SeedActiveOffer(fx.DbContext, amount: 99.00m);
+        var (programB, _, _) = SeedActiveOffer(fx.DbContext, amount: 149.00m);
+        var userA = Guid.NewGuid();
+        var userB = Guid.NewGuid();
+
+        await fx.PurchaseHandler.HandleAsync(new CreateProgramPurchaseCommand(userA, programA, CheckoutOutcome.Success), CancellationToken.None);
+        await fx.PurchaseHandler.HandleAsync(new CreateProgramPurchaseCommand(userB, programB, CheckoutOutcome.Success), CancellationToken.None);
+
+        Assert.True(await fx.AccessContext.HasProgramAccessAsync(userA, programA, CancellationToken.None));
+        Assert.True(await fx.AccessContext.HasProgramAccessAsync(userB, programB, CancellationToken.None));
+
+        // Neither dimension alone is sufficient: right user/wrong program, and right
+        // program/wrong user, must both be denied.
+        Assert.False(await fx.AccessContext.HasProgramAccessAsync(userA, programB, CancellationToken.None));
+        Assert.False(await fx.AccessContext.HasProgramAccessAsync(userB, programA, CancellationToken.None));
+
+        var accessibleForUserA = await fx.AccessContext.GetAccessibleProgramIdsAsync(userA, [programA, programB], CancellationToken.None);
+        Assert.Equal(new HashSet<Guid> { programA }, accessibleForUserA);
+    }
+
     [Fact]
     public async Task Checkout_snapshots_the_programs_current_title_onto_the_purchase()
     {

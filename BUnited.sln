@@ -339,6 +339,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BUnited.BuildingBlocks.Obse
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BUnited.BuildingBlocks.Localization.Tests", "src\BuildingBlocks\Localization.Tests\BUnited.BuildingBlocks.Localization.Tests.csproj", "{EA244E73-95EA-4ACB-BBAE-733DCC5672C3}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Security.Tests", "Security.Tests", "{61826687-5450-1AC1-F6E1-8C40961FCF43}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BUnited.BuildingBlocks.Security.Tests", "src\BuildingBlocks\Security.Tests\BUnited.BuildingBlocks.Security.Tests.csproj", "{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1285,6 +1289,18 @@ Global
 		{EA244E73-95EA-4ACB-BBAE-733DCC5672C3}.Release|x64.Build.0 = Release|Any CPU
 		{EA244E73-95EA-4ACB-BBAE-733DCC5672C3}.Release|x86.ActiveCfg = Release|Any CPU
 		{EA244E73-95EA-4ACB-BBAE-733DCC5672C3}.Release|x86.Build.0 = Release|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Debug|x64.Build.0 = Debug|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Debug|x86.Build.0 = Debug|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Release|x64.ActiveCfg = Release|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Release|x64.Build.0 = Release|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Release|x86.ActiveCfg = Release|Any CPU
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1456,5 +1472,7 @@ Global
 		{794FFF90-866A-457C-8BCE-8F4BFB57E9F8} = {7266C4A9-E384-DC00-0EB6-47F6002CFBA7}
 		{3C33A6A0-98B7-4E3D-9D5C-1AF5B7AC9E3E} = {7266C4A9-E384-DC00-0EB6-47F6002CFBA7}
 		{EA244E73-95EA-4ACB-BBAE-733DCC5672C3} = {7266C4A9-E384-DC00-0EB6-47F6002CFBA7}
+		{61826687-5450-1AC1-F6E1-8C40961FCF43} = {90298CBA-BD6F-3A0A-69D5-97CAD7B05E7E}
+		{ECB5F798-323D-49D0-B5BA-DD5E06E5AF16} = {61826687-5450-1AC1-F6E1-8C40961FCF43}
 	EndGlobalSection
 EndGlobal

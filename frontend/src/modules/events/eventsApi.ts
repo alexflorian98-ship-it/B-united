@@ -52,7 +52,13 @@ export const eventsApi = {
   listEvents: (includePast: boolean, language: string) =>
     apiRequest<EventSummary[]>(`/events?includePast=${includePast}&language=${language}`),
 
-  getMyUpcoming: (language: string) => apiRequest<MyRegistration | null>(`/events/my-upcoming?language=${language}`),
+  // The backend returns 204 No Content (not a JSON `null` body) when there's no upcoming
+  // registration — ASP.NET Core's default output formatter rewrites `Ok(null)` into 204 — and
+  // apiRequest resolves a 204 to `undefined`. TanStack Query forbids a queryFn resolving to
+  // `undefined` (it throws "Query data cannot be undefined"), so this must be coalesced to `null`
+  // here at the call site.
+  getMyUpcoming: (language: string) =>
+    apiRequest<MyRegistration | null>(`/events/my-upcoming?language=${language}`).then((result) => result ?? null),
 
   getEvent: (eventId: string, language: string) => apiRequest<EventDetail>(`/events/${eventId}?language=${language}`),
 

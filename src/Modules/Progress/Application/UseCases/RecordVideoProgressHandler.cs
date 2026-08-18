@@ -42,6 +42,23 @@ public sealed class RecordVideoProgressHandler(
 
         await SectionProgressRecalculator.RecalculateAsync(dbContext, command.UserId, command.SectionId, command.SectionContentItemIds, cancellationToken);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Two concurrent video-position reports for the same (user, section) — e.g. the
+            // player's periodic report racing its own pause/unmount report, or a React 19
+            // StrictMode double-invoked mount effect (see docs/HANDOVER.md bugs #12/#17) — can
+            // both see "no SectionProgress row yet" via RecalculateAsync's SingleOrDefaultAsync
+            // before either commits. The loser hits the real
+            // ix_section_progress_entries_user_id_section_id unique index. The winner's row is
+            // already correct and current, so recompute against it as a plain update instead of
+            // failing the request: clear this handler's own stale tracked insert and retry.
+            dbContext.ChangeTracker.Clear();
+            await SectionProgressRecalculator.RecalculateAsync(dbContext, command.UserId, command.SectionId, command.SectionContentItemIds, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
     }
 }

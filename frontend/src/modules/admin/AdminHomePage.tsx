@@ -14,6 +14,10 @@ function formatDateTime(isoUtc: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(isoUtc));
 }
 
+function formatMoney(amount: number, currency: string, locale: string): string {
+  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
+}
+
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
     <Card className="flex flex-col gap-1">
@@ -50,7 +54,7 @@ function WidgetCard({ title, viewAllLabel, viewAllTo, isEmpty, emptyLabel, child
  * <c>GET /api/v1/admin/dashboard</c> projection (see ADR-007,
  * BUnited.Modules.Admin.Application.UseCases.GetDashboardHandler). */
 export function AdminHomePage() {
-  const { t, i18n } = useTranslation(["dashboard", "common"]);
+  const { t, i18n } = useTranslation(["dashboard", "common", "billing"]);
   const user = useCurrentUser();
   const locale = i18n.resolvedLanguage ?? "ro";
 
@@ -91,7 +95,7 @@ export function AdminHomePage() {
               value={
                 dashboardQuery.data.kpis.revenueByCurrency.length === 0
                   ? "—"
-                  : dashboardQuery.data.kpis.revenueByCurrency.map((r) => `${r.amount.toFixed(2)} ${r.currency}`).join(" · ")
+                  : dashboardQuery.data.kpis.revenueByCurrency.map((r) => formatMoney(r.amount, r.currency, locale)).join(" · ")
               }
             />
           </div>
@@ -153,8 +157,10 @@ export function AdminHomePage() {
                     <p className="truncate text-xs text-text-muted">{purchase.programTitleSnapshot ?? purchase.programSlug ?? purchase.programId}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="whitespace-nowrap text-sm">{purchase.amount.toFixed(2)} {purchase.currency}</span>
-                    <Badge tone={purchase.status === "Refunded" || purchase.status === "Chargeback" ? "danger" : "success"}>{purchase.status}</Badge>
+                    <span className="whitespace-nowrap text-sm">{formatMoney(purchase.amount, purchase.currency, locale)}</span>
+                    <Badge tone={purchase.status === "Refunded" || purchase.status === "Chargeback" ? "danger" : "success"}>
+                      {t(`billing:purchase.status.${purchase.status}`)}
+                    </Badge>
                   </div>
                 </Link>
               ))}

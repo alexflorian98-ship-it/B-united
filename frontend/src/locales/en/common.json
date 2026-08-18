@@ -39,6 +39,7 @@
     "audit": "Audit"
   },
   "errors": {
+    "generic": "Something went wrong. Please try again.",
     "validationFailed": "Some fields need your attention.",
     "internalServerError": "Something went wrong on our side. Please try again.",
     "notFound": "We couldn't find what you were looking for.",

@@ -9,7 +9,10 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "check:locale-parity": "node scripts/check-locale-parity.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report e2e-results/html"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",
@@ -29,6 +32,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.3",
@@ -38,6 +42,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
     "@vitest/ui": "^4.1.10",
+    "@playwright/test": "^1.55.0",
     "jsdom": "^30.0.1",
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",

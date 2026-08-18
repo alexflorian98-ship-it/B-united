@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Alert } from "../../shared/design-system/Alert";
@@ -6,7 +6,7 @@ import { Button } from "../../shared/design-system/Button";
 import { Icon } from "../../shared/design-system/Icon";
 import { Modal } from "../../shared/design-system/Modal";
 import { Skeleton } from "../../shared/design-system/Skeleton";
-import { chatApi } from "./chatApi";
+import { chatApi, type ChatMessage } from "./chatApi";
 
 const POLL_INTERVAL_MS = 5000;
 
@@ -22,6 +22,11 @@ export function ChatPage() {
   const [reportReason, setReportReason] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // P6.13.a: messages loaded via "Load older messages", kept separate from the polling-refreshed
+  // newest page so a 5s poll never wipes them out. Reset whenever the active room changes.
+  const [olderMessages, setOlderMessages] = useState<ChatMessage[]>([]);
+  const [olderCursor, setOlderCursor] = useState<string | null>(null);
+
   const roomsQuery = useQuery({ queryKey: ["chat-rooms"], queryFn: () => chatApi.listRooms(), refetchInterval: POLL_INTERVAL_MS });
   const messagesQuery = useQuery({
     queryKey: ["chat-messages", activeRoom],
@@ -29,6 +34,33 @@ export function ChatPage() {
     enabled: activeRoom !== null,
     refetchInterval: POLL_INTERVAL_MS,
   });
+
+  useEffect(() => {
+    setOlderMessages([]);
+    setOlderCursor(null);
+  }, [activeRoom]);
+
+  // Once at least one older page has been loaded, the cursor for the *next* older page is owned
+  // entirely by that manual state — the live-polled newest page's own cursor keeps shifting as
+  // new messages arrive and must not override it.
+  const nextOlderCursor = olderMessages.length > 0 ? olderCursor : (messagesQuery.data?.nextBeforeCursor ?? null);
+
+  const loadOlderMutation = useMutation({
+    mutationFn: async () => {
+      if (!activeRoom || !nextOlderCursor) throw new Error("No older messages to load.");
+      return chatApi.getMessages(activeRoom, nextOlderCursor);
+    },
+    onSuccess: (page) => {
+      setOlderMessages((prev) => [...page.items, ...prev]);
+      setOlderCursor(page.nextBeforeCursor);
+    },
+  });
+
+  const allMessages = useMemo(() => {
+    const merged = [...olderMessages, ...(messagesQuery.data?.items ?? [])];
+    const seen = new Set<string>();
+    return merged.filter((message) => (seen.has(message.id) ? false : (seen.add(message.id), true)));
+  }, [olderMessages, messagesQuery.data]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -98,7 +130,14 @@ export function ChatPage() {
 
           {messagesQuery.isSuccess && (
             <div className="flex flex-col gap-2">
-              {messagesQuery.data.items
+              {nextOlderCursor && (
+                <div className="flex justify-center pb-2">
+                  <Button variant="secondary" onClick={() => loadOlderMutation.mutate()} disabled={loadOlderMutation.isPending}>
+                    {loadOlderMutation.isPending ? t("chat:loadingOlderMessages") : t("chat:loadOlderMessages")}
+                  </Button>
+                </div>
+              )}
+              {allMessages
                 .slice()
                 .sort((a, b) => (a.isPinned === b.isPinned ? 0 : a.isPinned ? -1 : 1))
                 .map((message) => (

@@ -28,6 +28,62 @@ jobs:
       - name: Test
         run: dotnet test BUnited.sln --no-build --configuration Release --logger "console;verbosity=normal"
 
+      # Security-gap-closure item #6: gates the build on any High/Critical vulnerability found in
+      # a RUNTIME/production project. A vulnerable package that only reaches a *.Tests.csproj
+      # (test-only dependency, e.g. an in-memory SQLite provider used purely by xUnit fixtures)
+      # cannot affect what ships to production, so it is reported as informational and does NOT
+      # fail the job — this step distinguishes the two by inspecting each finding's project path,
+      # not by ignoring severity outright. As of 2026-08-18 the only known finding is
+      # SQLitePCLRaw.lib.e_sqlite3 (GHSA-2m69-gcr7-jv3q, High), which appears exclusively in
+      # *.Tests.csproj projects across the solution — that is a documented, accepted, non-blocking
+      # finding (see docs/security/DAST.md), not a silently-ignored one.
+      - name: Dependency vulnerability scan (fails on High/Critical in non-test projects)
+        run: |
+          dotnet list BUnited.sln package --vulnerable --include-transitive --format json > vulnerable-packages.json
+          python3 - <<'PY'
+          import json, sys
+
+          with open("vulnerable-packages.json", encoding="utf-8") as handle:
+              data = json.load(handle)
+
+          findings = []
+          for project in data.get("projects", []):
+              path = project.get("path", "")
+              is_test_project = path.endswith(".Tests.csproj")
+              for framework in project.get("frameworks", []) or []:
+                  packages = (framework.get("topLevelPackages") or []) + (framework.get("transitivePackages") or [])
+                  for package in packages:
+                      for vulnerability in package.get("vulnerabilities", []) or []:
+                          findings.append({
+                              "path": path,
+                              "is_test_project": is_test_project,
+                              "package": package["id"],
+                              "resolvedVersion": package.get("resolvedVersion"),
+                              "severity": vulnerability["severity"],
+                              "advisoryUrl": vulnerability.get("advisoryurl"),
+                          })
+
+          if not findings:
+              print("No vulnerable packages found.")
+              sys.exit(0)
+
+          blocking = [f for f in findings if not f["is_test_project"] and f["severity"] in ("High", "Critical")]
+          informational = [f for f in findings if f not in blocking]
+
+          if informational:
+              print(f"Informational findings (test-only projects, or below High severity) — {len(informational)}:")
+              for f in informational:
+                  print(f"  [{f['severity']}] {f['package']} {f['resolvedVersion']} in {f['path']} — {f['advisoryUrl']}")
+
+          if blocking:
+              print(f"\nBLOCKING findings (High/Critical in a runtime/production project) — {len(blocking)}:")
+              for f in blocking:
+                  print(f"  [{f['severity']}] {f['package']} {f['resolvedVersion']} in {f['path']} — {f['advisoryUrl']}")
+              sys.exit(1)
+
+          print("\nNo High/Critical vulnerability in any runtime/production project — gate passed.")
+          PY
+
   frontend:
     name: Frontend (lint, test, build)
     runs-on: ubuntu-latest
@@ -59,3 +115,44 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Security-gap-closure item #6: fails the build on any high/critical vulnerability in a
+      # production or dev dependency. Moderate/low findings are reported but do not block —
+      # matches the "explicit release threshold" requirement without making every transitive
+      # low-severity advisory a hard release blocker.
+      - name: Dependency vulnerability scan (fails on high/critical)
+        run: npm audit --audit-level=high
+
+  dependency-review:
+    name: Dependency review (pull requests only)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Security-gap-closure item #6: reviews newly-added/changed direct and transitive
+      # dependencies on every PR (both npm and NuGet, where a lockfile/manifest changed) and fails
+      # on high-severity-or-above newly introduced vulnerabilities.
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  secret-scan:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Security-gap-closure item #6: scans the full history of the changes in this run for
+      # committed secrets (API keys, tokens, private keys) using a maintained open-source scanner.
+      # Complements, not replaces, GitHub's own native secret scanning + push protection (a
+      # repository setting, not a workflow step — see docs/E2E_AUDIT_RESULT.md's coverage matrix).
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

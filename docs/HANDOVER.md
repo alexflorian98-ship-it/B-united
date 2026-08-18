@@ -1,9 +1,326 @@
-# Handover — B-United (as of 2026-08-08, updated 2026-08-10)
+# Handover — B-United (as of 2026-08-08, updated 2026-08-18)
 
 Written for a fresh Claude Code session picking up this repo with no memory of prior
 conversations. Read this first, then `CLAUDE.md` (auto-loaded project instructions) and
 `docs/TASKS.md` (the authoritative, granular backlog — this doc is a narrative supplement,
 **not** a replacement for it).
+
+## Session update — 2026-08-18
+
+Following up on the previous day's end-to-end Playwright analysis (functional bugs #27–#30
+below), did a second pass focused specifically on **visual/UI quality** at the user's request —
+screenshots across desktop (1440px) and mobile (390px) viewports, all three roles, reviewed
+manually rather than just checked for console errors. Found 3 real, confirmed UI bugs and fixed
+all three; ruled out one apparent bug (a mobile bottom-nav/content overlap that turned out to be a
+Playwright `fullPage` screenshot artifact, not reproducible with a real scroll — see "How to verify
+things actually work" below for the added caveat).
+
+- **#31 — The YouTube player didn't fill its responsive container.** `YouTubePlayer.tsx` calls
+  `new YT.Player(mountElement, { videoId, events: {...} })` without a `width`/`height` option, so
+  the IFrame API injects an `<iframe>` at its default 640×390 HTML attributes, top-left-anchored
+  inside the much larger `aspect-video` box — on any viewport wider than 640px (the vast majority
+  of desktop usage), most of the player was empty black space next to a small video. Fixed with a
+  Tailwind arbitrary child selector on the wrapper (`[&>iframe]:h-full [&>iframe]:w-full`), which
+  overrides the iframe's own HTML width/height attributes (an author stylesheet rule beats a
+  presentational attribute even without `!important`). Live-verified: the video now fills the full
+  width of the container at 1440px.
+- **#32 — Admin dashboard showed raw, untranslated purchase-status enum values.** The client-facing
+  `BillingPage` correctly shows `t(\`billing:purchase.status.${status}\`)` (e.g. "Reușită"), but
+  `AdminHomePage`'s "Achiziții și rambursări recente" widget rendered `{purchase.status}` directly
+  — "Succeeded"/"Refunded" in raw English on an otherwise fully-Romanian admin screen. All 5
+  `PurchaseStatus` values already had translations in the `billing` namespace (added for the client
+  page); the admin dashboard just never used them. Fixed by adding `"billing"` to `AdminHomePage`'s
+  `useTranslation` namespaces and reusing the exact same key.
+- **#33 — Admin dashboard's money amounts were hand-built, not locale-formatted**, violating
+  docs/DEVELOPMENT_INSTRUCTIONS.md §8 ("do not hand-build localized... money strings"): both the
+  "Venituri" KPI and every per-purchase amount used `` `${amount.toFixed(2)} ${currency}` `` —
+  `"3364.00 RON"` with a period, while the client Billing page's `formatMoney` helper
+  (`Intl.NumberFormat(locale, { style: "currency", currency })`) correctly produces `"299,00 RON"`
+  with a comma for `ro`. Added the identical helper to `AdminHomePage.tsx` (this codebase's
+  established pattern is a local per-page `formatMoney`, not a shared utility — `BillingPage.tsx`
+  and `InvoiceDetailPage.tsx` each already have their own copy) and used it in both places. Live-
+  verified: "Venituri" now reads `"3.364,00 RON"`.
+- All three found and fixed together since the user asked for all three; each is independently
+  small and unrelated to the others (a CSS override, an i18n namespace gap, a formatting gap) —
+  not a single root cause.
+- `npx tsc -b` clean; `npm run lint`/`check:locale-parity`/`build` all pass. `npm run test`: the
+  same 79/79 tests this repo already had still pass — but the run also surfaced 3 unrelated failing
+  suites (`frontend/e2e/flow.spec.ts`, `security.spec.ts`, `ui-ux.spec.ts`, importing
+  `@playwright/test`). **Confirmed to be a different, concurrent Claude Code session actively
+  working in this same working tree at the same time** — not a leftover, not this session's doing:
+  `frontend/package.json`/`package-lock.json` were modified (adding `@playwright/test` as an actual
+  dependency — contrary to this project's own established "Playwright is a verification tool, not
+  a runtime dependency" rule, see below), plus new `frontend/playwright.config.ts`,
+  `docs/CLAUDE_E2E_AUDIT.md`, and a `.npm-cache/` directory all appeared mid-session, none of them
+  touched by this session. Left entirely alone — not this session's files to edit, delete, or
+  reconcile. Whoever picks this up next should check with the user about which of the two E2E
+  approaches (this file's Playwright-as-throwaway-scratchpad-script convention vs. the concurrent
+  session's `@playwright/test`-as-dependency + `playwright.config.ts` approach) should actually
+  stick, since both can't be the project's convention going forward.
+- No backend changes this pass (`dotnet build`/`dotnet test` untouched, still the 388/388 from the
+  prior pass).
+
+## Session update — 2026-08-17
+
+Closed **P3.30** (cross-user billing data access denial test), the last remaining item from the
+2026-08-10 batch's "still open" list that didn't need an ADR or a design decision first. The
+`docs/TASKS.md` note describing it as untested was itself **stale**: P3.19.b (also from the
+2026-08-10 session) had already added `GET /billing/my-invoices/{invoiceId}`, an ownership-scoped
+by-ID endpoint — exactly the parameter surface the P3.30 note claimed didn't exist — and
+`GetMyInvoiceHandlerTests.Throws_not_found_when_the_invoice_belongs_to_another_user` already
+covered the handler in isolation. The real remaining gap was HTTP-level: no test drove the actual
+`BillingController` behind the real JWT + authorization pipeline, the same gap P4.33.a/P6.20.a
+closed for Questionnaires/Chat.
+
+- Added `Billing.Tests.TestSupport.BillingApiTestHost`, mirroring
+  `Questionnaires.Tests.TestSupport.QuestionnairesApiTestHost` — a real ASP.NET Core `TestServer`
+  hosting the production `BillingController` behind real JWT auth + permission policies. Also had
+  to wire the real `GlobalExceptionHandler`/`CorrelationId` middleware (`AddBUnitedErrorHandling`/
+  `AddCorrelationId`/`UseExceptionHandler`/`UseCorrelationId`) into this host — the Questionnaires
+  test host didn't need it (its tests only ever hit permission-denial paths), but the Billing
+  cross-user case throws `NotFoundAppException` from inside the handler, which needs the real
+  exception-to-404 mapping to reach the HTTP response; without it the test host let the exception
+  propagate unhandled instead of surfacing 404.
+- Added `Billing.Tests.Security.BillingCrossUserAccessTests` (3 tests): a foreign invoice ID → 404,
+  the owning user's own invoice → 200, and an unauthenticated request → 401.
+- `Billing.Tests.csproj` needed new references to make this possible:
+  `Microsoft.AspNetCore.App` framework reference, `Microsoft.AspNetCore.TestHost` package,
+  and project references to `Identity.Infrastructure` (JWT issuing/auth wiring) and
+  `BuildingBlocks.Observability` (the exception handler) — same references
+  `Questionnaires.Tests.csproj` already carries, plus the new Observability one.
+- Verified: `dotnet build BUnited.sln` clean (0 warnings, 0 errors); `dotnet test BUnited.sln`
+  green across every project with tests (Billing.Tests 71/71, up from 68; every other module
+  unaffected). `docs/TASKS.md` P3.30 updated from `[ ]` to `[x]` with the corrected note.
+- Not touched this session: everything else on the 2026-08-10 "still open" list (P7.18.a,
+  P7.22.a/d/f, P1.30.b, P4.11.c/outbox) — those genuinely need a design decision or an ADR first,
+  unlike P3.30 which just needed the same test-authoring pattern already proven twice elsewhere in
+  this codebase.
+
+Also fixed **bug #20** (the Serilog status-code logging bug, see "Non-obvious bugs found this
+session" below) — the other item flagged as "a real, low-severity fix that's still open" with a
+concrete, already-diagnosed root cause, so no design decision was needed either.
+
+- `src/Api/Program.cs`: reordered three lines from `UseExceptionHandler(); UseCorrelationId();
+  UseSerilogRequestLogging();` to `UseCorrelationId(); UseSerilogRequestLogging();
+  UseExceptionHandler();`. `UseCorrelationId` has to stay before `UseSerilogRequestLogging` (its
+  `LogContext.PushProperty` scope must still be open when Serilog's own completion log line is
+  written, or the `CorrelationId` field goes missing from that line); `UseExceptionHandler` has to
+  move to *after* `UseSerilogRequestLogging` so Serilog logs the response status
+  `GlobalExceptionHandler` already corrected, instead of the exception's mid-flight status.
+- **Live-verified, not just reasoned about**: booted the real Api (`ASPNETCORE_ENVIRONMENT=Development
+  dotnet run --no-launch-profile --urls "http://127.0.0.1:5099"`), sent a request with a known
+  validation failure and an explicit `X-Correlation-Id` header
+  (`POST /api/v1/auth/login` with an empty password), confirmed the client got the correct `400`
+  it always got, then grepped the server's structured JSON log for that exact correlation ID —
+  Serilog's `HTTP {RequestMethod} {RequestPath} responded {StatusCode}` line now reads
+  `"StatusCode":400` (previously would have read `500`), with `CorrelationId` still present on
+  that same line, confirming the reorder fixed the target bug without breaking correlation-ID log
+  enrichment.
+- `dotnet build BUnited.sln` clean; `dotnet test BUnited.sln` green across every project (no test
+  exercises `Program.cs`'s pipeline directly — there is no `WebApplicationFactory`-based test for
+  the real Api host in this codebase — so the live curl+log verification above is the only
+  regression check this change has, beyond "the rest of the suite still passes").
+
+Also closed **P5.12.b** (waitlist-promotion notification) — the last of the 2026-08-10 batch's
+"still open" list that was a plain feature gap rather than something needing a design decision.
+
+- `CancelRegistrationHandler` (`src/Modules/Events/Application/UseCases/Client/CancelRegistrationHandler.cs`)
+  now takes `IUserLookup`/`INotificationSender` and, after promoting the oldest waitlisted
+  registration, resolves that user's email and sends `NotificationType.EventRegistrationConfirmed`
+  — the same notification type (and payload shape: `eventId`/`status`) `RegisterForEventHandler`
+  already sends for a fresh `Registered` outcome, reused deliberately rather than adding a new
+  `NotificationType` enum member, since docs/PROMPT.md §32's notification-type list is spec-fixed.
+  Sent unconditionally, not gated by `INotificationPreferenceLookup` the way `EventReminder` is —
+  a registration-status confirmation is transactional per §32 ("Security and transactional
+  notifications cannot be disabled"), matching `RegisterForEventHandler`'s own unconditional send.
+- Two new tests in `Events.Tests.Application.EventRegistrationFlowTests`: the promotion path sends
+  exactly one `EventRegistrationConfirmed` to the promoted user's email with `status: "Registered"`;
+  canceling a registration with no waitlisted users sends none.
+- **Live-verified against real Postgres, not just unit-tested**: booted the real Api, created and
+  published a real capacity-1 event via the admin API (as `demo.expert@bunited.local`), registered
+  two fresh throwaway users through the real HTTP endpoints (first → `Registered`, second →
+  `Waitlisted`), canceled the first user's registration, and confirmed via the server's structured
+  log that the `EventsController.CancelRegistration` action itself (not the registration endpoint)
+  sent `EventRegistrationConfirmed` to the second user's email — then confirmed via the admin
+  event-detail read that the second user's status had actually flipped to `Registered` with fresh
+  reminder rows scheduled. All throwaway data (event, registrations, reminders, translations, both
+  test users) deleted afterward via a throwaway Npgsql console tool in the scratchpad dir, same
+  discipline as every other live-verification pass in this project.
+- `dotnet build BUnited.sln` clean; `dotnet test BUnited.sln` green across every project
+  (Events.Tests 30/30, up from 29; every other module unaffected).
+
+Also closed **P6.13.a** (Chat "load older messages" not wired) — a frontend-only gap with no
+backend work needed at all, since the cursor-pagination API (`nextBeforeCursor`) already existed
+and was already tested; only the UI control was missing.
+
+- `frontend/src/modules/chat/ChatPage.tsx`: added a "Load older messages" button, shown whenever a
+  next-older cursor is available. Older pages are held in their own component state
+  (`olderMessages`/`olderCursor`), separate from the `messagesQuery` that the 5s poll keeps
+  refreshing to the newest page — once at least one older page has been loaded, the cursor for the
+  *next* older page is owned entirely by that manual state rather than re-derived from the live
+  page (whose own cursor keeps shifting as new messages arrive and would otherwise fight with it).
+  Rendered list merges `olderMessages` + the live page, de-duplicated by message `id`. Reset on
+  room switch. New `chat:loadOlderMessages`/`chat:loadingOlderMessages` locale keys (ro+en).
+- **Live-verified via Playwright against real Postgres, not just typechecked**: created a
+  throwaway program-scoped chat room via the admin API, seeded 55 messages as
+  `demo.client@bunited.local` through the real HTTP endpoint, then drove the real running SPA
+  (Vite dev server + Api, both against the real local Postgres): confirmed the button is visible
+  when only the newest 50-message page is loaded, clicking it brings the total rendered count to
+  55 with the oldest message (`Seed message number 1`) now present and no duplicate renders, the
+  button disappears once the pagination cursor comes back null, and — the specific risk this
+  design was built to avoid — the loaded older messages survive two full 5s poll cycles without
+  being wiped out. One unrelated pre-existing console error was observed during this run
+  (`Query data cannot be undefined... Affected query key: ["my-upcoming-event","en"]`, from the
+  dashboard's upcoming-event card, not the Chat feature) — not introduced by this change, not
+  investigated further this pass, noted here so it isn't lost.
+- All throwaway data (chat room, 55 messages, read-state row) deleted afterward via the same
+  scratchpad Npgsql console tool used for the P5.12.b verification above.
+- `npm run lint`/`check:locale-parity`/`build` all pass.
+
+Also added `ChatPage.test.tsx` (3 Vitest/RTL tests) — the first component test `ChatPage.tsx` has
+ever had, opportunistic since P6.13.a's work was already sitting in that exact file. Not a full
+close of the broader P2.H–P6.H frontend-test-coverage gap (every other Content/Progress/
+Billing/Events/Chat page is still uncovered), just the one component this session's other change
+already touched.
+
+- Covers: the "Load older messages" button appears when a cursor is available and disappears once
+  exhausted (asserting the exact cursor value `chatApi.getMessages` is called with); the button is
+  absent when the first page already has no further cursor; sending a message clears the draft.
+- Two `setupTests.ts` additions were needed, both real, previously-missing test infrastructure
+  gaps rather than anything ChatPage-specific: (1) the `chat` i18n namespace wasn't registered on
+  the test-only i18next instance at all (only `common`/`auth`/`dashboard`/`profile` were — every
+  namespace gets added here the first time a page in that module gets its first test, so this was
+  simply Chat's turn), and (2) jsdom doesn't implement `Element.scrollIntoView()`, which
+  `ChatPage`'s scroll-to-latest-message effect calls unconditionally — polyfilled as a no-op the
+  same way `setupTests.ts` already polyfills `<dialog>.showModal()`/`close()` for the same reason.
+- `npm run test` (frontend): 70/70 passing (67 existing + 3 new), no regressions from either
+  `setupTests.ts` change.
+
+Continued the P2.H–P6.H frontend-test-coverage push into Events: added `EventsListPage.test.tsx`
+(4 tests) and `EventDetailPage.test.tsx` (5 tests) — the first component tests either page has
+ever had.
+
+- `EventsListPage`: lists events with title/registration-status badge, shows an empty state, shows
+  an error alert on a failed fetch, and switching to the "Past" tab re-queries with
+  `includePast=true`.
+- `EventDetailPage`: not-found alert on a failed fetch, register → success feedback, register →
+  waitlisted feedback (full-event case), an already-registered event shows Cancel instead of
+  Register and cancels correctly, and the Back button navigates to `/events`.
+- **A real, pre-existing bug was found writing these tests, not injected by them**: `common:errors.generic`
+  — the key `EventsListPage`/`EventDetailPage`/`AdminBillingListPage`/`AdminEventEditorPage`/
+  `BillingPage`/`GuidanceHomePage`/`QuestionnaireFillPage` (8 call sites across Billing, Events,
+  Questionnaires, and Admin) all use for their generic-fetch-error `Alert` — **did not exist in
+  either locale file**. i18next's missing-key fallback means every one of those error states was
+  rendering the literal string `errors.generic` to real users instead of a translated message, in
+  both `ro` and `en`. Neither `npm run check:locale-parity` (checks *parity* between ro/en, not
+  *existence* against actual `t()` call sites in code) nor any prior test caught it — the same
+  category of gap as bug #10/#11 in this file's "non-obvious bugs" list, just never exercised by a
+  test until `EventsListPage.test.tsx`'s error-state assertion actually rendered the component and
+  looked for real text. Fixed by adding `common:errors.generic` to both `en`/`ro` `common.json`
+  (`"Something went wrong. Please try again."` / `"Ceva nu a funcționat. Te rugăm să încerci din
+  nou."`) rather than touching any of the 8 call sites — the key was clearly *meant* to exist,
+  given the consistent naming convention already used everywhere else in the codebase.
+- `dotnet test`/`build` unaffected (frontend-only change). Frontend: `npm run
+  lint`/`check:locale-parity`/`test`/`build` all pass — 79/79 tests (70 + 9 new).
+
+### End-to-end Playwright analysis (real backend + real frontend + real Postgres)
+
+At the user's explicit request, ran a systematic Playwright pass across the whole app — every
+client route, every expert-accessible admin route, and (via a throwaway self-registered account
+granted the `Administrator` role directly in Postgres, deleted afterward) every
+Administrator-only route (`/admin/clients`, `/admin/audit`, `/admin/billing`) — capturing console
+errors, uncaught page errors, and failed/5xx network requests per page, then investigating every
+signal against the real backend log before deciding whether it was a real bug. Two findings turned
+out to be script artifacts (a too-short wait before checking the 404 page's body text; a one-off
+CORS-looking error during Vite's own dependency-reoptimization at cold start) — both reproduced as
+clean on repeat runs, so they're **not** listed below. Two more turned out to be *this session's
+own testing* legitimately triggering real security features (the global/auth rate limiters; the
+account-lockout after repeated wrong-password attempts fired by a separate verification script) —
+also not bugs, and the affected demo accounts' lockouts were cleared afterward via the same
+scratchpad Npgsql tool used throughout this session. **Four real, previously-unknown, reproducible
+bugs were found and fixed**, all now covered by regression tests or live-reverified, added to the
+numbered bug list below as #27–#30:
+
+- **#27 — `GET /api/v1/profile` 500s for both seeded demo accounts** (`demo.client@bunited.local`,
+  `demo.expert@bunited.local`), and would 500 for `admin@bunited.local` too if it existed in this
+  DB. `DemoAccountSeeder` creates these two `User` rows via the domain factory `User.Register(...)`
+  directly — bypassing `RegisterUserHandler`, the only place a `UserPreference` row normally gets
+  created alongside a new user. `GetProfileHandler.HandleAsync` unconditionally does
+  `dbContext.Set<UserPreference>().SingleAsync(p => p.UserId == userId, ...)`, which throws
+  `InvalidOperationException: Sequence contains no elements` for either seeded account, unhandled
+  → 500. **The Profile page has been completely broken for both demo accounts since P7.18.b
+  shipped them (2026-08-10) and no one had opened `/profile` as either account since.** Fixed by
+  adding `context.Set<UserPreference>().Add(UserPreference.CreateDefault(...))` for both seeded
+  users in `DemoAccountSeeder.cs`, matching `RegisterUserHandler`'s own behavior. The two
+  already-seeded accounts in this local DB were also directly backfilled with the missing row (a
+  one-time local-DB repair, not something a fresh DB needs — the seeder fix covers that).
+- **#28 — A real concurrent-write race in Progress**: `RecordVideoProgressHandler` and
+  `MarkContentCompletedHandler` both call `SectionProgressRecalculator.RecalculateAsync`, which
+  does a check-then-insert on `SectionProgress` (`SingleOrDefaultAsync` → `Create` if null →
+  `Add`). Two concurrent progress reports for the *same section* (different content items, or the
+  same one via a React 19 StrictMode double-invoked mount effect — the exact same root cause as
+  bugs #12/#17) can both see "no row yet," both try to insert, and the loser hits the real
+  `ix_section_progress_entries_user_id_section_id` unique index with an unhandled
+  `DbUpdateException` → 500. Found live: opening the video player page threw exactly this on a
+  real request. Fixed with a catch-and-retry in both handlers (`dbContext.ChangeTracker.Clear()`
+  then recompute as a plain update, once — mirrors the recovery shape already used in
+  `Billing.ProcessProviderEventHandler` for the analogous duplicate-webhook race). Added
+  `TestDbContextFactory.CreateConcurrentPair` to `Progress.Tests` (porting the same
+  two-real-SQLite-connections-sharing-one-cache trick `Billing.Tests` already has for P3.23.b) and
+  a new regression test, `Concurrent_progress_reports_for_the_same_section_do_not_throw_or_duplicate_the_section_row`
+  — confirmed it reproduces the exact real exception when run against the pre-fix handlers (via a
+  temporary `git stash` of just the fix), then confirmed it passes with the fix restored.
+- **#29 — Two frontend API functions could resolve a TanStack Query `queryFn` to `undefined`,
+  which TanStack Query explicitly forbids** (throws "Query data cannot be undefined..." and puts
+  the query into an error state, silently triggering its default 3-retry backoff on every single
+  page load): `eventsApi.getMyUpcoming` and `questionnaireApi.getGuidance` are both typed
+  `T | null`, and their backend endpoints do `return Ok(result)` where `result` can be `null` —
+  ASP.NET Core's default `HttpNoContentOutputFormatter` silently rewrites a null-bodied `Ok(...)`
+  into a bare `204 No Content`, and `apiRequest` resolves *any* 204 to `undefined` (correct for the
+  many genuinely-void endpoints that share that helper). The mismatch: `undefined` (from 204)
+  reached React Query where only `null` (a real, valid "no upcoming event"/"no guidance yet"
+  value) was ever intended. This fired on **every single authenticated page load** for any user
+  with no upcoming event registration — i.e. most users, most of the time — via `ClientHomePage`'s
+  dashboard card. The UI degraded gracefully (the card's `data &&` guard just doesn't render), so
+  it was never visibly broken, but every affected page load logged a console error and silently
+  retried the request three extra times. Not caught by the `EventsListPage`/`EventDetailPage`
+  component tests added earlier this session (both mock `eventsApi` directly, bypassing the real
+  `apiRequest`/204 path entirely) — only found by watching real console output from a real browser
+  hitting the real backend. Fixed at the two call sites (`.then((result) => result ?? null)`)
+  rather than changing `apiRequest`'s shared 204-handling, which is correct for its many
+  legitimately-void callers.
+- **#30 — The most serious one: exhausting a rate limit made the app look completely broken with
+  a misleading "CORS policy" error, hiding the real 429 entirely.** `app.UseRateLimiter()` was
+  registered *before* `app.UseCors(...)` in `Program.cs` (same class of ordering mistake as bug
+  #20, just a different pair of middleware). A request rejected by the rate limiter never reaches
+  any middleware registered after the limiter — so it never gets an
+  `Access-Control-Allow-Origin` header. For a JSON `POST` (login, refresh — both CORS-preflighted),
+  the browser's preflight `OPTIONS` request itself gets rate-limited the same way once the budget
+  is exhausted, comes back with no CORS header, and Chromium can't distinguish "rate limited" from
+  "CORS misconfigured" — it reports the *preflight* failure as a blocked-by-CORS error and the
+  real `POST` is never even sent. The frontend never sees the 429 status, the `Retry-After` header,
+  or the `errors.rateLimitExceeded` message it already has a translation for (`"Too many attempts.
+  Please wait a moment and try again."`) — a user who trips this (e.g. a few too-fast login
+  retries) sees what looks like the entire app being down, and a developer investigating sees only
+  a CORS error pointing nowhere near the real cause. Found live: a Playwright script deliberately
+  exhausting the 5/minute auth rate limit got `net::ERR_FAILED`-flavored login failures with no
+  response ever observed, not a 429. Fixed by moving `app.UseCors(...)` to before
+  `app.UseRateLimiter()` (verified `app.UseExceptionHandler()` does *not* have the same problem —
+  tested directly: a real validation-error 400 from a real browser correctly carries the CORS
+  header today, so only the rate limiter needed to move). Re-verified live after the fix: attempts
+  1–5 (within budget) get `400`/CORS-header-present as expected; attempt 6+ correctly gets
+  `429` + `Retry-After: 60` + CORS-header-present, readable by the frontend for the first time.
+- `dotnet build`/`dotnet test` clean across all 12 backend projects (388 tests, up from 384 — the
+  4 new Progress concurrency-related assertions land inside the existing
+  `Concurrent_progress_reports_...` test, so only +1 test file's worth of net-new cases show up in
+  the per-project count). Frontend `lint`/`check:locale-parity`/`test`/`build` all clean.
+- **Scope note**: this pass did not attempt every possible interaction (e.g. full checkout/refund
+  cycles, questionnaire fill-and-guidance-publish end to end, admin content authoring mutations,
+  chat moderation actions) — it prioritized breadth (every route, every role) over exhaustively
+  interacting with each one. Those deeper flows already have backend test coverage and were
+  live-verified in earlier sessions (see the Phase 2–6 summaries above); this pass's goal was
+  specifically to catch what only a real browser against a real backend can catch, per this file's
+  own "How to verify things actually work" section.
 
 ## Session update — 2026-08-10
 
@@ -567,19 +884,20 @@ Each of these was caught by actually running the code, not by reading it:
     known-correct `"Submitted"` status directly into that cache entry via `setQueryData` in the
     submit mutation's `onSuccess`, rather than trusting invalidate-then-refetch timing to win the
     race before the redirect logic runs on first paint.
-20. **A misleading server-side log, not a client-facing bug**: `Serilog.AspNetCore`'s
-    `UseSerilogRequestLogging()` is registered *after* `UseExceptionHandler()` in `Program.cs`'s
-    pipeline, which means it sits *inside* the exception handler (closer to the actual request).
-    When a handler throws an `AppException`, Serilog's middleware catches the exception passing
-    through it, logs whatever `Response.StatusCode` happens to be at that moment (effectively the
-    ASP.NET default, i.e. 500) with the *wrong* status, then rethrows so `GlobalExceptionHandler`
-    (further out in the pipeline) can catch it and correctly write the real 400 + JSON body that
-    the client actually receives. Confirmed via direct `curl` (correct 400 body) versus the
-    simultaneous server log line (says 500) for the identical request/correlation ID. Purely a
-    debugging-experience issue — every response the client sees was already correct throughout
-    this whole session — but worth fixing eventually (swap the two middleware registrations,
-    verify nothing else depends on the current order, and re-run the full live-verification pass)
-    since a future debugging session could easily be misled by it.
+20. ~~**A misleading server-side log, not a client-facing bug**~~ — **fixed 2026-08-17**:
+    `Serilog.AspNetCore`'s `UseSerilogRequestLogging()` was registered *after*
+    `UseExceptionHandler()` in `Program.cs`'s pipeline, which meant it sat *inside* the exception
+    handler (closer to the actual request). When a handler threw an `AppException`, Serilog's
+    middleware caught the exception passing through it, logged whatever `Response.StatusCode`
+    happened to be at that moment (effectively the ASP.NET default, i.e. 500) with the *wrong*
+    status, then rethrew so `GlobalExceptionHandler` (further out in the pipeline) could catch it
+    and correctly write the real 400 + JSON body that the client actually received. Confirmed via
+    direct `curl` (correct 400 body) versus the simultaneous server log line (said 500) for the
+    identical request/correlation ID. Purely a debugging-experience issue — every response the
+    client saw was already correct throughout this whole session. Fixed by reordering to
+    `UseCorrelationId(); UseSerilogRequestLogging(); UseExceptionHandler();` (`CorrelationId` still
+    has to precede `SerilogRequestLogging` for its `LogContext` property to be active when Serilog
+    logs) — see the 2026-08-17 session update at the top of this file for the live re-verification.
 21. **`{action}` is a reserved ASP.NET Core MVC routing token.** `[HttpPost("demo/{action}")]`
     looked completely ordinary but silently 404'd on every real request — no exception, no log
     entry, nothing in `GlobalExceptionHandler`, not even a hit in the controller's action method.
@@ -628,6 +946,71 @@ Each of these was caught by actually running the code, not by reading it:
     UPDATE`, discarding the result) instead of trying to materialize an entity through it, then
     doing the normal tracked EF query afterward within the same transaction — the row lock
     persists for the rest of the transaction either way.
+26. **A localization key used across 8 call sites in production code never existed in either
+    locale file.** `common:errors.generic` — the generic-fetch-error `Alert` text on
+    `EventsListPage`, `EventDetailPage`, `AdminBillingListPage`, `AdminEventEditorPage`,
+    `BillingPage`, `GuidanceHomePage`, and `QuestionnaireFillPage` (twice) — was missing from both
+    `locales/en/common.json` and `locales/ro/common.json`. i18next's missing-key fallback silently
+    rendered the literal string `errors.generic` to any real user who hit a fetch failure on any of
+    those screens, in both languages. `npm run check:locale-parity` checks *parity between ro/en*,
+    not *existence against actual `t()` call sites in source*, so it never had a chance to catch
+    this — found only because `EventsListPage.test.tsx`'s error-state test actually rendered the
+    component and asserted on real text (2026-08-17). Fixed by adding the missing key to both
+    locale files rather than touching any of the 8 call sites.
+27. **Both seeded demo accounts (`demo.client@bunited.local`, `demo.expert@bunited.local`) 500 on
+    `GET /api/v1/profile`.** `DemoAccountSeeder` creates its two `User` rows via the domain
+    factory directly, bypassing `RegisterUserHandler` — the only place a `UserPreference` row
+    normally gets created for a new user. `GetProfileHandler` does an unconditional
+    `SingleAsync(p => p.UserId == userId)` against `UserPreference`, throwing
+    `InvalidOperationException: Sequence contains no elements` for either seeded account. The
+    Profile page has been completely broken for both demo accounts since P7.18.b shipped them.
+    Found live via a systematic Playwright route sweep (2026-08-17). Fixed by seeding a
+    `UserPreference.CreateDefault(...)` row alongside each demo user, matching
+    `RegisterUserHandler`'s own behavior.
+28. **A real concurrent-write race in Progress**: `RecordVideoProgressHandler` and
+    `MarkContentCompletedHandler` both call `SectionProgressRecalculator.RecalculateAsync`, a
+    check-then-insert on `SectionProgress`. Two concurrent progress reports for the same section
+    (plausible via a React 19 StrictMode double-invoked mount effect — the same root cause as bugs
+    #12/#17) can both see "no row yet" and both try to insert; the loser hits the real
+    `ix_section_progress_entries_user_id_section_id` unique index with an unhandled
+    `DbUpdateException` → 500. Found live: opening the video player page threw this on a real
+    request (2026-08-17). Fixed with a catch-and-retry in both handlers (clear the change tracker,
+    recompute as a plain update), mirroring `Billing.ProcessProviderEventHandler`'s existing
+    recovery shape for the analogous duplicate-webhook race. New `Progress.Tests` regression test
+    confirmed to fail against the pre-fix handlers and pass with the fix restored.
+29. **Two frontend API functions could resolve a TanStack Query `queryFn` to `undefined`**, which
+    TanStack Query explicitly forbids (throws, puts the query into a silently-retrying error
+    state): `eventsApi.getMyUpcoming` and `questionnaireApi.getGuidance` are typed `T | null`, but
+    their backend endpoints' `Ok(null)` gets rewritten by ASP.NET Core's default
+    `HttpNoContentOutputFormatter` into a bare `204 No Content`, which `apiRequest` correctly
+    resolves to `undefined` for its many genuinely-void callers — but these two callers needed
+    `null`, not `undefined`. Fired on every authenticated page load for any user with no upcoming
+    event registration (most users, most of the time) via `ClientHomePage`'s dashboard card — UI
+    degraded gracefully (a `data &&` guard just didn't render), but every affected load logged a
+    console error and silently retried 3 extra times. Found only by watching real console output
+    from a real browser against the real backend (2026-08-17) — not caught by the
+    `EventsListPage`/`EventDetailPage` component tests added earlier the same session, since both
+    mock `eventsApi` directly and never exercise the real `apiRequest`/204 path. Fixed at the two
+    call sites (`.then((result) => result ?? null)`), not in `apiRequest` itself.
+30. **The most serious finding this pass: exhausting a rate limit made the app look completely
+    broken with a misleading "CORS policy" error, hiding the real 429 entirely.**
+    `app.UseRateLimiter()` was registered *before* `app.UseCors(...)` — the same class of ordering
+    mistake as bug #20, a different middleware pair. A rate-limited request never reaches
+    anything registered after the limiter, so it never gets an `Access-Control-Allow-Origin`
+    header; for a CORS-preflighted `POST` (login, refresh), the preflight `OPTIONS` itself gets
+    rate-limited the same way once the budget is exhausted, comes back with no CORS header, and
+    Chromium reports the preflight failure as blocked-by-CORS — the real `POST` is never even
+    sent, and the frontend never sees the 429, the `Retry-After` header, or the
+    `errors.rateLimitExceeded` message it already had a translation for. A user who trips this
+    sees what looks like the entire app being down; a developer investigating sees a CORS error
+    pointing nowhere near the real cause. Found live: a Playwright script deliberately exhausting
+    the 5/minute auth rate limit got `net::ERR_FAILED` login failures with no response ever
+    observed, not a 429 (2026-08-17). Fixed by moving `app.UseCors(...)` to before
+    `app.UseRateLimiter()` (confirmed `app.UseExceptionHandler()` does *not* have the same
+    problem — a real validation-error 400 from a real browser already carries the CORS header
+    correctly). Re-verified live after the fix: attempts within budget get 400 with the CORS
+    header present; attempt 6+ correctly gets 429 + `Retry-After: 60` + the CORS header, readable
+    by the frontend for the first time.
 
 ## Environment-specific notes
 
@@ -684,30 +1067,32 @@ Each of these was caught by actually running the code, not by reading it:
   policy itself doesn't exist yet) — nothing to implement against yet.
 - **P4.22.b** (crisis-disclaimer wording sign-off) and **P4.27.c** (questionnaire builder preview
   mode): both real, narrow gaps — see the Phase 4 summary above.
-- **Server log status-code inaccuracy for exception-mapped responses** (bug #20 above): a real,
-  low-severity fix that's still open — `UseSerilogRequestLogging()`/`UseExceptionHandler()`
-  ordering in `src/Api/Program.cs`.
+- ~~**Server log status-code inaccuracy for exception-mapped responses**~~ (bug #20 above) — fixed
+  2026-08-17, see the session update at the top of this file.
 - ~~**P3.19.b**/**P3.20.b**/**P3.23.b**/**P3.31.b**~~ — closed 2026-08-10, see the session update
-  at the top of this file. **P3.30** (cross-user billing access-denial test — prevented by
-  construction, not by an explicit checked guard) remains open.
+  at the top of this file. ~~**P3.30**~~ (cross-user billing access-denial test) — closed
+  2026-08-17, see the session update at the top of this file.
 - **P3.H / P4.H / P2.H / P5.H / P6.H frontend component tests**: the same gap, now spanning
   Content/Progress (Phase 2), Questionnaires (Phase 4), Billing (Phase 3), Events (Phase 5), and
-  Chat (Phase 6) — no Vitest coverage exists for any of these modules' pages, only backend tests +
-  manual/live verification. Worth a dedicated pass at some point rather than continuing to let it
-  compound phase over phase.
+  Chat (Phase 6) — no Vitest coverage exists for most of these modules' pages, only backend tests +
+  manual/live verification. **Progress, 2026-08-17**: `ChatPage.tsx` (`ChatPage.test.tsx`, 3
+  tests), `EventsListPage.tsx`/`EventDetailPage.tsx` (4+5 tests) now have their first-ever
+  component tests — the latter pass caught a real, previously-invisible bug (`common:errors.generic`
+  missing from both locale files, see the session update at the top of this file). Still fully
+  uncovered: Content/Progress (Phase 2), Questionnaires (Phase 4), Billing (Phase 3). Worth a
+  dedicated pass rather than continuing to let it compound phase over phase.
 - **P5.06.c** (concurrent-load test for the capacity/waitlist race): the `SELECT ... FOR UPDATE`
   Postgres lock is real (see bug #25 above) and live-verified sequentially, but there's no
   automated concurrent-request regression test — the Sqlite unit-test harness has no real
   concurrent-writer story, and this specific behavior is provider-specific.
-- **P5.12.b** (waitlist-promotion notification): a promoted user isn't proactively notified at the
-  moment of promotion — only via their next normal page load/refetch. `CancelRegistrationHandler`
-  schedules the promoted registration's reminders but never calls `INotificationSender`.
+- ~~**P5.12.b**~~ (waitlist-promotion notification) — closed 2026-08-17, see the session update at
+  the top of this file.
 - **P6.04.a** (no SignalR): the client polls every 5s instead — explicitly permitted by
   docs/PROMPT.md §33-34, not silently skipped.
 - **P6.11** (no account-deletion message anonymization): blocked on account deletion not existing
   as a feature anywhere in this codebase yet — same category as P4.20/P7.06.
-- **P6.13.a** ("load older messages" not wired): the cursor-pagination API exists and is tested,
-  but the client only ever loads the newest 50-message page — no "load older" UI control.
+- ~~**P6.13.a**~~ ("load older messages" not wired) — closed 2026-08-17, see the session update at
+  the top of this file.
 - ~~**P6.20.a** (no HTTP-level Chat permission test)~~ — closed 2026-08-10, see the session update
   at the top of this file.
 - **No browser-level (Playwright) verification of the Events or Chat UI**: no Playwright tool was

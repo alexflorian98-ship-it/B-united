@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Domain\BUnited.Modules.Identity.Domain.csproj" />
     <ProjectReference Include="..\Contracts\BUnited.Modules.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\Application\BUnited.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Observability\BUnited.BuildingBlocks.Observability.csproj" />
     <ProjectReference Include="..\..\Audit\Contracts\BUnited.Modules.Audit.Contracts.csproj" />
   </ItemGroup>
 

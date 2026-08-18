@@ -30,6 +30,7 @@
     <ProjectReference Include="..\Infrastructure\BUnited.Modules.Questionnaires.Infrastructure.csproj" />
     <ProjectReference Include="..\Api\BUnited.Modules.Questionnaires.Api.csproj" />
     <ProjectReference Include="..\..\Identity\Infrastructure\BUnited.Modules.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Observability\BUnited.BuildingBlocks.Observability.csproj" />
   </ItemGroup>
 
 </Project>

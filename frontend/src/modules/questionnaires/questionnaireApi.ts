@@ -84,8 +84,12 @@ export const questionnaireApi = {
   submit: (submissionId: string) =>
     apiRequest<void>(`/questionnaires/submissions/${submissionId}/submit`, { method: "POST" }),
 
+  // The backend returns 204 No Content (not a JSON `null` body) when no guidance exists yet —
+  // ASP.NET Core's default output formatter rewrites `Ok(null)` into 204 — and apiRequest resolves
+  // a 204 to `undefined`. TanStack Query forbids a queryFn resolving to `undefined` (it throws
+  // "Query data cannot be undefined"), so this must be coalesced to `null` here at the call site.
   getGuidance: (submissionId: string) =>
-    apiRequest<Guidance | null>(`/questionnaires/submissions/${submissionId}/guidance`),
+    apiRequest<Guidance | null>(`/questionnaires/submissions/${submissionId}/guidance`).then((result) => result ?? null),
 
   submitFollowUp: (guidanceResponseId: string, question: string) =>
     apiRequest<void>(`/questionnaires/guidance/${guidanceResponseId}/follow-up`, { method: "POST", body: { question } }),

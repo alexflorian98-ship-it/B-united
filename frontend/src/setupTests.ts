@@ -23,14 +23,25 @@ if (typeof HTMLDialogElement !== "undefined" && !HTMLDialogElement.prototype.sho
     this.dispatchEvent(new Event("close"));
   };
 }
+// jsdom doesn't implement Element.scrollIntoView() (throws "not implemented") — ChatPage's
+// scroll-to-latest-message effect calls it on every render, which would otherwise fail every test
+// that touches the chat message list.
+if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 import { initReactI18next } from "react-i18next";
 import authEn from "./locales/en/auth.json";
+import chatEn from "./locales/en/chat.json";
 import commonEn from "./locales/en/common.json";
 import dashboardEn from "./locales/en/dashboard.json";
+import eventsEn from "./locales/en/events.json";
 import profileEn from "./locales/en/profile.json";
 import authRo from "./locales/ro/auth.json";
+import chatRo from "./locales/ro/chat.json";
 import commonRo from "./locales/ro/common.json";
 import dashboardRo from "./locales/ro/dashboard.json";
+import eventsRo from "./locales/ro/events.json";
 import profileRo from "./locales/ro/profile.json";
 
 // A separate, test-only i18next instance: resources are imported statically instead of via the
@@ -39,11 +50,11 @@ import profileRo from "./locales/ro/profile.json";
 void i18n.use(initReactI18next).init({
   lng: "en",
   fallbackLng: "en",
-  ns: ["common", "auth", "dashboard", "profile"],
+  ns: ["common", "auth", "dashboard", "profile", "chat", "events"],
   defaultNS: "common",
   resources: {
-    en: { common: commonEn, auth: authEn, dashboard: dashboardEn, profile: profileEn },
-    ro: { common: commonRo, auth: authRo, dashboard: dashboardRo, profile: profileRo },
+    en: { common: commonEn, auth: authEn, dashboard: dashboardEn, profile: profileEn, chat: chatEn, events: eventsEn },
+    ro: { common: commonRo, auth: authRo, dashboard: dashboardRo, profile: profileRo, chat: chatRo, events: eventsRo },
   },
   interpolation: { escapeValue: false },
   react: { useSuspense: false },

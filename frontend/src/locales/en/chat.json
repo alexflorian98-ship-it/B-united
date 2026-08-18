@@ -14,6 +14,8 @@
     "body": "This space is visible to clients who own the associated program. Do not post sensitive health, financial, or personal information."
   },
   "unknownUser": "Unknown user",
+  "loadOlderMessages": "Load older messages",
+  "loadingOlderMessages": "Loading…",
   "pinned": "Pinned",
   "messageDeleted": "This message was removed by a moderator.",
   "report": "Report",

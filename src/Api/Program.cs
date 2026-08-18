@@ -7,6 +7,8 @@ using BUnited.BuildingBlocks.Observability.HealthChecks;
 using BUnited.BuildingBlocks.Observability.Logging;
 using BUnited.BuildingBlocks.Security.Abuse;
 using BUnited.BuildingBlocks.Security.Cors;
+using BUnited.BuildingBlocks.Security.Headers;
+using BUnited.BuildingBlocks.Security.Proxy;
 using BUnited.Migrations;
 using BUnited.Migrations.Seed;
 using BUnited.Modules.Admin.Infrastructure;
@@ -71,12 +73,21 @@ builder.Services.AddHealthChecks()
 builder.Services.AddBUnitedRateLimiting();
 builder.Services.AddBUnitedCors(builder.Configuration);
 
+// Strict-Transport-Security is only meaningful once the host is actually reached over HTTPS
+// under a real certificate — enabling it in Development would poison browser HSTS caches for
+// localhost. See the conditional app.UseHsts() call below.
+builder.Services.AddHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(365);
+    options.IncludeSubDomains = true;
+});
+
 builder.Services.AddDbContext<BUnitedApplicationDbContext>(options =>
     options.UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly(typeof(BUnitedApplicationDbContext).Assembly.FullName))
         .AddInterceptors(new AuditableEntitySaveChangesInterceptor()));
 builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<BUnitedApplicationDbContext>());
 
-builder.Services.AddIdentityModule(builder.Configuration);
+builder.Services.AddIdentityModule(builder.Configuration, builder.Environment);
 builder.Services.AddAuditModule();
 builder.Services.AddContentModule();
 builder.Services.AddProgressModule();
@@ -131,14 +142,46 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseExceptionHandler();
+// P: bug #20 (docs/HANDOVER.md) — UseSerilogRequestLogging must wrap UseExceptionHandler (i.e. be
+// registered before it) so it logs the response status GlobalExceptionHandler already corrected,
+// not the pre-correction status an exception leaves behind on its way up. UseCorrelationId must
+// stay before UseSerilogRequestLogging so the pushed CorrelationId LogContext property is still
+// active when Serilog writes its completion log line.
+// Registered before every other middleware so its Response.OnStarting callback is queued before
+// any downstream middleware (routing, MVC, the exception handler, the rate limiter) can
+// short-circuit the pipeline — see SecurityHeadersMiddleware for why OnStarting is used instead
+// of setting headers directly.
+app.UseBUnitedSecurityHeaders();
+
+// Must run before anything that reads the client IP or request scheme (rate limiting's per-IP
+// partitioning, HTTPS redirection, request logging) so those see the real values behind a
+// reverse proxy — see ForwardedHeadersExtensions for why this is safe by default with nothing
+// configured (ignores forwarded headers rather than blindly trusting them).
+app.UseBUnitedForwardedHeaders(app.Configuration);
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
 app.UseCorrelationId();
 app.UseSerilogRequestLogging();
-app.UseRateLimiter();
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
+// UseCors must wrap (be registered before) UseRateLimiter: a rejected (429) request never reaches
+// any middleware registered after the rejecting one, so CORS headers are never attached to it
+// unless CORS itself sits further out. Without this order, once a client exhausts the "auth"
+// rate-limit policy, the browser's preflight for the next request gets a 429 with no
+// Access-Control-Allow-Origin header — Chromium can't distinguish "rate limited" from "CORS
+// misconfigured" and reports the real 429/Retry-After as an opaque CORS failure instead, hiding
+// both the correlationId and the errors.rateLimitExceeded message the frontend already has a
+// translation for. Found live via Playwright: exhausting the login rate limit from a real browser
+// made every subsequent login attempt fail as "blocked by CORS policy", not the expected 429.
 app.UseCors(CorsExtensions.SpaPolicyName);
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -39,6 +39,7 @@
     "audit": "Audit"
   },
   "errors": {
+    "generic": "Ceva nu a funcționat. Te rugăm să încerci din nou.",
     "validationFailed": "Unele câmpuri necesită atenția ta.",
     "internalServerError": "A apărut o problemă la noi. Te rugăm să încerci din nou.",
     "notFound": "Nu am găsit ce căutai.",

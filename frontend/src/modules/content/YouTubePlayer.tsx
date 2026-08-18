@@ -87,8 +87,14 @@ export function YouTubePlayer({ videoId, resumeFromSeconds, onProgress, errorMes
     let intervalId: ReturnType<typeof setInterval> | null = null;
     let cancelled = false;
     const mountElement = document.createElement("div");
+    // Captured now, not re-read from wrapperRef.current inside the cleanup below: by the time
+    // cleanup runs (e.g. on unmount), the ref may already point elsewhere or be null, which is
+    // exactly what react-hooks/exhaustive-deps warns about for a ref read inside a cleanup
+    // closure. Capturing the current wrapper element here makes cleanup act on the element this
+    // effect actually mounted into, regardless of what the ref holds later.
+    const wrapperElement = wrapperRef.current;
     setHasPlaybackError(false);
-    wrapperRef.current?.replaceChildren(mountElement);
+    wrapperElement?.replaceChildren(mountElement);
 
     const reportProgress = (target: YouTubePlayerInstance) => {
       const duration = target.getDuration();
@@ -98,7 +104,7 @@ export function YouTubePlayer({ videoId, resumeFromSeconds, onProgress, errorMes
     };
 
     void loadYouTubeIframeApi().then((YT) => {
-      if (cancelled || !wrapperRef.current?.contains(mountElement)) return;
+      if (cancelled || !wrapperElement?.contains(mountElement)) return;
 
       player = new YT.Player(mountElement, {
         videoId,
@@ -139,14 +145,22 @@ export function YouTubePlayer({ videoId, resumeFromSeconds, onProgress, errorMes
         reportProgress(player);
         player.destroy();
       }
-      wrapperRef.current?.replaceChildren();
+      wrapperElement?.replaceChildren();
     };
+    // onProgress/resumeFromSeconds are read through refs (onProgressRef/resumeFromSecondsRef)
+    // precisely so this effect does not need to depend on them and re-mount the player whenever
+    // the caller passes a new function/value — only a real video change (or an explicit retry)
+    // should tear down and recreate the YouTube player.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoId, retryNonce]);
 
   return (
     <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
-      <div ref={wrapperRef} className="h-full w-full" />
+      {/* The YouTube IFrame API injects an <iframe> with its own fixed width/height HTML
+          attributes (defaulting to 640x390) regardless of this wrapper's size — [&>iframe]
+          overrides those so the video actually fills the responsive aspect-video box instead of
+          leaving it mostly empty black space on any viewport wider than 640px. */}
+      <div ref={wrapperRef} className="h-full w-full [&>iframe]:h-full [&>iframe]:w-full" />
       {hasPlaybackError && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/90 p-6 text-center text-white">
           <p className="text-sm">{errorMessage}</p>

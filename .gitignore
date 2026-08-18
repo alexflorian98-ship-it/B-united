@@ -10,6 +10,9 @@ node_modules/
 dist/
 dist-ssr/
 frontend/.vite/
+frontend/e2e-results/
+.npm-cache/
+.playwright-browsers/
 *.local
 
 # Environment
@@ -32,3 +35,11 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+
+# Local scratch artifacts (e.g. tokens dumped ad hoc while debugging a session) — never a
+# legitimate source file, so this narrow, explicit name is safe to ignore outright.
+scratch_token.txt
+
+# Playwright global-setup writes real session refresh tokens here for local storageState reuse —
+# must never be committed.
+frontend/e2e/.auth/

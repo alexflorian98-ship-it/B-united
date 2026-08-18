@@ -17,12 +17,13 @@ using BUnited.Modules.Identity.Infrastructure.Security;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace BUnited.Modules.Identity.Infrastructure;
 
 public static class IdentityModuleExtensions
 {
-    public static IServiceCollection AddIdentityModule(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddIdentityModule(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.Configure<AccountLockoutOptions>(configuration.GetSection(AccountLockoutOptions.SectionName));
@@ -59,7 +60,7 @@ public static class IdentityModuleExtensions
 
         services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
 
-        services.AddIdentityJwtAuthentication(configuration);
+        services.AddIdentityJwtAuthentication(configuration, environment);
         services.AddIdentityPermissionPolicies();
 
         return services;

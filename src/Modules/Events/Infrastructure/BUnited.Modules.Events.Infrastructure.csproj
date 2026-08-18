@@ -10,6 +10,17 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.14" />
     <PackageReference Include="Hangfire.PostgreSql" Version="1.20.10" />
+
+    <!-- Hangfire.Core 1.8.14 pins a floor of Newtonsoft.Json 11.0.1, which NuGet resolves down to
+         since nothing else in the graph forces a higher version. That version is vulnerable to
+         CVE-2024-21907 (GHSA-5crp-9r3c-p9vr, High/CVSS 7.5): a denial-of-service via extremely
+         deep JSON nesting during serialization/deserialization, fixed in 13.0.1. Our own code
+         never calls Newtonsoft.Json directly (ASP.NET Core model binding uses System.Text.Json);
+         this pin only raises the floor Hangfire's own internal job-argument serialization uses.
+         An explicit direct reference here wins over the transitive one for this project and
+         propagates as a floor to every project that references it (Events.Api, BUnited.Api,
+         BUnited.Migrations) — confirmed via a solution-wide vulnerable-package scan. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
   <PropertyGroup>

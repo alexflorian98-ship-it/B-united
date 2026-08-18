@@ -5,6 +5,7 @@ using BUnited.Modules.Events.Domain;
 using BUnited.Modules.Events.Domain.Entities;
 using BUnited.Modules.Events.Tests.TestSupport;
 using BUnited.Modules.Identity.Contracts;
+using BUnited.Modules.Notifications.Contracts;
 
 namespace BUnited.Modules.Events.Tests.Application;
 
@@ -13,6 +14,7 @@ public sealed class EventRegistrationFlowTests
     private sealed record Fixture(
         TestDbContext DbContext,
         FakeNotificationSender NotificationSender,
+        FakeUserLookup UserLookup,
         FakeProgramAccessContext ProgramAccessContext,
         RegisterForEventHandler RegisterHandler,
         CancelRegistrationHandler CancelHandler);
@@ -22,10 +24,11 @@ public sealed class EventRegistrationFlowTests
         var (conn, context) = TestDbContextFactory.Create();
         connection = conn;
         var notificationSender = new FakeNotificationSender();
+        var userLookup = new FakeUserLookup();
         var programAccessContext = new FakeProgramAccessContext();
         var registerHandler = new RegisterForEventHandler(context, notificationSender, programAccessContext);
-        var cancelHandler = new CancelRegistrationHandler(context);
-        return new Fixture(context, notificationSender, programAccessContext, registerHandler, cancelHandler);
+        var cancelHandler = new CancelRegistrationHandler(context, userLookup, notificationSender);
+        return new Fixture(context, notificationSender, userLookup, programAccessContext, registerHandler, cancelHandler);
     }
 
     private static Event SeedEvent(TestDbContext dbContext, DateTime startsAtUtc, int? capacity)
@@ -80,10 +83,12 @@ public sealed class EventRegistrationFlowTests
         var firstUser = Guid.NewGuid();
         var secondUser = Guid.NewGuid();
         var thirdUser = Guid.NewGuid();
+        fx.UserLookup.Users[secondUser] = new UserSummary(secondUser, "second@example.com", null);
 
         await fx.RegisterHandler.HandleAsync(@event.Id, firstUser, "first@example.com", CancellationToken.None);
         await fx.RegisterHandler.HandleAsync(@event.Id, secondUser, "second@example.com", CancellationToken.None);
         await fx.RegisterHandler.HandleAsync(@event.Id, thirdUser, "third@example.com", CancellationToken.None);
+        fx.NotificationSender.Sent.Clear();
 
         await fx.CancelHandler.HandleAsync(@event.Id, firstUser, CancellationToken.None);
 
@@ -94,6 +99,28 @@ public sealed class EventRegistrationFlowTests
 
         // The promoted registration now gets reminder rows scheduled — it didn't have any while waitlisted.
         Assert.Contains(fx.DbContext.EventReminders, r => r.EventRegistrationId == second.Id);
+
+        // P5.12.b: the promoted user is notified at promotion time, not left to discover it later.
+        var sent = Assert.Single(fx.NotificationSender.Sent);
+        Assert.Equal(NotificationType.EventRegistrationConfirmed, sent.Type);
+        Assert.Equal("second@example.com", sent.RecipientEmail);
+        Assert.Equal(EventRegistrationStatus.Registered.ToString(), sent.TemplateData["status"]);
+    }
+
+    [Fact]
+    public async Task Canceling_a_registered_seat_with_no_waitlisted_users_sends_no_promotion_notification()
+    {
+        var fx = CreateFixture(out var connection);
+        using var _ = connection;
+        var @event = SeedEvent(fx.DbContext, DateTime.UtcNow.AddDays(2), capacity: 1);
+        var onlyUser = Guid.NewGuid();
+
+        await fx.RegisterHandler.HandleAsync(@event.Id, onlyUser, "only@example.com", CancellationToken.None);
+        fx.NotificationSender.Sent.Clear();
+
+        await fx.CancelHandler.HandleAsync(@event.Id, onlyUser, CancellationToken.None);
+
+        Assert.Empty(fx.NotificationSender.Sent);
     }
 
     [Fact]
@@ -148,6 +175,33 @@ public sealed class EventRegistrationFlowTests
             fx.RegisterHandler.HandleAsync(@event.Id, userId, "client@example.com", CancellationToken.None));
 
         Assert.Equal("EVENT_ALREADY_REGISTERED", ex.Code);
+    }
+
+    /// <summary>Security-gap-closure item #1 (two-user IDOR suite, "event registrations"):
+    /// <see cref="CancelRegistrationHandler"/> is scoped by (eventId, callerUserId) taken from the
+    /// JWT — there is no client-suppliable "registration id" to attack — so the only IDOR shape
+    /// possible here is a caller with no registration of their own attempting to cancel on an
+    /// event where a DIFFERENT user has a real seat. Proves that attempt fails closed (404, not a
+    /// silent no-op that could be confused with success) and leaves the other user's registration
+    /// completely untouched — no state change after a rejected mutation.</summary>
+    [Fact]
+    public async Task Canceling_with_no_registration_of_ones_own_fails_and_leaves_another_users_registration_untouched()
+    {
+        var fx = CreateFixture(out var connection);
+        using var _ = connection;
+        var @event = SeedEvent(fx.DbContext, DateTime.UtcNow.AddDays(2), capacity: null);
+        var registeredUser = Guid.NewGuid();
+        var attackerUser = Guid.NewGuid();
+
+        await fx.RegisterHandler.HandleAsync(@event.Id, registeredUser, "owner@example.com", CancellationToken.None);
+
+        var ex = await Assert.ThrowsAsync<NotFoundAppException>(
+            () => fx.CancelHandler.HandleAsync(@event.Id, attackerUser, CancellationToken.None));
+        Assert.NotNull(ex);
+
+        var untouchedRegistration = fx.DbContext.EventRegistrations.Single(r => r.EventId == @event.Id && r.UserId == registeredUser);
+        Assert.Equal(EventRegistrationStatus.Registered, untouchedRegistration.Status);
+        Assert.DoesNotContain(fx.DbContext.EventRegistrations, r => r.UserId == attackerUser);
     }
 
     [Fact]

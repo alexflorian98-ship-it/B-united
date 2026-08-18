@@ -62,7 +62,20 @@ public sealed class RefreshTokenHandler(
         existingToken.Revoke(utcNow, rotatedToken.Id);
         dbContext.Set<RefreshToken>().Add(rotatedToken);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // A concurrent /auth/refresh call for the same token committed its own rotation
+            // first (see RefreshTokenConfiguration's concurrency token on RevokedAtUtc) — this
+            // caller loses the race. Fail the same safe, generic way as any other invalid token,
+            // never exposing that a race occurred.
+            logger.LogWarning(
+                "identity.refresh_token_concurrent_rotation_lost: UserId {UserId}", existingToken.UserId);
+            throw InvalidToken();
+        }
 
         logger.LogInformation("identity.refresh_token_rotated: UserId {UserId}", user.Id);
 

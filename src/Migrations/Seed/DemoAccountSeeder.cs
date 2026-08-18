@@ -58,11 +58,13 @@ public static class DemoAccountSeeder
         client.MarkEmailVerified(utcNow);
         client.AssignRole(WellKnownRoles.ClientId);
         context.Users.Add(client);
+        context.Set<UserPreference>().Add(UserPreference.CreateDefault(client.Id));
 
         var expert = User.Register(ExpertEmail, passwordHasher.Hash(DemoPassword));
         expert.MarkEmailVerified(utcNow);
         expert.AssignRole(WellKnownRoles.ExpertId);
         context.Users.Add(expert);
+        context.Set<UserPreference>().Add(UserPreference.CreateDefault(expert.Id));
 
         var offer = await context.Set<ProgramOffer>().SingleOrDefaultAsync(o => o.ProgramId == program.Id && o.Status == ProgramOfferStatus.Active, cancellationToken);
         ProgramPrice price;
